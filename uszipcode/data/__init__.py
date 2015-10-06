@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This package using the integrated data made by Sanhe Hu, Data Scientist in 
+``uszipcode`` using the integrated data made by Sanhe Hu, Data Scientist in 
 WeatherBug Home, which includes:
 
 - 2012-01-22 federal governmanet zipcode data from 

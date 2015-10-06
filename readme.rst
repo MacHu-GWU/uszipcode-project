@@ -1,7 +1,7 @@
 Welcome to the uszipcode Documentation
 ====================================================================================================
 
-``uszipcode`` is the most powerful and easy to use zipcode information searchengine. Besides geometry data (also boundary info), several useful census data points are also served: `population`, `population density`, `total wage`, `average annual wage`, `house of units`, `land area`, `water area`. The geometry and geocoding data is from google map API on Oct 2015. The geometry data in `this another zipcode python package <https://pypi.python.org/pypi/zipcode/2.0.0>`_ is not accurate any more, if you exam it on google map.
+``uszipcode`` is the most powerful and easy to use zipcode information searchengine in Python. Besides geometry data (also boundary info), several useful census data points are also served: `population`, `population density`, `total wage`, `average annual wage`, `house of units`, `land area`, `water area`. The geometry and geocoding data is from google map API on Oct 2015. The geometry data in `this another popular zipcode python package <https://pypi.python.org/pypi/zipcode>`_ is not accurate any more, if you exam it on google map. To know more about the data, `click here <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/uszipcode/data/__init__.html#module-uszipcode.data>`_.
 
 **Highlight**:
 
@@ -12,9 +12,11 @@ Welcome to the uszipcode Documentation
 **Quick links**:
 
 - `Home page <https://github.com/MacHu-GWU/uszipcode-project>`_
-- `Online Documentation <http://uszipcode-project.readthedocs.org/>`_
+- `Online Documentation <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html>`_
 - `PyPI download <https://pypi.python.org/pypi/uszipcode>`_
 - `Install <install_>`_
+- `Issue submit and feature request <https://github.com/MacHu-GWU/uszipcode-project/issues>`_
+- `API reference and source code <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/uszipcode/searchengine.html#uszipcode.searchengine.ZipcodeSearchEngine>`_
 
 Now let's see some real magic!
 
@@ -71,6 +73,8 @@ Context manager works too (to keep connection safe, RECOMMENDED)::
 	    "ZipcodeType": "Standard"
 	}
 
+For all available zipcode attributes, `click here <file:///C:/Users/shu/Documents/PythonWorkSpace/py3/py33_projects/uszipcode-project/build/html/uszipcode/searchengine.html#uszipcode.searchengine.Zipcode>`_.
+
 There are two method you may need:
     
 1. You can use ``to_json()`` method to return json encoded string.
@@ -101,7 +105,9 @@ You also should know `this trick <keyword_>`_ to sort your results.
 Search by City and State
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search **by city and state name**, **multiple results may returns**. Plus, **fuzzy name search is supported**::
+You can search **by city and state name**, **multiple results may returns**. Plus, **fuzzy name search is supported**. Which means even the inputs has spelling problem, the fuzzy matching algorithm can still find out the city and state your are looking for, no matter using 2 letter short name or full state name.
+
+.. code-block:: python
 
 	>>> res = search.by_city_and_state("cicago", "ilinoy") # smartly guess what you are looking for
 	>>> len(res) # matched 56 zipcode
@@ -113,7 +119,9 @@ You can search **by city and state name**, **multiple results may returns**. Plu
 	>>> zipcode.State
 	'IL'
 
-Short state name also works::
+Short state name also works:
+
+.. code-block:: python
 
 	>>> res = search.by_city_and_state("cicago", "il") # smartly guess what you are looking for
 	>>> len(res)
@@ -137,7 +145,7 @@ Search by Latitude and Longitude
 
 You can search all zipcode with-in range of XXX miles to a coordinate. You can add ``returns=xxx`` to set maxiumum number of zipcode can be returned. By default, it's 5. Use ``returns=0`` to remove the limit. **The results are sorted by the distance from the center, from lowest to highest.
 
-.. cold-block:: python
+.. code-block:: python
 
 	>>> res = search.by_coordinate(39.122229, -77.133578, radius=30)
 	>>> len(res) # by default 5 results returned
@@ -156,7 +164,9 @@ You can search all zipcode with-in range of XXX miles to a coordinate. You can a
 Search by Zipcode Prefix
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search all zipcode by its prefix::
+You can search all zipcode by its prefix:
+
+.. code-block:: python
 
 	>>> res = search.by_prefix("900")
 	>>> for zipcode in res:
@@ -171,7 +181,9 @@ You can search all zipcode by its prefix::
 Search by Zipcode Estimate Population
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search all zipcode by defining its population lower bound or upper bound, or both::
+You can search all zipcode by defining its population lower bound or upper bound, or both:
+
+.. code-block:: python
 
 	>>> res = search.by_population(lower=5000, upper=10000)
 	>>> for zipcode in res:
@@ -183,7 +195,9 @@ You can search all zipcode by defining its population lower bound or upper bound
 Search by Zipcode Estimate Population Density
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search all zipcode by defining its population density lower bound or upper bound, or both. Density is the estimate population / total land area in square miles::
+You can search all zipcode by defining its population density lower bound or upper bound, or both. Density is the estimate population / total land area in square miles:
+
+.. code-block:: python
 
 	>>> res = search.by_density(lower=1000, upper=2000)
 	>>> for zipcode in res:
@@ -195,7 +209,9 @@ You can search all zipcode by defining its population density lower bound or upp
 Search by Zipcode Estimate Annual Total Wage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search all zipcode by defining its annual total wage lower bound or upper bound, or both::
+You can search all zipcode by defining its annual total wage lower bound or upper bound, or both:
+
+.. code-block:: python
 
 	>>> res = search.by_totalwages(lower=1000**3)
 	>>> for zipcode in res:
@@ -207,7 +223,9 @@ You can search all zipcode by defining its annual total wage lower bound or uppe
 Search by Zipcode Estimate Average Annual Total Wage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search all zipcode by defining its average annual total wage lower bound or upper bound, or both::
+You can search all zipcode by defining its average annual total wage lower bound or upper bound, or both:
+
+.. code-block:: python
 
 	>>> res = search.by_wealthy(lower=100000)
 	>>> for zipcode in res:
@@ -219,7 +237,9 @@ You can search all zipcode by defining its average annual total wage lower bound
 Search by Zipcode Estimate Total House of Units
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can search all zipcode by defining its total house of units lower bound or upper bound, or both::
+You can search all zipcode by defining its total house of units lower bound or upper bound, or both:
+
+.. code-block:: python
 
 	>>> res = search.by_house(lower=20000)
 	>>> for zipcode in res:
@@ -237,9 +257,10 @@ Sortby, Descending and Returns Keyword
 - ``descending``: boolean, default False, is in descending order
 - ``returns``: maxiumum number of zipcode can be returned, use 0 for unlimited
 
-Here's an example::
-	
-	# find the top 100 richest zipcode, sorted by average annual wage
+Here's an example to find the top 100 richest zipcode, sorted by average annual wage:
+
+.. code-block:: python
+
 	>>> res = search.by_wealthy(lower=100000, sortby="Wealthy", descending=True, returns=100) 
 	>>> for zipcode in res:
 	... 	# do whatever you want...

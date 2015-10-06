@@ -74,7 +74,7 @@ URL = "https://github.com/{0}/{1}".format(GITHUB_ACCOUNT, PROJECT_NAME)
 DOWNLOAD_URL = "https://github.com/{0}/{1}/tarball/{2}".format(
     GITHUB_ACCOUNT, PROJECT_NAME, RELEASE_TAG)
 
-with open("readme.rst", "rb") as f:
+with open("long_description.rst", "rb") as f:
     LONG_DESCRIPTION = f.read().decode("utf-8")
 LICENSE = "MIT"
 

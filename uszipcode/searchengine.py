@@ -76,6 +76,7 @@ class ZipcodeSearchEngine(object):
     - :meth:`ZipcodeSearchEngine.by_coordinate`
     - :meth:`ZipcodeSearchEngine.by_city_and_state`
     - :meth:`ZipcodeSearchEngine.by_prefix`
+    - :meth:`ZipcodeSearchEngine.by_pattern`
     - :meth:`ZipcodeSearchEngine.by_population`
     - :meth:`ZipcodeSearchEngine.by_density`
     - :meth:`ZipcodeSearchEngine.by_totalwages`

@@ -8,6 +8,7 @@
 # Directory
 build
 dist
+uszipcode.egg-info
 dataset
 prepare_dataset
 

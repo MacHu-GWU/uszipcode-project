@@ -1,6 +1,6 @@
 .. include:: ..\readme.rst
 
-
+.. include:: about.rst
 
 Indices and tables
 ==================

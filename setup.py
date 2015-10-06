@@ -61,7 +61,7 @@ NAME = "uszipcode" # name your package
 VERSION = __import__(NAME).__version__
 PACKAGES = [NAME] + ["%s.%s" % (NAME, i) for i in find_packages(NAME)]
 PACKAGE_DATA = {
-    "uszipcode": ["*.sqlite3"],
+    "uszipcode": ["data/zipcode.sqlite3"],
 }
 SHORT_DESCRIPTION = __import__(NAME).__short_description__ # GitHub Short Description
 AUTHOR = "Sanhe Hu"

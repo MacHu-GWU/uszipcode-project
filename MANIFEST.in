@@ -1,1 +1,2 @@
-include readme.rst LICENSE.txt requirements.txt
+include readme.rst long_description.rst LICENSE.txt requirements.txt
+recursive-include uszipcode *.sqlite3

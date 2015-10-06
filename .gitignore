@@ -1,3 +1,17 @@
+# =========================
+# User Setting
+# =========================
+
+# File
+*.pyc
+
+# Directory
+build
+dist
+dataset
+prepare_dataset
+
+# =========================
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

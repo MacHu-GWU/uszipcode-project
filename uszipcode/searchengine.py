@@ -75,10 +75,14 @@ class ZipcodeSearchEngine(object):
     - :meth:`ZipcodeSearchEngine.by_zipcode`
     - :meth:`ZipcodeSearchEngine.by_coordinate`
     - :meth:`ZipcodeSearchEngine.by_city_and_state`
+    - :meth:`ZipcodeSearchEngine.by_city`
+    - :meth:`ZipcodeSearchEngine.by_state`
     - :meth:`ZipcodeSearchEngine.by_prefix`
     - :meth:`ZipcodeSearchEngine.by_pattern`
     - :meth:`ZipcodeSearchEngine.by_population`
     - :meth:`ZipcodeSearchEngine.by_density`
+    - :meth:`ZipcodeSearchEngine.by_landarea`
+    - :meth:`ZipcodeSearchEngine.by_waterarea`
     - :meth:`ZipcodeSearchEngine.by_totalwages`
     - :meth:`ZipcodeSearchEngine.by_wealthy`
     - :meth:`ZipcodeSearchEngine.by_house`

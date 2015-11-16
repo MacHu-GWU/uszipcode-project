@@ -89,10 +89,14 @@ List of the way you can search
 Here's the list of the ways you can search zipcode:
 
 - `by city and state <by_city_and_state_>`_
+- `by city <by_city_>`_
+- `by state <by_state_>`_
 - `by latitude, longitude and radius <by_coordinate_>`_
 - `by zipcode prefix <by_prefix_>`_
 - `by estimated population <by_population_>`_
 - `by estimated population density <by_density_>`_
+- `by landarea <by_landarea_>`_
+- `by waterarea <by_waterarea_>`_
 - `by estimated total annual wage <by_total_wage_>`_
 - `by estimated average total annual wage <by_wealthy_>`_
 - `by estimated house of units <by_house_>`_
@@ -136,6 +140,36 @@ Short state name also works:
 You can add ``standard_only=False`` parameter to enable returning Po Box type zipcode. By default, return standard type zipcode only::
 
 	>>> res = search.by_city_and_state("Chicago", "IL", standard_only=False)
+
+
+.. _by_city:
+
+Search by City
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can search zipcode by city name.
+
+.. code-block:: python
+
+	>>> res = search.by_city("vienna")
+	>>> zipcode = res[0]
+	>>> zipcode.City
+	'Vienna'
+
+
+.. _by_state:
+
+Search by State
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can search zipcode by state name.
+
+.. code-block:: python
+
+	>>> res = search.by_state("Rhode Island")
+	>>> zipcode = res[0]
+	>>> zipcode.State
+	'RI'
 
 
 .. _by_coordinate:
@@ -200,6 +234,34 @@ You can search all zipcode by defining its population density lower bound or upp
 .. code-block:: python
 
 	>>> res = search.by_density(lower=1000, upper=2000)
+	>>> for zipcode in res:
+	... 	# do whatever you want...
+
+
+.. _by_landarea:
+
+Search by Landarea of Zipcode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can search all zipcode by defining its Landarea lower bound or upper bound, or both:
+
+.. code-block:: python
+
+	>>> res = search.by_landarea(lower=1000, upper=2000)
+	>>> for zipcode in res:
+	... 	# do whatever you want...
+
+
+.. _by_waterarea:
+
+Search by Waterarea of Zipcode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can search all zipcode by defining its Waterarea lower bound or upper bound, or both:
+
+.. code-block:: python
+
+	>>> res = search.by_waterarea(lower=100, upper=200)
 	>>> for zipcode in res:
 	... 	# do whatever you want...
 

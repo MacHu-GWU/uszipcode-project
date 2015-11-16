@@ -1,12 +1,12 @@
 Welcome to the uszipcode Documentation
 ====================================================================================================
 
-``uszipcode`` is the most powerful and easy to use zipcode information searchengine in Python. Besides geometry data (also boundary info), several useful census data points are also served: `population`, `population density`, `total wage`, `average annual wage`, `house of units`, `land area`, `water area`. The geometry and geocoding data is from google map API on Oct 2015. The geometry data in `this another popular zipcode python package <https://pypi.python.org/pypi/zipcode>`_ is not accurate any more, if you exam it on google map. To know more about the data, `click here <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/uszipcode/data/__init__.html#module-uszipcode.data>`_.
+``uszipcode`` is the most powerful and easy to use zipcode information searchengine in Python. Besides geometry data (also boundary info), several useful census data points are also served: `population`, `population density`, `total wage`, `average annual wage`, `house of units`, `land area`, `water area`. The geometry and geocoding data I am using is from google map API on Oct 2015. To know more about the data, `click here <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/uszipcode/data/__init__.html#module-uszipcode.data>`_. `Another pupolar zipcode Python extension <https://pypi.python.org/pypi/zipcode>`_ has lat, lng accuracy issue, which doesn't give me reliable results of searching by coordinate and radius.
 
 **Highlight**:
 
-1. `rich methods <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html#list-of-the-way-you-can-search>`_ are provided for getting zipcode anyway you want. 
-2. `fuzzy city name and state name <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html#search-by-city-and-state>`_ allows you to search **WITHOUT using exactly accurate input**. **This is very helpful if you need to build a web app with it**.
+1. `Rich methods <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html#list-of-the-way-you-can-search>`_ are provided for getting zipcode anyway you want. 
+2. `Fuzzy city name and state name <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html#search-by-city-and-state>`_ allows you to search **WITHOUT using exactly accurate input**. **This is very helpful if you need to build a web app with it**.
 3. You can easily `sort your results <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html#sortby-descending-and-returns-keyword>`_ by `population`, `area`, `wealthy` and etc...
 
 **Quick links**:

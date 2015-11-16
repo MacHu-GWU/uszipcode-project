@@ -31,21 +31,41 @@ class ZipcodeSearchEngineUnittest(unittest.TestCase):
             self.assertEqual(zipcode.City, "Nickerson")
             self.assertEqual(zipcode.State, "KS")
             
+            res = search.by_state("RI")
+            zipcode = res[0]
+            self.assertEqual(zipcode.Zipcode, "02804")
+            self.assertEqual(zipcode.City, "Ashaway")
+            self.assertEqual(zipcode.State, "RI")
+
+            res = search.by_city("Vienna")
+            zipcode = res[0]
+            self.assertEqual(zipcode.Zipcode, "04360")
+            self.assertEqual(zipcode.City, "Vienna")
+            self.assertEqual(zipcode.State, "ME")
+                     
             res = search.by_prefix("208",
-                sortby="Population", descending=True, returns=0)
+                sortby="Zipcode", descending=True, returns=0)
             self.assertEqual(len(res), 34)
 
             res = search.by_pattern("100",
-                sortby="Population", descending=True, returns=0)
+                sortby="Zipcode", descending=True, returns=0)
             self.assertEqual(len(res), 97)
 
             res = search.by_population(lower=100000,
-                sortby="Population", descending=True, returns=0)
+                sortby="Population", descending=False, returns=0)
             self.assertEqual(len(res), 10)
             
             res = search.by_density(lower=10000,
-                sortby="Population", descending=True, returns=0)
+                sortby="Density", descending=False, returns=0)
             self.assertEqual(len(res), 631)
+
+            res = search.by_landarea(lower=1000,
+                sortby="LandArea", descending=False, returns=0)
+            self.assertEqual(len(res), 181)
+
+            res = search.by_waterarea(lower=100,
+                sortby="WaterArea", descending=False, returns=0)
+            self.assertEqual(len(res), 30)
             
             res = search.by_totalwages(lower=1000**3,
                 sortby="Population", descending=True, returns=0)

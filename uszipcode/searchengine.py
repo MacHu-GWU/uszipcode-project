@@ -214,7 +214,7 @@ class ZipcodeSearchEngine(object):
         """Search zipcode information by City and State name.
         
         You can use either short state name and long state name. My engine use
-        fuzzy search and guess what is you want.
+        fuzzy match and guess what is you want.
         
         :param city: city name.
         :param state: 2 letter short name or long name.
@@ -250,6 +250,76 @@ class ZipcodeSearchEngine(object):
             City = '%s' 
             AND State = '%s'
         """ % (city, state)
+        if standard_only:
+            select_sql = select_sql + self._standard_only_param
+
+        res = list()
+        for row in self.cursor.execute(select_sql):
+            res.append(Zipcode(self.all_column, list(row)))
+        
+        return res
+
+    def by_city(self, city, standard_only=True):
+        """Search zipcode information by City and State name.
+        
+        My engine use fuzzy match and guess what is you want.
+        
+        :param city: city name.
+        :param standard_only: boolean, default True, only returns standard 
+          type zipcode
+        """
+        # find out what is the city that user looking for
+        select_sql = "SELECT City FROM zipcode WHERE City == '%s'" % city
+        all_city = [record[0] for record in self.cursor.execute(select_sql)]
+        
+        choice, confidence = extractOne(city.lower(), all_city)
+        if confidence < 70:
+            raise Exception("Cannot found '%s' in '%s'." % (city, state))
+        else:
+            city = choice
+
+        # execute query
+        select_sql = \
+        """
+        SELECT * FROM zipcode 
+        WHERE City = '%s'
+        """ % (city,)
+        if standard_only:
+            select_sql = select_sql + self._standard_only_param
+
+        res = list()
+        for row in self.cursor.execute(select_sql):
+            res.append(Zipcode(self.all_column, list(row)))
+        
+        return res
+    
+    def by_state(self, state, standard_only=True):
+        """Search zipcode information by State name.
+        
+        You can use either short state name and long state name. My engine use
+        fuzzy match and guess what is you want.
+        
+        :param state: 2 letter short name or long name.
+        :param standard_only: boolean, default True, only returns standard 
+          type zipcode
+        """
+        # check if it is a abbreviate name
+        if state.upper() in self.all_state_short:
+            state = state.upper()
+        # if not, find out what is the state that user looking for
+        else:
+            choice, confidence = extractOne(state.lower(), self.all_state_long)
+            if confidence < 70:
+                raise Exception("'%s' is not a valid statename, use 2 letter "
+                                "short name or correct full name please." % state)
+            state = STATE_ABBR_LONG_TO_SHORT[choice]
+
+        # execute query
+        select_sql = \
+        """
+        SELECT * FROM zipcode 
+        WHERE State = '%s'
+        """ % (state,)
         if standard_only:
             select_sql = select_sql + self._standard_only_param
 
@@ -374,6 +444,58 @@ class ZipcodeSearchEngine(object):
             res.append(Zipcode(self.all_column, list(row)))
         return res
 
+    def by_landarea(self, lower=-1, upper=2**30, standard_only=True, 
+            sortby="ZipCode", descending=False, returns=_DEFAULT_LIMIT):
+        """Search zipcode information by landarea range.
+        
+        :param lower: minimal landarea
+        :param upper: maximum landarea
+        :param standard_only: boolean, default True, only returns standard 
+          type zipcode
+        :param sortby: string, default ``"Zipcode"``
+        :param descending: boolean, default False
+        :param returns: int, default 5
+        """
+        select_sql = \
+        """
+        SELECT * FROM zipcode WHERE LandArea >= %f AND LandArea <= %f
+        """ % (lower, upper)
+        if standard_only:
+            select_sql = select_sql + self._standard_only_param
+        select_sql = select_sql + self.get_sortby_sql(sortby, descending)
+        select_sql = select_sql + self.get_limit_sql(returns)
+        
+        res = list()
+        for row in self.cursor.execute(select_sql):
+            res.append(Zipcode(self.all_column, list(row)))
+        return res
+
+    def by_waterarea(self, lower=-1, upper=2**30, standard_only=True, 
+            sortby="ZipCode", descending=False, returns=_DEFAULT_LIMIT):
+        """Search zipcode information by landarea range.
+        
+        :param lower: minimal waterarea
+        :param upper: maximum waterarea
+        :param standard_only: boolean, default True, only returns standard 
+          type zipcode
+        :param sortby: string, default ``"Zipcode"``
+        :param descending: boolean, default False
+        :param returns: int, default 5
+        """
+        select_sql = \
+        """
+        SELECT * FROM zipcode WHERE WaterArea >= %f AND WaterArea <= %f
+        """ % (lower, upper)
+        if standard_only:
+            select_sql = select_sql + self._standard_only_param
+        select_sql = select_sql + self.get_sortby_sql(sortby, descending)
+        select_sql = select_sql + self.get_limit_sql(returns)
+        
+        res = list()
+        for row in self.cursor.execute(select_sql):
+            res.append(Zipcode(self.all_column, list(row)))
+        return res
+    
     def by_totalwages(self, lower=-1, upper=2**30, standard_only=True, 
             sortby="ZipCode", descending=False, returns=_DEFAULT_LIMIT):
         """Search zipcode information by total annual wages.

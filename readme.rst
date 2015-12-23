@@ -73,7 +73,7 @@ Context manager works too (to keep connection safe, RECOMMENDED)::
 	    "ZipcodeType": "Standard"
 	}
 
-For all available zipcode attributes, `click here <file:///C:/Users/shu/Documents/PythonWorkSpace/py3/py33_projects/uszipcode-project/build/html/uszipcode/searchengine.html#uszipcode.searchengine.Zipcode>`_.
+For all available zipcode attributes, `click here <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/uszipcode/searchengine.html#uszipcode.searchengine.Zipcode`_.
 
 There are two method you may need:
     

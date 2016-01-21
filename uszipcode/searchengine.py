@@ -65,6 +65,18 @@ class Zipcode(object):
     def to_json(self):
         return self.__str__()
 
+    def __nonzero__(self):
+        if "Zipcode" in self.__dict__:
+            return True
+        else:
+            return False
+        
+    def __bool__(self):
+        if "Zipcode" in self.__dict__:
+            return True
+        else:
+            return False
+          
 _DEFAULT_LIMIT = 5
 
 class ZipcodeSearchEngine(object):
@@ -149,10 +161,11 @@ class ZipcodeSearchEngine(object):
         if standard_only:
             select_sql = select_sql + self._standard_only_param
         
-        for row in self.cursor.execute(select_sql):
-            return Zipcode(self.all_column, list(row))
-        
-        return None
+        res = list(self.cursor.execute(select_sql))
+        if len(res) > 0:
+            return Zipcode(self.all_column, list(res[0]))
+        else:
+            return Zipcode([], [])
     
     def by_coordinate(self, lat, lng, radius=20, standard_only=True, 
                       returns=_DEFAULT_LIMIT):

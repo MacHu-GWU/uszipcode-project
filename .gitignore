@@ -4,13 +4,15 @@
 
 # File
 *.pyc
+*.log
+*.csv
+*.txt
+*.sqlite3
 
 # Directory
 build
 dist
 uszipcode.egg-info
-dataset
-prepare_dataset
 
 # =========================
 # Windows image file caches

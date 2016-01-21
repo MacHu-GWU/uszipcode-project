@@ -82,7 +82,7 @@ class ZipcodeSearchEngineUnittest(unittest.TestCase):
     def test_edge_case(self):
         with ZipcodeSearchEngine() as search: 
             zipcode = search.by_zipcode(00000)
-            self.assertIsNone(zipcode)
+            self.assertFalse(zipcode)
             
             res = search.by_coordinate(39.122229, -77.133578, radius=0.01)
             self.assertEqual(res, [])

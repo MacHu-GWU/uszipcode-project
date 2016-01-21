@@ -1,6 +1,5 @@
 Welcome to the uszipcode Documentation
-====================================================================================================
-
+===================================================================================================
 ``uszipcode`` is the most powerful and easy to use zipcode information searchengine in Python. Besides geometry data (also boundary info), several useful census data points are also served: `population`, `population density`, `total wage`, `average annual wage`, `house of units`, `land area`, `water area`. The geometry and geocoding data I am using is from google map API on Oct 2015. To know more about the data, `click here <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/uszipcode/data/__init__.html#module-uszipcode.data>`_. `Another pupolar zipcode Python extension <https://pypi.python.org/pypi/zipcode>`_ has lat, lng accuracy issue, which doesn't give me reliable results of searching by coordinate and radius.
 
 **Highlight**:
@@ -11,7 +10,7 @@ Welcome to the uszipcode Documentation
 
 **Quick links**:
 
-- `Home page <https://github.com/MacHu-GWU/uszipcode-project>`_
+- `GitHub Homepage <https://github.com/MacHu-GWU/uszipcode-project>`_
 - `Online Documentation <http://www.wbh-doc.com.s3.amazonaws.com/uszipcode/index.html>`_
 - `PyPI download <https://pypi.python.org/pypi/uszipcode>`_
 - `Install <install_>`_

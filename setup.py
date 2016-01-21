@@ -55,7 +55,7 @@ from datetime import datetime
 import os
 
 GITHUB_ACCOUNT = "MacHu-GWU" # your GitHub account name
-RELEASE_TAG = "2015-11-16" # the GitHub release tag
+RELEASE_TAG = "2016-01-20" # the GitHub release tag
 NAME = "uszipcode" # name your package
 
 VERSION = __import__(NAME).__version__

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This script is to construct a zipcode sqlite database for uszipcode extension.
+Merge csv data and geocoding data.
 """
 
 from __future__ import print_function

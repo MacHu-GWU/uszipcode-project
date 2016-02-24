@@ -11,6 +11,7 @@ import sqlite3
 import math
 import json
 
+
 class Zipcode(object):
     """Zipcode class. Attributes includes:
     
@@ -78,6 +79,7 @@ class Zipcode(object):
             return False
           
 _DEFAULT_LIMIT = 5
+
 
 class ZipcodeSearchEngine(object):
     """A fast, powerful index optimized zipcode object search engine class.
@@ -183,8 +185,8 @@ class ZipcodeSearchEngine(object):
         # define lat lng boundary
         dist_btwn_lat_deg = 69.172
         dist_btwn_lon_deg = math.cos(lat) * 69.172
-        lat_degr_rad = radius * 1.0/dist_btwn_lat_deg
-        lon_degr_rad = radius * 1.0/dist_btwn_lon_deg
+        lat_degr_rad = abs(radius * 1.0/dist_btwn_lat_deg)
+        lon_degr_rad = abs(radius * 1.0/dist_btwn_lon_deg)
     
         lat_lower = lat - lat_degr_rad
         lat_upper = lat + lat_degr_rad

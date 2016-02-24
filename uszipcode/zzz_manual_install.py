@@ -118,12 +118,16 @@ Class, method, function, exception
 """
 
 from __future__ import print_function, unicode_literals
-import hashlib, site, shutil, os 
+import hashlib
+import site
+import shutil
+import os
 
 _ROOT = os.getcwd()
 _PACKAGE_NAME = os.path.basename(_ROOT)
 _DST = os.path.join(site.getsitepackages()[1], _PACKAGE_NAME)
-    
+
+
 def md5_of_file(abspath):
     """Md5 value of a file.
     """
@@ -136,6 +140,7 @@ def md5_of_file(abspath):
                 break
             m.update(data)
     return m.hexdigest()
+
 
 def check_need_install():
     """Check if installed package are exactly the same to this one.
@@ -153,7 +158,8 @@ def check_need_install():
                 else:
                     return True
     return need_install_flag
-    
+
+
 def install():
     """Manual install main script.
     """
@@ -164,18 +170,18 @@ def install():
         print("\tpackage is up-to-date, no need to install.")
         return
     print("Difference been found, start installing ...")
-    
+
     # remove __pycache__ folder and *.pyc file
-    print("Remove *.pyc file ...")  
+    print("Remove *.pyc file ...")
     pyc_folder_list = list()
     for root, _, basename_list in os.walk(_ROOT):
         if os.path.basename(root) == "__pycache__":
             pyc_folder_list.append(root)
-     
+
     for folder in pyc_folder_list:
         shutil.rmtree(folder)
     print("\tall *.pyc file has been removed.")
-       
+
     # install this package to all python version
     print("Uninstall %s from %s ..." % (_PACKAGE_NAME, _DST))
     try:
@@ -183,10 +189,10 @@ def install():
         print("\tSuccessfully uninstall %s" % _PACKAGE_NAME)
     except Exception as e:
         print("\t%s" % e)
-       
+
     print("Install %s to %s ..." % (_PACKAGE_NAME, _DST))
-    shutil.copytree(_ROOT, _DST)     
+    shutil.copytree(_ROOT, _DST)
     print("\tComplete!")
-        
+
 if __name__ == "__main__":
     install()

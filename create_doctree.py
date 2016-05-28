@@ -3,18 +3,21 @@
 
 from __future__ import print_function
 from docfly import Docfly
-import shutil
- 
+import os, shutil
+
+package_name = "uszipcode"
+
 try:
-    shutil.rmtree(r"source\uszipcode")
+    shutil.rmtree(os.path.join("source", package_name))
 except Exception as e:
     print(e)
      
-docfly = Docfly("uszipcode", dst="source", 
+docfly = Docfly(
+    package_name, 
+    dst="source",
     ignore=[
-        "uszipcode.packages",
-        "uszipcode.tests.test_fuzzywuzzy.py",
-        "uszipcode.tests.test_haversine.py"
+        "%s.zzz_manual_install.py" % package_name,
+        "%s.packages" % package_name,
     ]
 )
 docfly.fly()

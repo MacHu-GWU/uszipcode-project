@@ -3,6 +3,8 @@
 
 from .searchengine import ZipcodeSearchEngine
 
-__version__ = "0.0.9"
+__version__ = "0.1.1"
 __short_description__ = ("USA zipcode programmable database, includes "
                          "up-to-date census and geometry information.")
+__license__ = "MIT"
+__author__ = "Sanhe Hu"

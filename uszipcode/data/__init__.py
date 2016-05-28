@@ -12,7 +12,9 @@ WeatherBug Home, which includes:
 - 2015-10-01 geometry google map geocoding data from http://maps.google.com
 """
 
-DB_FILE = __file__.replace("__init__.py", "zipcode.sqlite3")
+import os
+
+DB_FILE = os.path.join(os.path.dirname(__file__), "zipcode.sqlite3")
 
 # State short name and long name mapping
 STATE_ABBR_SHORT_TO_LONG = { 

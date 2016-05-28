@@ -5,7 +5,7 @@ from uszipcode.searchengine import ZipcodeSearchEngine
 from pprint import pprint as ppt
 
 
-def test_all():
+def test_ZipcodeSearchEngine():
     with ZipcodeSearchEngine() as search:
         zipcode = search.by_zipcode(20876)
         assert zipcode.Zipcode == "20876"

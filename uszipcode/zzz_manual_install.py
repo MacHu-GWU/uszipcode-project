@@ -2,130 +2,117 @@
 # -*- coding: utf-8 -*-
 
 """
-Install your own package in one seconds! (For Windows, MacOS, Linux system)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Put this script in your package directory, for example::
+Copyright (c) 2014-2016 Sanhe Hu
 
-    |---mypackage
-        |---subpackage1
-            |---__init__.py
-        |---subpackage2
-            |---__init__.py
-        |---__init__.py
-        |---module1.py
-        |---module2.py
-        |---zzz_manual_install.py <=== put it here
-        
-Run this script as the main script. Then your package is automatically installed 
-for the python intepreter you currently using. Basically, it just removes ``.pyc``
-file from ``mypackage`` directory. Then create a directory and copy all file in 
-``mypackage`` to it:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Windows::
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-    C:\Python33\Lib\site-packages\mypackage
-
-MacOS::
-
-    /Library/Python/2.7/site-packages/mypackage
-    
-Linux::
-
-    /usr/lib/python2.7/dist-packages
-
-This feature is extremely useful when you need refresh your package over and 
-over again. But if you want to make an official release, you should make a 
-setup.py and build the distribution by yourself. Read the following instruction:
-    
-- For Python2:
-
-    - https://docs.python.org/2/distutils/setupscript.html
-    - https://docs.python.org/2/distutils/builtdist.html
-
-- For Python3:
-
-    - https://docs.python.org/3.3/distutils/setupscript.html
-    - https://docs.python.org/3.3/distutils/builtdist.html
-
-**Warning**: with python2, the project directory cannot have non-ascil char.
-
-
-一键安装你的自定义库! (For Windows, MacOS, Linux System)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-本脚用于在一键安装用户自己写的扩展包, 纯python实现。
-
-例如你有一个扩展包叫 mypackage, 文件目录形如: ``C:\project\mypackage``
-
-则只需要把该脚本拷贝到 mypackage 目录下:
-``C:\project\mypackage\zzz_manual_install.py``
-
-然后将本脚本以主脚本运行。则会把 ``mypackage`` 文件中所有的 ``.pyc`` 文件清除后, 
-安装到你当前运行本脚本时使用的Python的版本下。我们以Python27版本为例, 那么运行
-本脚本的结果是创建以下目录并将 ``mypackage`` 目录中的文件拷贝到该目录下:
-
-Windows::
-
-    C:\Python33\Lib\site-packages\mypackage
-
-MacOS::
-
-    /Library/Python/2.7/site-packages/mypackage
-    
-Linux::
-
-    /usr/lib/python2.7/dist-packages
-
-然后你就可以用 ``import mypackage`` 调用你写的库了。
-
-这一功能在调试阶段非常方便, 但最终发布时还是要通过写 ``setup.py`` 文件来制作
-package的安装包。这一部分可以参考:
-
-- Python2:
-
-    - https://docs.python.org/2/distutils/setupscript.html
-    - https://docs.python.org/2/distutils/builtdist.html
-
-- Python3:
-
-    - https://docs.python.org/3.3/distutils/setupscript.html
-    - https://docs.python.org/3.3/distutils/builtdist.html
-
-注: 项目目录在python2中不允许有中文路径。
-
-
-About
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-**Copyright (c) 2016 by Sanhe Hu**
-
-- Author: Sanhe Hu
-- Email: husanhe@gmail.com
-- Lisence: MIT
-
-
-**Compatibility**
-
-- Python2: Yes
-- Python3: Yes
-    
-
-**Prerequisites**
-
-- None
-
-
-Class, method, function, exception
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
 
 from __future__ import print_function, unicode_literals
-import hashlib
+import os
 import site
 import shutil
-import os
+import hashlib
+import platform
 
-_ROOT = os.getcwd()
-_PACKAGE_NAME = os.path.basename(_ROOT)
-_DST = os.path.join(site.getsitepackages()[1], _PACKAGE_NAME)
+__version__ = "0.0.1"
+__short_description__ = "Utility script to install your package in one shot, for developer."
+__author__ = "Sanhe Hu"
+
+SRC = os.getcwd()
+PKG_NAME = os.path.basename(SRC)
+
+SYS_NAME = platform.system()
+if SYS_NAME == "Windows":
+    BIN_SCRIPTS = "Scripts"
+elif SYS_NAME in ["Darwin", "Linux"]:
+    BIN_SCRIPTS = "bin"
+
+
+def is_venv():
+    """Check whether if this workspace is a virtualenv.
+    """
+    dir_path = os.path.dirname(SRC)
+    is_venv_flag = True
+
+    if SYS_NAME == "Windows":
+        executable_list = ["activate", "pip.exe", "python.exe"]
+    elif SYS_NAME in ["Darwin", "Linux"]:
+        executable_list = ["activate", "pip", "python"]
+
+    for executable in executable_list:
+        path = os.path.join(dir_path, BIN_SCRIPTS, executable)
+        if not os.path.exists(path):
+            is_venv_flag = False
+
+    return is_venv_flag
+
+
+def find_linux_venv_py_version():
+    """Find python version name used in this virtualenv.
+
+    For example: ``python2.7``, ``python3.4``
+    """
+    available_python_version = [
+        "python2.6",
+        "python2.7",
+        "python3.3",
+        "python3.4",
+        "python3.5",
+        "python3.6",
+    ]
+    dir_path = os.path.dirname(SRC)
+    for basename in os.listdir(os.path.join(dir_path, BIN_SCRIPTS)):
+        for python_version in available_python_version:
+            if python_version in basename:
+                return python_version
+    raise Exception("Can't find virtualenv python version!")
+
+
+def find_venv_DST():
+    """Find where this package should be installed to in this virtualenv.
+
+    For example: ``/path-to-venv/lib/python2.7/site-packages/package-name``
+    """
+    dir_path = os.path.dirname(SRC)
+
+    if SYS_NAME == "Windows":
+        DST = os.path.join(dir_path, "Lib", "site-packages", PKG_NAME)
+    elif SYS_NAME in ["Darwin", "Linux"]:
+        python_version = find_linux_venv_py_version()
+        DST = os.path.join(dir_path, "lib", python_version, "site-packages", PKG_NAME)
+
+    return DST
+
+
+def find_DST():
+    """Find where this package should be installed to.
+    """
+    if SYS_NAME == "Windows":
+        return os.path.join(site.getsitepackages()[1], PKG_NAME)
+    elif SYS_NAME in ["Darwin", "Linux"]:
+        return os.path.join(site.getsitepackages()[0], PKG_NAME)
+
+
+if is_venv():
+    DST = find_venv_DST()
+else:
+    DST = find_DST()
 
 
 def md5_of_file(abspath):
@@ -144,14 +131,14 @@ def md5_of_file(abspath):
 
 def check_need_install():
     """Check if installed package are exactly the same to this one.
+    By checking md5 value of all files.
     """
-    md5_root, md5_dst = list(), list()
     need_install_flag = False
-    for root, _, basename_list in os.walk(_ROOT):
+    for root, _, basename_list in os.walk(SRC):
         if os.path.basename(root) != "__pycache__":
             for basename in basename_list:
                 src = os.path.join(root, basename)
-                dst = os.path.join(root.replace(_ROOT, _DST), basename)
+                dst = os.path.join(root.replace(SRC, DST), basename)
                 if os.path.exists(dst):
                     if md5_of_file(src) != md5_of_file(dst):
                         return True
@@ -164,35 +151,36 @@ def install():
     """Manual install main script.
     """
     # check installed package
-    print("Compare to '%s' ..." % _DST)
+    print("Compare to '%s' ..." % DST)
     need_install_flag = check_need_install()
     if not need_install_flag:
-        print("\tpackage is up-to-date, no need to install.")
+        print("    package is up-to-date, no need to install.")
         return
     print("Difference been found, start installing ...")
 
     # remove __pycache__ folder and *.pyc file
     print("Remove *.pyc file ...")
     pyc_folder_list = list()
-    for root, _, basename_list in os.walk(_ROOT):
+    for root, _, basename_list in os.walk(SRC):
         if os.path.basename(root) == "__pycache__":
             pyc_folder_list.append(root)
 
     for folder in pyc_folder_list:
         shutil.rmtree(folder)
-    print("\tall *.pyc file has been removed.")
+    print("    all *.pyc file has been removed.")
 
     # install this package to all python version
-    print("Uninstall %s from %s ..." % (_PACKAGE_NAME, _DST))
+    print("Uninstall %s from %s ..." % (PKG_NAME, DST))
     try:
-        shutil.rmtree(_DST)
-        print("\tSuccessfully uninstall %s" % _PACKAGE_NAME)
+        shutil.rmtree(DST)
+        print("    Successfully uninstall %s" % PKG_NAME)
     except Exception as e:
-        print("\t%s" % e)
+        print("    %s" % e)
 
-    print("Install %s to %s ..." % (_PACKAGE_NAME, _DST))
-    shutil.copytree(_ROOT, _DST)
-    print("\tComplete!")
+    print("Install %s to %s ..." % (PKG_NAME, DST))
+    shutil.copytree(SRC, DST)
+    print("    Complete!")
+
 
 if __name__ == "__main__":
     install()

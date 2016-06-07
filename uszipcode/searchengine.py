@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from uszipcode.data import (
-    DB_FILE, STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT)
-from uszipcode.packages.haversine import great_circle
-from uszipcode.packages.fuzzywuzzy.process import extractOne
-from collections import OrderedDict
-from heapq import *
-import sqlite3
-import math
 import json
+import math
+import sqlite3
+from heapq import *
+from collections import OrderedDict
+
+try:
+    from .data import (
+        DB_FILE, STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT)
+except:
+    from uszipcode.data import (
+        DB_FILE, STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT)
+try:
+    from .packages.haversine import great_circle
+except:
+    from uszipcode.packages.haversine import great_circle
+try:
+    from .packages.fuzzywuzzy.process import extractOne
+except:
+    from uszipcode.packages.fuzzywuzzy.process import extractOne
 
 
 class Zipcode(object):

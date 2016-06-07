@@ -10,16 +10,12 @@ from collections import OrderedDict
 try:
     from .data import (
         DB_FILE, STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT)
+    from .packages.haversine import great_circle
+    from .packages.fuzzywuzzy.process import extractOne
 except:
     from uszipcode.data import (
         DB_FILE, STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT)
-try:
-    from .packages.haversine import great_circle
-except:
     from uszipcode.packages.haversine import great_circle
-try:
-    from .packages.fuzzywuzzy.process import extractOne
-except:
     from uszipcode.packages.fuzzywuzzy.process import extractOne
 
 

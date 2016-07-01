@@ -55,6 +55,7 @@ except:
     print("'__license__' not found in '%s.__init__.py'!" % NAME)
     LICENSE = ""
 
+KEYWORDS = ["zipcode", "database", "search engine"]
 PLATFORMS = ["Windows", "MacOS", "Unix"]
 CLASSIFIERS = [
     "Development Status :: 5 - Production/Stable",
@@ -91,6 +92,7 @@ setup(
     package_data=PACKAGE_DATA,
     url=URL,
     download_url=DOWNLOAD_URL,
+    keywords=KEYWORDS,
     classifiers=CLASSIFIERS,
     platforms=PLATFORMS,
     license=LICENSE,

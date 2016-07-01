@@ -90,7 +90,7 @@ Here's the list of the ways you can search zipcode:
 - `by estimated house of units <by_house_>`_
 - `advance search search <find_>`_
 
-You also should know `this trick <keyword_>`_ to sort your results.
+You also should know `this trick <sort_>`_ to sort your results.
 
 
 .. _by_city_and_state:

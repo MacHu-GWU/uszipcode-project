@@ -11,6 +11,17 @@ Welcome to uszipcode Documentation
 ==================================
 ``uszipcode`` is the **most powerful and easy to use programmable zipcode database, and also a searchengine** in Python. Besides geometry data (also boundary info), several useful census data points are also served: `population`, `population density`, `total wage`, `average annual wage`, `house of units`, `land area`, `water area`. The geometry and geocoding data I am using is from google map API on Mar 2016. `To know more about the data, click here <http://pythonhosted.org/uszipcode/uszipcode/data/__init__.html#module-uszipcode.data>`_. Another `popular zipcode Python extension <https://pypi.python.org/pypi/zipcode>`_ has lat, lng accuracy issue, which doesn't give me reliable results of searching by coordinate and radius.
 
+
+**Quick Links**
+-------------------------------------------------------------------------------
+- `GitHub Homepage <https://github.com/MacHu-GWU/uszipcode-project>`_
+- `Online Documentation <http://pythonhosted.org/uszipcode>`_
+- `PyPI download <https://pypi.python.org/pypi/uszipcode>`_
+- `Install <install_>`_
+- `Issue submit and feature request <https://github.com/MacHu-GWU/uszipcode-project/issues>`_
+- `API reference and source code <http://pythonhosted.org/uszipcode/uszipcode/searchengine.html#uszipcode.searchengine.ZipcodeSearchEngine>`_
+
+
 **Highlight**:
 
 - `Rich information <http://pythonhosted.org/uszipcode/uszipcode/searchengine.html#uszipcode.searchengine.Zipcode>`_ of zipcode is available.
@@ -95,16 +106,6 @@ Welcome to uszipcode Documentation
 	# Find all zipcode in new york
 	>>> res = search.by_city(city="New York", returns=0)
 	>>> search.export_to_csv(res, "result.csv")
-
-
-**Quick Links**
--------------------------------------------------------------------------------
-- `GitHub Homepage <https://github.com/MacHu-GWU/uszipcode-project>`_
-- `Online Documentation <http://pythonhosted.org/uszipcode>`_
-- `PyPI download <https://pypi.python.org/pypi/uszipcode>`_
-- `Install <install_>`_
-- `Issue submit and feature request <https://github.com/MacHu-GWU/uszipcode-project/issues>`_
-- `API reference and source code <http://pythonhosted.org/uszipcode/uszipcode/searchengine.html#uszipcode.searchengine.ZipcodeSearchEngine>`_
 
 
 .. _install:

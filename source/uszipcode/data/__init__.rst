@@ -2,11 +2,12 @@ data
 ====
 
 .. automodule:: uszipcode.data
-	:members:
+    :members:
 
-subpackage and modules
-----------------------
+sub packages and modules
+------------------------
 
 .. toctree::
    :maxdepth: 1
 
+    

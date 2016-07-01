@@ -13,6 +13,8 @@ def test_all():
     assert abs(great_circle(lyon, paris, miles=True)/243.589575 - 1.0) <= delta
 
 
+#--- Unittest ---
 if __name__ == "__main__":
     import py
-    py.test.cmdline.main("--tb=native -s")
+    import os
+    py.test.cmdline.main("%s --tb=native -s" % os.path.basename(__file__))

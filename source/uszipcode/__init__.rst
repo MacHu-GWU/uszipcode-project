@@ -2,13 +2,14 @@ uszipcode
 =========
 
 .. automodule:: uszipcode
-	:members:
+    :members:
 
-subpackage and modules
-----------------------
+sub packages and modules
+------------------------
 
 .. toctree::
    :maxdepth: 1
 
-	data <data/__init__>
-	searchengine <searchengine>
+    data <data/__init__>
+    searchengine <searchengine>
+    

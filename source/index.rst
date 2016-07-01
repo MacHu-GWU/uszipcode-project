@@ -37,7 +37,7 @@ Start the search engine, do some basic search::
 	False
 
 
-Context manager works too (to keep connection safe, RECOMMENDED)::
+Context manager works too (automatically disconnect database. RECOMMENDED)::
 
 	>>> with ZipcodeSearchEngine() as search:
 	...     zipcode = search.by_zipcode(10030)
@@ -62,13 +62,13 @@ Context manager works too (to keep connection safe, RECOMMENDED)::
 	    "ZipcodeType": "Standard"
 	}
 
-For all available zipcode attributes, :class:`click here <uszipcode.searchengine.Zipcode>`.
-
 There are two method you may need:
     
-1. You can use ``to_json()`` method to return json encoded string.
-2. You can use ``to_dict()`` method to return dictionary data.
-
+- You can use :meth:`~Zipcode.to_json()` method to return json encoded string.
+- You can use :meth:`~Zipcode.to_dict()` method to return dictionary data.
+- You can use :meth:`~Zipcode.to_OrderedDict()` method to return ordered dictionary data.
+- You can use :meth:`~Zipcode.keys()` method to return available attribute list.
+- You can use :meth:`~Zipcode.values()` method to return attributes' values.
 
 .. _search_way:
 
@@ -88,6 +88,7 @@ Here's the list of the ways you can search zipcode:
 - `by estimated total annual wage <by_total_wage_>`_
 - `by estimated average total annual wage <by_wealthy_>`_
 - `by estimated house of units <by_house_>`_
+- `advance search search <find_>`_
 
 You also should know `this trick <keyword_>`_ to sort your results.
 
@@ -115,12 +116,11 @@ Short state name also works:
 .. code-block:: python
 
 	>>> res = search.by_city_and_state("cicago", "il") # smartly guess what you are looking for
-	>>> len(res)
+	>>> len(res) # 56 zipcodes in Chicago
 	56
 	>>> zipcode = res[0]
 	>>> zipcode.City
 	'Chicago'
-
 	>>> zipcode.State
 	'IL'
 
@@ -280,35 +280,98 @@ You can search all zipcode by defining its total house of units lower bound or u
 .. code-block:: python
 
 	>>> res = search.by_house(lower=20000)
-	>>> for zipcode in res:
-	...     # do whatever you want...
 
 
-.. _keyword:
+.. _find:
 
-Sortby, Descending and Returns Keyword
+Advance Search
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``by_prefix``, ``by_population``, ``by_density``, ``by_totalwages``, ``by_wealthy``, ``by_house`` methods support ``sortby``, ``descending`` and ``returns`` keyword.
+In addition, above methods can mix each other to implement very advance search:
 
-- ``sortby``: string, default ``"Zipcode"``,the order of attributes that query results been returned
-- ``descending``: boolean, default False, is in descending order
-- ``returns``: maxiumum number of zipcode can be returned, use 0 for unlimited
-
-Here's an example to find the top 100 richest zipcode, sorted by average annual wage:
+**Find most people-living zipcode in New York**
 
 .. code-block:: python
 
-	>>> res = search.by_wealthy(lower=100000, sortby="Wealthy", descending=True, returns=100) 
+	res = search.find(
+	    city="new york",
+	    sort_by="Population", ascending=False,
+	)
+
+**Find all zipcode in California that prefix is "999"**
+
+.. code-block:: python
+
+	res = search.find(
+	    state="califor",
+	    prefix="95",
+	    sort_by="HouseOfUnits", ascending=False,
+	    returns=100,
+	)
+
+**Find top 10 richest zipcode near Silicon Valley**
+
+.. code-block:: python
+            
+    # Find top 10 richest zipcode near Silicon Valley
+    lat, lng = 37.391184, -122.082235
+    radius = 100
+    res = search.find(
+        lat=lat, 
+        lng=lng,
+        radius=radius,
+        sort_by="Wealthy", ascending=False,
+        returns=10,
+    )
+
+**Find zipcode that average personal annual income greater than $100,000 near Silicon Valley, order by distance**
+
+.. code-block:: python
+
+	lat, lng = 37.391184, -122.082235
+	radius = 100
+	res = search.find(
+	    lat=lat, 
+	    lng=lng,
+	    radius=radius,
+	    wealthy_lower=60000,
+	    sort_by="Dist",
+	    ascending=True,
+	    returns=0,
+	)
+
+
+.. _sort:
+
+Sort result
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``by_city_and_state``, ``by_city``, ``by_state``, ``by_prefix``, ``by_population``, ``by_density``, ``by_totalwages``, ``by_wealthy``, ``by_house`` methods all support ``sort_by``, ``ascending`` keyword.
+
+- ``sort_by``: attribute name(s), case insensitive. Accepts an attribute name or a list for a nested sort. By default ordered by ``Zipcode``. All valid attribute name is :class:`listed here <uszipcode.searchengine.Zipcode>`
+- ``ascending``: boolean or list, default ``True``, sort ascending vs. descending. Specify list for multiple sort orders
+
+.. code-block:: python
+
+	# Search zipcode that average annual income per person greater than $100,000
+	>>> res = search.by_wealthy(lower=100000, sort_by="Wealthy", ascending=True) 
 	>>> for zipcode in res:
-	...     # do whatever you want...
+	...     print(zipcode.Wealthy) # should be in ascending order
+
+
+.. _limit:
+
+Restrict number of results to return
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Every search method support ``returns`` keyword to limit number of results to return. Zero is for unlimited. The default limit is 5.
+
+Here's an example to find the top 10 most people zipcode, sorted by population:
+
+.. code-block:: python
+
+	# Find the top 10 population zipcode
+	>>> res = search.by_population(upper=999999999, sort_by="population", ascending=False, returns=10)
+	>>> len(res)
+	10
+	>>> for zipcode in res:
+	...     print(zipcode.Population) # should be in descending order
 
 .. include:: about.rst
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-

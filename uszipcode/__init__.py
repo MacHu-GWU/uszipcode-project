@@ -8,7 +8,7 @@ except Exception as e:
     print(e)
     
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __short_description__ = ("USA zipcode programmable database, includes "
                          "up-to-date census and geometry information.")
 __license__ = "MIT"

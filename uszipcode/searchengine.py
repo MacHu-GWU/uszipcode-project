@@ -4,7 +4,7 @@
 import json
 import math
 import sqlite3
-from heapq import heappush, heappop
+from heapq import heappush, heappop, nlargest, nsmallest
 from functools import total_ordering
 from collections import OrderedDict
 
@@ -24,6 +24,7 @@ except:
 
 @total_ordering
 class Zipcode(object):
+
     """Zipcode data container class.
 
     Attributes:
@@ -85,7 +86,8 @@ class Zipcode(object):
                  # estimate population per square miles (on land only)
                  Density=None,
                  TotalWages=None,  # estimate annual total wage
-                 Wealthy=None,  # estimate average annual wage = TotalWages/Population
+                 # estimate average annual wage = TotalWages/Population
+                 Wealthy=None,
                  HouseOfUnits=None,  # estimate number of house unit
                  LandArea=None,  # land area in square miles
                  WaterArea=None,  # marine area in square miles
@@ -205,6 +207,7 @@ _DEFAULT_LIMIT = 5
 
 
 class ZipcodeSearchEngine(object):
+
     """A fast, powerful index optimized zipcode object search engine class.
 
     Quick links:
@@ -387,7 +390,7 @@ class ZipcodeSearchEngine(object):
     def _find_state(self, state, best_match=True):
         """Fuzzy search correct state.
 
-        :param multiple: bool, when False, only one state will return. 
+        :param best_match: bool, when True, only one state will return. 
           otherwise, will return all matching states.
         """
         result = list()
@@ -416,6 +419,11 @@ class ZipcodeSearchEngine(object):
 
     def _find_city(self, city, state=None, best_match=True):
         """Fuzzy search correct city.
+
+        :param city: city name.
+        :param state: search city in specified state.
+        :param best_match: bool, when True, only one city will return. 
+          otherwise, will return all matching cities.
 
         **中文文档**
 
@@ -485,6 +493,7 @@ class ZipcodeSearchEngine(object):
         :param lng: center lngitude
         :param radius: for the inside implementation only, search zipcode 
           within #radius units of lat, lng
+        :param ascending: bool, if True, sort by distance from closest
         :param standard_only: bool, default True, only returns standard 
           type zipcode
         :param returns: returns at most how many results
@@ -513,7 +522,7 @@ class ZipcodeSearchEngine(object):
         :param state: 2 letter short name or long name.
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -540,7 +549,7 @@ class ZipcodeSearchEngine(object):
         :param city: city name.
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -567,7 +576,7 @@ class ZipcodeSearchEngine(object):
         :param state: 2 letter short name or long name.
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -591,7 +600,7 @@ class ZipcodeSearchEngine(object):
         :param prefix: first N zipcode number
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -600,10 +609,10 @@ class ZipcodeSearchEngine(object):
         根据Zipcode的前面几个字符模糊查询。
         """
         # exam input
-        return self.find(prefix=prefix, 
-                         standard_only=standard_only, 
-                         sort_by=sort_by, 
-                         ascending=ascending, 
+        return self.find(prefix=prefix,
+                         standard_only=standard_only,
+                         sort_by=sort_by,
+                         ascending=ascending,
                          returns=returns)
 
     def by_pattern(self, pattern,
@@ -616,7 +625,7 @@ class ZipcodeSearchEngine(object):
         :param prefix: first N zipcode number
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -641,7 +650,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum population
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -669,7 +678,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum population
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -695,7 +704,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum landarea in sqrt miles
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -721,7 +730,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum waterarea in sqrt miles
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -747,7 +756,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum total annual wages
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -775,7 +784,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum AAW
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -801,7 +810,7 @@ class ZipcodeSearchEngine(object):
         :param upper: maximum house of units
         :param standard_only: bool, default True, only returns standard 
           type zipcode
-        :param sortby: str or list of str, default ``"Zipcode"``
+        :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
         :param returns: int, default 5
 
@@ -959,7 +968,7 @@ class ZipcodeSearchEngine(object):
         select_sql = self._sql_modify_standard_only(select_sql, standard_only)
         select_sql = self._sql_modify_order_by(select_sql, sort_by, ascending)
 
-        #--- solve coordinate and other search sort-by conflict ---
+        #--- solve coordinate and other search sort_by conflict ---
         if flag_by_coordinate:
             # has sort_by keyword, order by keyword
             # 有sort_by关键字的情况下, 按关键字排序
@@ -976,28 +985,25 @@ class ZipcodeSearchEngine(object):
             # 没有sort_by关键字, 按距离远近排序
             else:
                 # use heap sort find top N closest zipcode
-                heap = list()
+                def gen():
+                    for row in self.cursor.execute(select_sql):
+                        dist = great_circle(
+                            (row["Latitude"], row["Longitude"]), (lat, lng))
+                        if dist <= radius:
+                            yield (dist, row)
 
-                for row in self.cursor.execute(select_sql):
-                    dist = great_circle(
-                        (row["Latitude"], row["Longitude"]), (lat, lng))
-                    if dist <= radius:
-                        heappush(heap, (dist, row))
-
-                # generate results
-                res = list()
                 if returns >= 1:
-                    try:
-                        for i in range(returns):
-                            res.append(Zipcode(**heappop(heap)[1]))
-                    except IndexError:
-                        pass
-                elif returns == 0:
-                    while heap:
-                        res.append(Zipcode(**heappop(heap)[1]))
 
-                if ascending is False: # 按距离逆序输出
-                    res = res[::-1]
+                    if ascending:
+                        data = nsmallest(returns, gen(), key=lambda x: x[0])
+                    else:
+                        data = nlargest(returns, gen(), key=lambda x: x[0])
+                else:
+                    if ascending:
+                        data = sorted(
+                            gen(), key=lambda x: x[0], reverse=not ascending)
+
+                res = [Zipcode(**row) for dist, row in data]
         else:
             select_sql = self._sql_modify_limit(select_sql, returns)
             res = [Zipcode(**row) for row in self.cursor.execute(select_sql)]

@@ -143,6 +143,18 @@ You can search zipcode by city name.
 	'Vienna'
 
 
+**uszipcode also provide a internal method to help you find correct city name**::
+
+.. code-block: python
+
+	>>> search._find_city("phonix", bes_match=True)
+	['Phoenix']
+
+	# Find city in kensas state, state name is also typo tolerant
+	>>> search._find_city("kersen", state="kensas", best_match=False) 
+    city_expected = ["Nickerson", ]
+
+
 .. _by_state:
 
 Search by State

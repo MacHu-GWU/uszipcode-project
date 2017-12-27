@@ -390,7 +390,7 @@ class ZipcodeSearchEngine(object):
     def _find_state(self, state, best_match=True):
         """Fuzzy search correct state.
 
-        :param best_match: bool, when True, only one state will return. 
+        :param best_match: bool, when True, only one state will return.
           otherwise, will return all matching states.
         """
         result = list()
@@ -422,13 +422,13 @@ class ZipcodeSearchEngine(object):
 
         :param city: city name.
         :param state: search city in specified state.
-        :param best_match: bool, when True, only one city will return. 
+        :param best_match: bool, when True, only one city will return.
           otherwise, will return all matching cities.
 
         **中文文档**
 
         如果给定了state, 则只在state里的城市中寻找, 否则, 在全国所有的城市中
-        寻找。 
+        寻找。
         """
         # find out what is the city that user looking for
         if state:
@@ -462,7 +462,7 @@ class ZipcodeSearchEngine(object):
         """Search zipcode information.
 
         :param zipcode: integer or string zipcode, no zero pad needed
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
 
         **中文文档**
@@ -491,10 +491,10 @@ class ZipcodeSearchEngine(object):
 
         :param lat: center latitude
         :param lng: center lngitude
-        :param radius: for the inside implementation only, search zipcode 
+        :param radius: for the inside implementation only, search zipcode
           within #radius units of lat, lng
         :param ascending: bool, if True, sort by distance from closest
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param returns: returns at most how many results
 
@@ -520,7 +520,7 @@ class ZipcodeSearchEngine(object):
 
         :param city: city name.
         :param state: 2 letter short name or long name.
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -547,7 +547,7 @@ class ZipcodeSearchEngine(object):
         My engine use fuzzy match and guess what is the city you want.
 
         :param city: city name.
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -574,7 +574,7 @@ class ZipcodeSearchEngine(object):
         fuzzy match and guess what is the state you want.
 
         :param state: 2 letter short name or long name.
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -598,7 +598,7 @@ class ZipcodeSearchEngine(object):
         """Search zipcode information by first N numbers.
 
         :param prefix: first N zipcode number
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -623,7 +623,7 @@ class ZipcodeSearchEngine(object):
         """Search zipcode by wildcard.
 
         :param prefix: first N zipcode number
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -648,7 +648,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal population
         :param upper: maximum population
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -676,7 +676,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal population
         :param upper: maximum population
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -702,7 +702,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal landarea in sqrt miles
         :param upper: maximum landarea in sqrt miles
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -728,7 +728,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal waterarea in sqrt miles
         :param upper: maximum waterarea in sqrt miles
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -754,7 +754,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal total annual wages
         :param upper: maximum total annual wages
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -782,7 +782,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal AAW
         :param upper: maximum AAW
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -808,7 +808,7 @@ class ZipcodeSearchEngine(object):
 
         :param lower: minimal house of units
         :param upper: maximum house of units
-        :param standard_only: bool, default True, only returns standard 
+        :param standard_only: bool, default True, only returns standard
           type zipcode
         :param sort_by: str or list of str, default ``"Zipcode"``
         :param ascending: bool or list of bool, default True
@@ -848,7 +848,7 @@ class ZipcodeSearchEngine(object):
 
         #--- by_coordinate ---
         if isinstance(lat, (integer_types, float)) and \
-                isinstance(lat, (integer_types, float)) and \
+                isinstance(lng, (integer_types, float)) and \
                 isinstance(radius, (integer_types, float)):
             flag_by_coordinate = True
             if radius <= 0:

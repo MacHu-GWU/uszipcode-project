@@ -1,16 +1,18 @@
 .. contents::
 
+Release v\ |release| (:ref:`What's new? <changelog>`).
+
 .. include:: ../../README.rst
 
-Table of Content
+Quick Start
 ------------------------------------------------------------------------------
 
 .. toctree::
    :maxdepth: 1
 
-    5 Minutes Tutorial with Examples <01-Features/index.rst>
-    Migrate from 0.1.x to 0.2.x <02-Migrate-from-0.1.x-to-0.2.x/index.rst>
-    
+    5 Minutes Tutorial <01-Tutorial/index.rst>
+    Migrate to 0.2.x <02-Migrate-to-0.2.x/index.rst>
+
 
 .. include:: author.rst
 

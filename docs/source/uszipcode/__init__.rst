@@ -11,7 +11,6 @@ sub packages and modules
    :maxdepth: 1
 
     db <db>
-    download <download>
     model <model>
     search <search>
     state_abbr <state_abbr>

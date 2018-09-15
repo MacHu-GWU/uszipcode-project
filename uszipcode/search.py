@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+This module allows developer to query zipcode with super clean API.
+"""
+
 import sys
 import math
 import heapq
@@ -19,10 +23,50 @@ from .state_abbr import STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT
 from .pkg.fuzzywuzzy.process import extract, extractOne
 
 SORT_BY_DIST = "dist"
+"""
+a string for ``sort_by`` arguments. order the result by distance from a coordinates.
+"""
+
 DEFAULT_LIMIT = 5
+"""
+default number of results to return.
+"""
 
 
 class SearchEngine(object):
+    """
+    Zipcode Search Engine.
+
+    :param simple_zipcode: bool, default True, if True, use the simple zipcode
+        db. Rich Demographics, Real Estate, Employment, Education info is not
+        available. If False, use the rich info database.
+
+    Usage::
+
+        >>> search = SearchEngine()
+        >>> zipcode = search.by_zipcode("10001")
+
+    Context Manager::
+
+        >>> with SearchEngine() as search:
+        ...     for zipcode in search.by_coordinates(lat, lng, radius):
+        ...         # do what every you want
+
+
+    :meth:`SearchEngine.query` provides mass options to customize your query.
+
+    :attr:`SearchEngine.ses` is a ``sqlalchemy.orm.Session`` object, you can
+    use it for query. For example::
+
+        >>> from uszipcode import SearchEngine, SimpleZipcode
+        >>> search = SearchEngine()
+        >>> search.ses.query(SimpleZipcode).filter(SimpleZipcode.zipcode=="10001")
+
+    .. note::
+
+        :class:`SearchEngine` is not multi-thread safe. You should create different
+        instance for each thread.
+    """
     _city_list = None
     _state_list = None
     """
@@ -51,6 +95,9 @@ class SearchEngine(object):
         self.close()
 
     def close(self):
+        """
+        close database connection.
+        """
         self.ses.close()
 
     def _get_cache_data(self):
@@ -100,12 +147,18 @@ class SearchEngine(object):
 
     @property
     def city_list(self):  # pragma: no cover
+        """
+        Return all available city name.
+        """
         if self._city_list is None:
             self._get_cache_data()
         return self._city_list
 
     @property
     def state_list(self):  # pragma: no cover
+        """
+        Return all available state name.
+        """
         if self._state_list is None:
             self._get_cache_data()
         return self._state_list
@@ -126,8 +179,8 @@ class SearchEngine(object):
         """
         Fuzzy search correct state.
 
-        :param best_match: bool, when True, only one state will return.
-          otherwise, will return all matching states.
+        :param best_match: bool, when True, only the best matched state
+            will be return. otherwise, will return all matching states.
         """
         result_state_short_list = list()
 
@@ -161,8 +214,8 @@ class SearchEngine(object):
 
         :param city: city name.
         :param state: search city in specified state.
-        :param best_match: bool, when True, only one city will return.
-          otherwise, will return all matching cities.
+        :param best_match: bool, when True, only the best matched city
+            will return. otherwise, will return all matching cities.
 
         **中文文档**
 
@@ -251,13 +304,52 @@ class SearchEngine(object):
               sort_by=SimpleZipcode.zipcode.name,
               ascending=True,
               returns=DEFAULT_LIMIT):
+        """
+        Query zipcode the simple way.
 
+        :param zipcode: int or str, find the exactly matched zipcode. Will be
+            automatically zero padding to 5 digits
+        :param prefix: str, zipcode prefix.
+        :param pattern: str, zipcode wildcard.
+        :param city: str, city name.
+        :param state: str, state name, two letter abbr or state full name.
+        :param lat: latitude.
+        :param lng: longitude.
+        :param radius: number, only returns zipcodes within a specific circle.
+        :param population_lower:
+        :param population_upper:
+        :param population_density_lower:
+        :param population_density_upper:
+        :param land_area_in_sqmi_lower:
+        :param land_area_in_sqmi_upper:
+        :param water_area_in_sqmi_lower:
+        :param water_area_in_sqmi_upper:
+        :param housing_units_lower:
+        :param housing_units_upper:
+        :param occupied_housing_units_lower:
+        :param occupied_housing_units_upper:
+        :param median_home_value_lower:
+        :param median_home_value_upper:
+        :param median_household_income_lower:
+        :param median_household_income_upper:
+        :param zipcode_type: str or :class`~uszipcode.model.ZipcodeType` attribute.
+        :param sort_by: str or :class:`~uszipcode.model.Zipcode` attribute,
+            specified which field is used for sorting.
+        :param ascending: bool, True means ascending, False means descending.
+        :param returns: int or None, limit the number of result to returns.
+
+        :return: list of :class:`~uszipcode.model.SimpleZipcode` or
+            :class:`~uszipcode.model.Zipcode`.
+        """
         filters = list()
 
         # by coordinates
-        if isinstance(lat, (integer_types, float)) and \
-                isinstance(lng, (integer_types, float)) and \
-                isinstance(radius, (integer_types, float)):
+        _n_radius_param_not_null = sum([
+            isinstance(lat, (integer_types, float)),
+            isinstance(lng, (integer_types, float)),
+            isinstance(radius, (integer_types, float)),
+        ])
+        if _n_radius_param_not_null == 3:
             flag_radius_query = True
             if radius <= 0:  # pragma: no cover
                 raise ValueError("`radius` parameters can't less than 0!")
@@ -292,8 +384,11 @@ class SearchEngine(object):
             filters.append(self.zip_klass.lat <= lat_upper)
             filters.append(self.zip_klass.lng >= lng_lower)
             filters.append(self.zip_klass.lng <= lng_upper)
-        else:
+        elif _n_radius_param_not_null == 0:
             flag_radius_query = False
+        else:
+            msg = "You can either specify all of `lat`, `lng`, `radius` or none of them"
+            raise ValueError(msg)
 
         # by city or state
         if (state is not None) and (city is not None):

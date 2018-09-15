@@ -1,5 +1,9 @@
-Migrate from 0.1.x to 0.2.x
+Migrate to 0.2.x
 ==============================================================================
+
+
+From 0.1.x
+------------------------------------------------------------------------------
 
 If you still want to stick with 0.1.x, the last 0.1.x version is 0.1.3. You can install it by ``$ pip install uszipcode==0.1.3``.
 

@@ -32,7 +32,7 @@ Base = declarative_base()
 @total_ordering
 class BaseZipcode(Base, ExtendedBase):
     """
-
+    Base class for Zipcode.
     """
     __abstract__ = True
 
@@ -139,6 +139,9 @@ class BaseZipcode(Base, ExtendedBase):
         return great_circle((self.lat, self.lng), (lat, lng), miles=miles)
 
     def to_json(self, include_null=True):  # pragma: no cover
+        """
+        Convert to json.
+        """
         data = self.to_OrderedDict(include_null=include_null)
         return json.dumps(data, indent=4)
 

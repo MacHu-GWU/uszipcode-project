@@ -51,6 +51,9 @@
 Welcome to ``uszipcode`` Documentation
 ==============================================================================
 
+**If you are on www.pypi.org or www.github.com**, this is not the complete document. Here is the `Complete Document <https://uszipcode.readthedocs.io/index.html>`_.
+
+
 ``uszipcode`` is the **most powerful and easy to use programmable zipcode database** in Python. It comes with a rich feature and easy-to-use zipcode search engine. And it is easy to customize the search behavior as you wish.
 
 

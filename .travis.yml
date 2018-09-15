@@ -1,9 +1,21 @@
 language: python
+
 python:
   - "2.7"
-  - "3.3"
   - "3.4"
   - "3.5"
+  - "3.6"
+
 install:
-  - pip install . # Install it self
-script: py.test
+  - pip install --editable . # Install it self
+  - pip install -r requirements-test.txt # Install test dependencies
+  - pip install codecov # Install coveralls
+
+script:
+  - pytest tests --cov=uszipcode # Run unittest
+
+notifications:
+  email: false # Mute email notification
+
+after_success:
+  - codecov # travis-ci will transfer data to codecov after success

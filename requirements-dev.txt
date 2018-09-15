@@ -1,0 +1,7 @@
+pathlib_mate
+twine>=1.5.0
+pandas
+geopy
+sfm==0.0.16
+dataIO==0.0.5
+superjson==0.0.9

@@ -1,103 +1,167 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+The setup script is the centre of all activity in building, distributing,
+and installing modules using the Distutils. It is required for ``pip install``.
+
+See more: https://docs.python.org/2/distutils/setupscript.html
+"""
+
 from __future__ import print_function
-from setuptools import setup, find_packages
-from datetime import date
 import os
+from datetime import date
+from setuptools import setup, find_packages
 
-#--- Define project dependent variable ---
-# Your package name
-NAME = "uszipcode"
-# Your GitHub user name
-GITHUB_USERNAME = "MacHu-GWU" # your GitHub account name
+# --- import your package ---
+import uszipcode as package
 
+if __name__ == "__main__":
+    # --- Automatically generate setup parameters ---
+    # Your package name
+    PKG_NAME = package.__name__
 
-#--- Automatically generate setup parameters ---
-try:
-    SHORT_DESCRIPTION = __import__(NAME).__short_description__ # GitHub Short Description
-except:
-    print("'__short_description__' not found in '%s.__init__.py'!" % NAME)
-    SHORT_DESCRIPTION = "No short description!"
-    
-try:
-    LONG_DESCRIPTION = open("README.rst", "rb").read().decode("utf-8")
-except:
-    LONG_DESCRIPTION = "No long description!"
+    # Your GitHub user name
+    try:
+        GITHUB_USERNAME = package.__github_username__
+    except:
+        GITHUB_USERNAME = "Unknown-Github-Username"
 
-VERSION = __import__(NAME).__version__
-AUTHOR = "Sanhe Hu"
-AUTHOR_EMAIL = "husanhe@gmail.com"
-MAINTAINER = "Sanhe Hu"
-MAINTAINER_EMAIL = "husanhe@gmail.com"
+    # Short description will be the description on PyPI
+    try:
+        SHORT_DESCRIPTION = package.__short_description__  # GitHub Short Description
+    except:
+        print(
+            "'__short_description__' not found in '%s.__init__.py'!" % PKG_NAME)
+        SHORT_DESCRIPTION = "No short description!"
 
-# Include all sub packages in package directory
-PACKAGES = [NAME] + ["%s.%s" % (NAME, i) for i in find_packages(NAME)]
-# Include everything in package directory
-INCLUDE_PACKAGE_DATA = True
-PACKAGE_DATA = {
-    "": ["*.*"],
-}
+    # Long description will be the body of content on PyPI page
+    try:
+        LONG_DESCRIPTION = open("README.rst", "rb").read().decode("utf-8")
+    except:
+        LONG_DESCRIPTION = "No long description!"
 
-# The project directory name is the GitHub repository name
-repository_name = os.path.basename(os.getcwd())
-# Project Url
-URL = "https://github.com/{0}/{1}".format(GITHUB_USERNAME, repository_name)
-# Use todays date as GitHub release tag
-github_release_tag = str(date.today())
-# Source code download url
-DOWNLOAD_URL = "https://github.com/{0}/{1}/tarball/{2}".format(
-    GITHUB_USERNAME, repository_name, github_release_tag)
+    # Version number, VERY IMPORTANT!
+    VERSION = package.__version__
 
-try:
-    LICENSE = __import__(NAME).__license__
-except:
-    print("'__license__' not found in '%s.__init__.py'!" % NAME)
-    LICENSE = ""
+    # Author and Maintainer
+    try:
+        AUTHOR = package.__author__
+    except:
+        AUTHOR = "Unknown"
 
-KEYWORDS = ["zipcode", "database", "search engine"]
-PLATFORMS = ["Windows", "MacOS", "Unix"]
-CLASSIFIERS = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Natural Language :: English",
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: MacOS",
-    "Operating System :: Unix",
-    "Programming Language :: Python :: 2.7",
-    "Programming Language :: Python :: 3.3",
-    "Programming Language :: Python :: 3.4",
-    "Programming Language :: Python :: 3.5",
-]
+    try:
+        AUTHOR_EMAIL = package.__author_email__
+    except:
+        AUTHOR_EMAIL = None
 
-try:
-    f = open("requirements.txt", "rb")
-    REQUIRES = [i.strip() for i in f.read().decode("utf-8").split("\n")]
-except:
-    print("'requirements.txt' not found!")
-    REQUIRES = list()
+    try:
+        MAINTAINER = package.__maintainer__
+    except:
+        MAINTAINER = "Unknown"
 
-setup(
-    name=NAME,
-    description=SHORT_DESCRIPTION,
-    long_description=LONG_DESCRIPTION,
-    version=VERSION,
-    author=AUTHOR,
-    author_email=AUTHOR_EMAIL,
-    maintainer=MAINTAINER,
-    maintainer_email=MAINTAINER_EMAIL,
-    packages=PACKAGES,
-    include_package_data=INCLUDE_PACKAGE_DATA,
-    package_data=PACKAGE_DATA,
-    url=URL,
-    download_url=DOWNLOAD_URL,
-    keywords=KEYWORDS,
-    classifiers=CLASSIFIERS,
-    platforms=PLATFORMS,
-    license=LICENSE,
-    install_requires=REQUIRES,
-)
+    try:
+        MAINTAINER_EMAIL = package.__maintainer_email__
+    except:
+        MAINTAINER_EMAIL = None
+
+    PACKAGES, INCLUDE_PACKAGE_DATA, PACKAGE_DATA, PY_MODULES = (
+        None, None, None, None,
+    )
+
+    # It's a directory style package
+    if os.path.exists(__file__[:-8] + PKG_NAME):
+        # Include all sub packages in package directory
+        PACKAGES = [PKG_NAME] + ["%s.%s" % (PKG_NAME, i)
+                                 for i in find_packages(PKG_NAME)]
+
+        # Include everything in package directory
+        INCLUDE_PACKAGE_DATA = True
+        PACKAGE_DATA = {
+            "": ["*.*"],
+        }
+
+    # It's a single script style package
+    elif os.path.exists(__file__[:-8] + PKG_NAME + ".py"):
+        PY_MODULES = [PKG_NAME, ]
+
+    # The project directory name is the GitHub repository name
+    repository_name = os.path.basename(os.path.dirname(__file__))
+
+    # Project Url
+    URL = "https://github.com/{0}/{1}".format(GITHUB_USERNAME, repository_name)
+
+    # Use todays date as GitHub release tag
+    github_release_tag = str(date.today())
+
+    # Source code download url
+    DOWNLOAD_URL = "https://pypi.python.org/pypi/{0}/{1}#downloads".format(
+        PKG_NAME, VERSION)
+
+    try:
+        LICENSE = package.__license__
+    except:
+        print("'__license__' not found in '%s.__init__.py'!" % PKG_NAME)
+        LICENSE = ""
+
+    PLATFORMS = [
+        "Windows",
+        "MacOS",
+        "Unix",
+    ]
+
+    CLASSIFIERS = [
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: MacOS",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+    ]
+    """
+    Full list can be found at: https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    """
+
+    # Read requirements.txt, ignore comments
+    try:
+        REQUIRES = list()
+        f = open("requirements.txt", "rb")
+        for line in f.read().decode("utf-8").split("\n"):
+            line = line.strip()
+            if "#" in line:
+                line = line[:line.find("#")].strip()
+            if line:
+                REQUIRES.append(line)
+    except:
+        print("'requirements.txt' not found!")
+        REQUIRES = list()
+
+    setup(
+        name=PKG_NAME,
+        description=SHORT_DESCRIPTION,
+        long_description=LONG_DESCRIPTION,
+        version=VERSION,
+        author=AUTHOR,
+        author_email=AUTHOR_EMAIL,
+        maintainer=MAINTAINER,
+        maintainer_email=MAINTAINER_EMAIL,
+        packages=PACKAGES,
+        include_package_data=INCLUDE_PACKAGE_DATA,
+        package_data=PACKAGE_DATA,
+        py_modules=PY_MODULES,
+        url=URL,
+        download_url=DOWNLOAD_URL,
+        classifiers=CLASSIFIERS,
+        platforms=PLATFORMS,
+        license=LICENSE,
+        install_requires=REQUIRES,
+    )
 
 """
 Appendix
@@ -140,14 +204,15 @@ Frequent used classifiers List = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
     "Operating System :: Unix",
-    
+
     "Programming Language :: Python",
     "Programming Language :: Python :: 2",
     "Programming Language :: Python :: 2.7",
     "Programming Language :: Python :: 2 :: Only",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.3",
     "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3 :: Only",
 ]
 """

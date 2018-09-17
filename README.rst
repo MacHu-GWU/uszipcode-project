@@ -30,7 +30,7 @@
       :target: https://uszipcode.readthedocs.io/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Source_Code-blue.svg
-      :target: https://uszipcode.readthedocs.io/py-modindex.html
+      :target: https://github.com/MacHu-GWU/uszipcode-project/tree/master/uszipcode
 
 .. image:: https://img.shields.io/badge/Link-Install-blue.svg
       :target: `install`_

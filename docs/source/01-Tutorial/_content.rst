@@ -25,7 +25,7 @@ Start the search engine, do some basic search:
     >>> zipcode.population
     26999
 
-Zipcode support comparison and is hashable:
+Zipcode support comparison and is hashable, which means you can sort, or put it in a set:
 
     >>> bool(SimpleZipcode(zipcode="10030"))
     True
@@ -33,6 +33,8 @@ Zipcode support comparison and is hashable:
     False
     >>> SimpleZipcode(zipcode="10030") <= SimpleZipcode(zipcode="10031")
     True
+    >>> len(set([SimpleZipcode(zipcode="10030"), SimpleZipcode(zipcode="10031")]))
+    2
 
 Context manager works too (automatically disconnect database. RECOMMENDED):
 

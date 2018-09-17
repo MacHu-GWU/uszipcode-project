@@ -49,6 +49,8 @@ Context manager works too (automatically disconnect database. RECOMMENDED):
 - You can use :meth:`~uszipcode.model.BaseZipcode.keys()` method to return available attribute list.
 - You can use :meth:`~uszipcode.model.BaseZipcode.values()` method to return attributes' values.
 
+By default, ``uszipcode`` **only returns Standard zipcode**, if you want to **return other zipcode type, or return all kinds of zipcode**, please see :ref:`zipcode_type`.
+
 
 .. _search_way:
 
@@ -289,6 +291,16 @@ There are four type of zipcode:
 - Standard: all other ZIP Codes.
 
 This database doesn't have ``Military``. And only the Standard zipcode has rich info.
+
+.. note::
+
+    By default, ``uszipcode`` only returns Standard zipcode. If you want to return PO Box or Unique zipcode, you can specify::
+
+        search.by_xxx(..., zipcode_type=ZipcodeType.PO_Box)
+
+    If you want to return all kinds of zipcode, you can specify::
+
+        search.by_xxx(..., zipcode_type=None)
 
 
 .. _sort:

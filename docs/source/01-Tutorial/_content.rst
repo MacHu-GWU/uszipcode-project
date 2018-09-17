@@ -39,11 +39,11 @@ Context manager works too (automatically disconnect database. RECOMMENDED):
     >>> with ZipcodeSearchEngine() as search:
     ...     zipcode = search.by_zipcode(10030)
 
-There are several utility methods you may need:
+**Convert the object to dictionary / json is easy**:
 
-- You can use :meth:`~uszipcode.model.BaseZipcode.to_json()` method to return json encoded string.
-- You can use :meth:`~uszipcode.model.BaseZipcode.to_dict()` method to return dictionary data.
-- You can use :meth:`~uszipcode.model.BaseZipcode.to_OrderedDict()` method to return ordered dictionary data.
+- You can use :meth:`~uszipcode.model.BaseZipcode.to_json(include_null=True)` method to return json encoded string.
+- You can use :meth:`~uszipcode.model.BaseZipcode.to_dict(include_null=True)` method to return dictionary data.
+- You can use :meth:`~uszipcode.model.BaseZipcode.to_OrderedDict(include_null=True)` method to return ordered dictionary data.
 - You can use :meth:`~uszipcode.model.BaseZipcode.keys()` method to return available attribute list.
 - You can use :meth:`~uszipcode.model.BaseZipcode.values()` method to return attributes' values.
 

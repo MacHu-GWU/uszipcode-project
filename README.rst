@@ -60,6 +60,8 @@ Welcome to ``uszipcode`` Documentation
 Data Points
 ------------------------------------------------------------------------------
 
+From version 0.2.0, ``uszipcode`` use a more up-to-date database, and having a crawler running every week to collection different data points from multiple data source. And **API in 0.2.X NOT COMPATIBLE with 0.1.X**, please read `Document <https://uszipcode.readthedocs.io/index.html>`_ for more information.
+
 **Address, Postal**
 
 - zipcode

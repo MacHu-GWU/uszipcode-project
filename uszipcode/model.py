@@ -148,7 +148,39 @@ class BaseZipcode(Base, ExtendedBase):
 
 class SimpleZipcode(BaseZipcode):
     """
+    Simplized Zipcode, doesn't include rich Demography, Real Estate, Employment,
+    Education, geo boundary data.
 
+    :param zipcode: str,
+    :param zipcode_type: str, one of "Standard", "PO Box", "Unique",
+        recommend to use :class:`ZipcodeType` to access the value.
+    :param major_city: str,
+    :param post_office_city: str,
+    :param common_city_list: str list,
+    :param county: str,
+    :param state: str, state two letters abbrivation.
+    :param lat: float, lat
+    :param lng: float, lng
+    :param radius_in_miles: float,
+    :param timezone: str,
+    :param area_code_list: str list,
+
+    :param population: number,
+    :param population_density: number, total population per sqmi
+
+    :param land_area_in_sqmi: number, sqmi
+    :param water_area_in_sqmi: number, sqmi
+
+    :param housing_units: int,
+    :param occupied_housing_units: int,
+
+    :param median_home_value: int,
+    :param median_household_income: int,
+
+    :param bounds_west: number,
+    :param bounds_east: number,
+    :param bounds_north: number,
+    :param bounds_south: number,
     """
 
     __tablename__ = "simple_zipcode"
@@ -163,7 +195,51 @@ _simple_zipcode_columns = [c.name for c in SimpleZipcode.__table__.columns]
 
 class Zipcode(BaseZipcode):
     """
+    Zipcode that with rich info.
 
+    :param population_by_year: population change over year.
+    :param population_by_age: population distribution by gender and age.
+    :param population_by_gender: population distribution by gender.
+    :param population_by_race: population distribution by race.
+    :param head_of_household_by_age: head of household distribution by age.
+    :param families_vs_singles: population distribution by marital status.
+    :param households_with_kids: population by with or without kids.
+    :param children_by_age: children population distribution by age
+
+    :param housing_type: number of house distribution of house type.
+    :param year_housing_was_built: number of house distribution of built year.
+    :param housing_occupancy: number of house by occupancy status.
+    :param vancancy_reason: number of house by vancancy reason.
+    :param owner_occupied_home_values: number of house by home values.
+    :param rental_properties_by_number_of_rooms: number of rental properties
+        by number of rooms.
+
+    :param monthly_rent_including_utilities_studio_apt: see var name.
+    :param monthly_rent_including_utilities_1_b: see var name.
+    :param monthly_rent_including_utilities_2_b: see var name.
+    :param monthly_rent_including_utilities_3plus_b: see var name.
+
+    :param employment_status: see var name.
+    :param average_household_income_over_time: see var name.
+    :param household_income: see var name.
+    :param annual_individual_earnings: see var name.
+
+    :param sources_of_household_income____percent_of_households_receiving_income: see var name.
+    :param sources_of_household_income____average_income_per_household_by_income_source: see var name.
+
+    :param household_investment_income____percent_of_households_receiving_investment_income: see var name.
+    :param household_investment_income____average_income_per_household_by_income_source: see var name.
+
+    :param household_retirement_income____percent_of_households_receiving_retirement_incom: see var name.
+    :param household_retirement_income____average_income_per_household_by_income_source: see var name.
+
+    :param source_of_earnings: see var name.
+    :param means_of_transportation_to_work_for_workers_16_and_over: see var name.
+
+    :param travel_time_to_work_in_minutes: see var name.
+
+    :param educational_attainment_for_population_25_and_over: see var name.
+    :param school_enrollment_age_3_to_17: see var name.
     """
     __tablename__ = "zipcode"
 

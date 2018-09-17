@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+``uszipcode`` is awesome!
+"""
+
 from __future__ import print_function
 
 try:

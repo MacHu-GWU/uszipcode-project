@@ -69,7 +69,8 @@ class BaseZipcode(Base, ExtendedBase):
     bounds_north = Column(Float)
     bounds_south = Column(Float)
 
-    _major_attrs = "zipcode,zipcode_type,city,county,state,lat,lng,timezone".split(",")
+    _major_attrs = "zipcode,zipcode_type,city,county,state,lat,lng,timezone".split(
+        ",")
     """
     major attributes.
     """

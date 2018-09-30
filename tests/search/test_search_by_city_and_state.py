@@ -17,11 +17,11 @@ class TestSearchEngineQuery(TestSearchEngineBase):
     def test_find_state(self):
         for state_short in STATE_ABBR_SHORT_TO_LONG:
             assert self.search.find_state(state_short.lower(), best_match=True)[
-                       0] == state_short
+                0] == state_short
 
         for state_long in STATE_ABBR_LONG_TO_SHORT:
             assert self.search.find_state(state_long.lower()[:8], best_match=True)[0] \
-                   == STATE_ABBR_LONG_TO_SHORT[state_long]
+                == STATE_ABBR_LONG_TO_SHORT[state_long]
 
         assert self.search.find_state("mary", best_match=True) == ["MD", ]
 

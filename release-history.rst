@@ -4,7 +4,7 @@ Release and Version History
 ==============================================================================
 
 
-0.2.1 (TODO)
+0.2.2 (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
@@ -13,6 +13,18 @@ Release and Version History
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.2.1 (2018-09-29)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- add an alias for ``Zipcode.major_city`` attribute. Now you can access it by ``Zipcode.city``
+- add a utility method ``Zipcode.glance()`` to allow user to print major attributes and values instead of all attributes.
+
+**Minor Improvements**
+
+- Emphasize that there are two database used, and add an instruction for how to switching between these two.
 
 
 0.2.0 (2018-09-15)

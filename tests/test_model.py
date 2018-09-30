@@ -7,6 +7,10 @@ from uszipcode.model import Zipcode, STATE_ABBR_SHORT_TO_LONG
 
 
 class TestZipcode(object):
+    def test_city(self):
+        z = Zipcode(major_city="New York")
+        assert z.major_city == z.city
+
     def test_bool(self):
         assert bool(Zipcode()) is False
         assert bool(Zipcode(zipcode="10001")) is True
@@ -31,6 +35,10 @@ class TestZipcode(object):
         z = Zipcode(state="ca")
         assert z.state_abbr == "CA"
         assert z.state_long == STATE_ABBR_SHORT_TO_LONG["CA"]
+
+    def test_glance(self):
+        z = Zipcode(zipcode="10001")
+        z.glance()
 
 
 if __name__ == "__main__":

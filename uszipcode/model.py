@@ -5,6 +5,7 @@
 This module defines the zipcode data model.
 """
 
+from __future__ import print_function
 import json
 from functools import total_ordering
 from sqlalchemy import Column
@@ -67,6 +68,18 @@ class BaseZipcode(Base, ExtendedBase):
     bounds_east = Column(Float)
     bounds_north = Column(Float)
     bounds_south = Column(Float)
+
+    _major_attrs = "zipcode,zipcode_type,city,county,state,lat,lng,timezone".split(",")
+    """
+    major attributes.
+    """
+
+    @property
+    def city(self):
+        """
+        Alias of ``.major_city``.
+        """
+        return self.major_city
 
     @property
     def bounds(self):
@@ -144,6 +157,18 @@ class BaseZipcode(Base, ExtendedBase):
         """
         data = self.to_OrderedDict(include_null=include_null)
         return json.dumps(data, indent=4)
+
+    def glance(self):
+        """
+        Print its major attributes and values.
+        """
+        kwargs = [(key, getattr(self, key)) for key in self._major_attrs]
+        s = "Zipcode({})".format(
+            ", ".join(
+                ["%s=%r" % (key, value) for key, value in kwargs]
+            )
+        )
+        print(s)
 
 
 class SimpleZipcode(BaseZipcode):

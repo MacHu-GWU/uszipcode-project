@@ -149,10 +149,19 @@ From version 0.2.0, ``uszipcode`` use a more up-to-date database, and having a c
 Example Usage
 ------------------------------------------------------------------------------
 
+**NOTE**:
+
+    ``uszipcode`` has two backend database, ``SimpleZipcode`` and ``Zipcode``. ``Zipcode`` has more info, but the database file is 450MB (takes more time to download). ``SimpleZipcode`` doesn't has all data points listed above, but the database file is smaller (9MB). By default ``uszipcode`` use ``SimpleZipcode``. You can use this code to choose to use the rich info ``Zipcode``::
+
+        >>> from uszipcode import SearchEngine
+        >>> search = SearchEngine(simple_zipcode=False)
+
+**Examples**:
+
 .. code-block:: python
 
     >>> from uszipcode import SearchEngine
-    >>> search = SearchEngine(simple_zipcode=True)
+    >>> search = SearchEngine(simple_zipcode=True) # set simple_zipcode=False to use rich info database
     >>> zipcode = search.by_zipcode("10001")
     >>> zipcode
     SimpleZipcode(zipcode=u'10001', zipcode_type=u'Standard', major_city=u'New York', post_office_city=u'New York, NY', common_city_list=[u'New York'], county=u'New York County', state=u'NY', lat=40.75, lng=-73.99, timezone=u'Eastern', radius_in_miles=0.9090909090909091, area_code_list=[u'718', u'917', u'347', u'646'], population=21102, population_density=33959.0, land_area_in_sqmi=0.62, water_area_in_sqmi=0.0, housing_units=12476, occupied_housing_units=11031, median_home_value=650200, median_household_income=81671, bounds_west=-74.008621, bounds_east=-73.984076, bounds_north=40.759731, bounds_south=40.743451)

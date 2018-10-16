@@ -14,7 +14,7 @@ try:
 except Exception as e:  # pragma: no cover
     print(e)
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __short_description__ = ("USA zipcode programmable database, includes "
                          "up-to-date census and geometry information.")
 __license__ = "MIT"

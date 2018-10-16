@@ -1,1 +1,1 @@
-include ${shell pwd}/make/python_env.mk
+include ./make/python_env.mk

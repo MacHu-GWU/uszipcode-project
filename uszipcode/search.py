@@ -333,6 +333,8 @@ class SearchEngine(object):
         :param median_household_income_lower:
         :param median_household_income_upper:
         :param zipcode_type: str or :class`~uszipcode.model.ZipcodeType` attribute.
+            if None, allows to return any type of zipcode.
+            if specified, only return specified zipcode type.
         :param sort_by: str or :class:`~uszipcode.model.Zipcode` attribute,
             specified which field is used for sorting.
         :param ascending: bool, True means ascending, False means descending.
@@ -531,13 +533,30 @@ class SearchEngine(object):
             else:
                 return q.all()
 
-    def by_zipcode(self, zipcode):
+    def by_zipcode(self,
+                   zipcode,
+                   zipcode_type=None,
+                   zero_padding=True):
         """
         Search zipcode by exact 5 digits zipcode. No zero padding is needed.
-        """
-        zipcode = str(zipcode).zfill(5)
 
-        res = self.query(zipcode=zipcode, sort_by=None, returns=1)
+        :param zipcode: int or str, the zipcode will be automatically
+            zero padding to 5 digits.
+        :param zipcode_type: str or :class`~uszipcode.model.ZipcodeType` attribute.
+            by default, it returns any zipcode type.
+        :param zero_padding: bool, toggle on and off automatic zero padding.
+        """
+        if zero_padding:
+            zipcode = str(zipcode).zfill(5)
+        else:  # pragma: no cover
+            zipcode = str(zipcode)
+
+        res = self.query(
+            zipcode=zipcode,
+            sort_by=None,
+            returns=1,
+            zipcode_type=zipcode_type,
+        )
         if len(res):
             return res[0]
         else:

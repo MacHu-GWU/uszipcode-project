@@ -231,13 +231,13 @@ class SearchEngine(object):
         result_city_list = list()
 
         if best_match:
-            candidte_city, confidence = extractOne(city, city_pool)
+            candidate_city, confidence = extractOne(city, city_pool)
             if confidence >= min_similarity:
                 result_city_list.append(candidate_city)
         else:
             for candidate_city, confidence in extract(city, city_pool):
                 if confidence >= min_similarity:
-                    result_city_list.append(candidtate_city)
+                    result_city_list.append(candidate_city)
 
         if len(result_city_list) == 0:
             raise ValueError("'%s' is not a valid city name" % city)

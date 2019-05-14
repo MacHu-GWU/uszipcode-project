@@ -94,6 +94,11 @@ class SearchEngine(object):
     def __exit__(self, *exc_info):  # pragma: no cover
         self.close()
 
+    def __del__(self):  # pragma: no cover
+        # Cleanup connection if still open
+        if self.ses:
+            self.close()
+
     def close(self):
         """
         close database connection.

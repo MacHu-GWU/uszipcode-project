@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -14,7 +13,8 @@ try:
 except Exception as e:  # pragma: no cover
     print(e)
 
-__version__ = "0.2.1"
+from ._version import __version__
+
 __short_description__ = ("USA zipcode programmable database, includes "
                          "up-to-date census and geometry information.")
 __license__ = "MIT"

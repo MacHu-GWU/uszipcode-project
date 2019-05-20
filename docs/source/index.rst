@@ -1,6 +1,6 @@
 .. contents::
 
-Release v\ |release| (:ref:`What's new? <changelog>`).
+Release v\ |release| (:ref:`What's new? <release_history>`).
 
 .. include:: ../../README.rst
 
@@ -14,7 +14,10 @@ Quick Start
     Migrate to 0.2.x <02-Migrate-to-0.2.x/index.rst>
 
 
-.. include:: author.rst
+.. autotoctree::
+
+.. include:: ../../AUTHORS.rst
+
 
 API Document
 ------------------------------------------------------------------------------

@@ -1,3 +1,16 @@
-sphinx==1.6.3
-docfly
+sphinx==1.8.1
+
+# Theme
+
 sphinx_rtd_theme
+
+# Extensions
+
+sphinx-jinja        # allow jinja2 template
+sphinx-copybutton   # add copy to clipboard button for code block
+docfly>=0.0.17      # auto API manual, auto Table of Content
+rstobj>=0.0.5       # generate list table from data
+
+# Other
+
+pygments            # live RestructuredText preview

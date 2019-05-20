@@ -3,6 +3,7 @@ uszipcode_venv/
 uszipcode.egg-info/
 uszipcode-*/
 
+playground/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -70,7 +71,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/build/
 
 # PyBuilder
 target/
@@ -90,6 +91,8 @@ celerybeat-schedule
 # virtualenv
 venv/
 ENV/
+
+
 
 # Spyder project settings
 .spyderproject

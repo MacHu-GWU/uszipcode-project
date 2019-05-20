@@ -1,1 +1,0 @@
-.. include:: ../../release-history.rst

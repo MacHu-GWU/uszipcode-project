@@ -1,5 +1,6 @@
 pathlib_mate
-twine>=1.5.0
+twine>=1.13.0   # make distribution archive
+wheel>=0.33.1   # make pre-compiled distribution package
 pandas
 geopy
 sfm==0.0.16

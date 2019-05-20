@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -15,7 +14,7 @@ from __future__ import print_function
 
 import requests
 
-from pathlib_mate import Path
+from pathlib_mate import PathCls as Path
 
 try:
     from .pkg.atomicwrites import atomic_write

@@ -2,6 +2,9 @@
 # for more info: https://coverage.readthedocs.io/en/coverage-4.4.1/config.html
 [run]
 omit =
+    uszipcode/_version.py
+    uszipcode/docs/*
+    uszipcode/tests/*
     uszipcode/pkg/*
     uszipcode/db.py
 

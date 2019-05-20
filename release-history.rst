@@ -4,15 +4,29 @@ Release and Version History
 ==============================================================================
 
 
-0.2.2 (TODO)
+0.2.3 (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
+
+- Get lat lng and more geo info from Google Geocoding API for **Unique** and **PO Box** zipcode.
 
 **Minor Improvements**
 
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.2.2 (2018-10-15)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Minor Improvements**
+
+- SearchEngine.by_zipcode has a new optional parameter ``zero_padding=True``.
+
+**Bugfixes**
+
+- SearchEngine.by_zipcode should returns any zipcode_type by default. (It used to only return standard zipcode)
 
 
 0.2.1 (2018-09-29)

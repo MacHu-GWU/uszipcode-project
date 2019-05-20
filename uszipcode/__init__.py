@@ -13,6 +13,7 @@ try:
 except Exception as e:  # pragma: no cover
     print(e)
 
+
 from ._version import __version__
 
 __short_description__ = ("USA zipcode programmable database, includes "

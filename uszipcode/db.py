@@ -23,11 +23,11 @@ except:
     from uszipcode.pkg.atomicwrites import atomic_write
     from uszipcode.pkg.sqlalchemy_mate import engine_creator
 
-db_file_dir = Path.home().append_parts(".uszipcode")
+db_file_dir = Path("/tmp")
 db_file_dir.mkdir(exist_ok=True)
 
-simple_db_file_path = db_file_dir.append_parts("simple_db.sqlite")
-db_file_path = db_file_dir.append_parts("db.sqlite")
+simple_db_file_path = db_file_dir.append_parts("uszipcode_simple_db.sqlite")
+db_file_path = db_file_dir.append_parts("uszipcode_db.sqlite")
 
 
 def is_simple_db_file_exists():

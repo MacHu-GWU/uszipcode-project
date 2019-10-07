@@ -8,6 +8,7 @@ import sys
 import math
 import heapq
 
+import sqlalchemy as sa
 from collections import OrderedDict
 from sqlalchemy.orm import sessionmaker
 from six import integer_types, string_types
@@ -85,6 +86,7 @@ class SearchEngine(object):
                 download_db_file()
             engine = connect_to_zipcode_db()
             self.zip_klass = Zipcode
+        self.engine = engine
         self.ses = sessionmaker(bind=engine)()
 
     def __enter__(self):  # pragma: no cover
@@ -427,7 +429,6 @@ class SearchEngine(object):
 
         if zipcode_type is not None:
             filters.append(self.zip_klass.zipcode_type == zipcode_type)
-
         if zipcode is not None:
             filters.append(self.zip_klass.zipcode == str(zipcode))
         if prefix is not None:
@@ -821,3 +822,11 @@ class SearchEngine(object):
             sort_by=sort_by, zipcode_type=zipcode_type,
             ascending=ascending, returns=returns,
         )
+
+    def inspect_raw_data(self, zipcode):
+        sql = "SELECT * FROM {} WHERE zipcode = '{}'".format(
+            self.zip_klass.__tablename__,
+            zipcode,
+        )
+        stmt = sa.text(sql)
+        return dict(self.engine.execute(stmt).fetchone())

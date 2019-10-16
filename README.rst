@@ -17,6 +17,9 @@
 .. image:: https://img.shields.io/pypi/pyversions/uszipcode.svg
     :target: https://pypi.python.org/pypi/uszipcode
 
+.. image:: https://img.shields.io/pypi/dm/uszipcode
+    :target: https://pypi.python.org/pypi/uszipcode
+
 .. image:: https://img.shields.io/badge/STAR_Me_on_GitHub!--None.svg?style=social
     :target: https://github.com/MacHu-GWU/uszipcode-project
 

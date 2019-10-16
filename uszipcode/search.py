@@ -12,6 +12,7 @@ import sqlalchemy as sa
 from collections import OrderedDict
 from sqlalchemy.orm import sessionmaker
 from six import integer_types, string_types
+from pathlib_mate import Path
 
 from .db import (
     is_simple_db_file_exists, is_db_file_exists,
@@ -33,13 +34,22 @@ default number of results to return.
 """
 
 
+HOME = Path.home().abspath
+HOME_USZIPCODE = Path(HOME, ".uszipcode").abspath
+TMP = "/tmp"
+
+
 class SearchEngine(object):
     """
     Zipcode Search Engine.
 
-    :param simple_zipcode: bool, default True, if True, use the simple zipcode
+    :type simple_zipcode: bool
+    :param simple_zipcode: default True, if True, use the simple zipcode
         db. Rich Demographics, Real Estate, Employment, Education info is not
         available. If False, use the rich info database.
+
+    :type db_file_dir: str
+    :param db_file_dir: where you want to download the sqlite database to.
 
     Usage::
 
@@ -75,16 +85,18 @@ class SearchEngine(object):
     _state_to_city_mapper = None
     _city_to_state_mapper = None
 
-    def __init__(self, simple_zipcode=True):
+    def __init__(self, simple_zipcode=True, db_file_dir=HOME_USZIPCODE):
+        Path(db_file_dir).mkdir(exist_ok=True)
+
         if simple_zipcode:
-            if not is_simple_db_file_exists():
-                download_simple_db_file()
-            engine = connect_to_simple_zipcode_db()
+            if not is_simple_db_file_exists(db_file_dir):
+                download_simple_db_file(db_file_dir)
+            engine = connect_to_simple_zipcode_db(db_file_dir)
             self.zip_klass = SimpleZipcode
         else:  # pragma: no cover
-            if not is_db_file_exists():
-                download_db_file()
-            engine = connect_to_zipcode_db()
+            if not is_db_file_exists(db_file_dir):
+                download_db_file(db_file_dir)
+            engine = connect_to_zipcode_db(db_file_dir)
             self.zip_klass = Zipcode
         self.engine = engine
         self.ses = sessionmaker(bind=engine)()

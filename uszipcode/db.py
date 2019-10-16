@@ -23,45 +23,51 @@ except:
     from uszipcode.pkg.atomicwrites import atomic_write
     from uszipcode.pkg.sqlalchemy_mate import engine_creator
 
-db_file_dir = Path("/tmp")
-db_file_dir.mkdir(exist_ok=True)
 
-simple_db_file_path = db_file_dir.append_parts("uszipcode_simple_db.sqlite")
-db_file_path = db_file_dir.append_parts("uszipcode_db.sqlite")
+def get_simple_db_file_path(db_file_dir):
+    return Path(db_file_dir, "simple_db.sqlite")
 
 
-def is_simple_db_file_exists():
+def get_db_file_path(db_file_dir):
+    return Path(db_file_dir, "db.sqlite")
+
+
+def is_simple_db_file_exists(db_file_dir):
+    simple_db_file_path = get_simple_db_file_path(db_file_dir)
     if simple_db_file_path.exists():
         if simple_db_file_path.size >= 5 * 1000 * 1000:
             return True
     return False
 
 
-def is_db_file_exists():
+def is_db_file_exists(db_file_dir):
+    db_file_path = get_db_file_path(db_file_dir)
     if db_file_path.exists():
         if db_file_path.size >= 100 * 1000 * 1000:
             return True
     return False
 
 
-def connect_to_simple_zipcode_db():
-    return engine_creator.create_sqlite(path=simple_db_file_path.abspath)
+def connect_to_simple_zipcode_db(db_file_dir):
+    return engine_creator.create_sqlite(
+        path=get_simple_db_file_path(db_file_dir).abspath)
 
 
-def connect_to_zipcode_db():
-    return engine_creator.create_sqlite(path=db_file_path.abspath)
+def connect_to_zipcode_db(db_file_dir):
+    return engine_creator.create_sqlite(
+        path=get_db_file_path(db_file_dir).abspath)
 
 
-def download_simple_db_file():
+def download_simple_db_file(db_file_dir):
     simple_db_file_download_url = "https://datahub.io/machu-gwu/uszipcode-0.2.0-simple_db/r/simple_db.sqlite"
 
-    if not is_simple_db_file_exists():
+    if not is_simple_db_file_exists(db_file_dir):
         print("Start downloading data for simple zipcode database, total size 9MB ...")
         response = requests.get(simple_db_file_download_url, stream=True)
         chunk_size = 1 * 1024 ** 2
 
         counter = 0
-        with atomic_write(simple_db_file_path.abspath, mode="wb", overwrite=True) as f:
+        with atomic_write(get_simple_db_file_path(db_file_dir).abspath, mode="wb", overwrite=True) as f:
             for chunk in response.iter_content(chunk_size):
                 if not chunk:
                     break
@@ -71,16 +77,16 @@ def download_simple_db_file():
         print("  Complete!")
 
 
-def download_db_file():
+def download_db_file(db_file_dir):
     db_file_download_url = "https://datahub.io/machu-gwu/uszipcode-0.2.0-db/r/db.sqlite"
-    if not is_db_file_exists():
+    if not is_db_file_exists(db_file_dir):
         print(
             "Start downloading data for rich info zipcode database, total size 450+MB ...")
         response = requests.get(db_file_download_url, stream=True)
         chunk_size = 10 * 1024 ** 2
 
         counter = 0
-        with atomic_write(db_file_path.abspath, mode="wb", overwrite=True) as f:
+        with atomic_write(get_db_file_path(db_file_dir).abspath, mode="wb", overwrite=True) as f:
             for chunk in response.iter_content(chunk_size):
                 if not chunk:
                     break

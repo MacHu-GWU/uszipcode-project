@@ -151,10 +151,21 @@ Example Usage
 
 **NOTE**:
 
-    ``uszipcode`` has two backend database, ``SimpleZipcode`` and ``Zipcode``. ``Zipcode`` has more info, but the database file is 450MB (takes more time to download). ``SimpleZipcode`` doesn't has all data points listed above, but the database file is smaller (9MB). By default ``uszipcode`` use ``SimpleZipcode``. You can use this code to choose to use the rich info ``Zipcode``::
+    ``uszipcode`` has two backend database, ``SimpleZipcode`` and ``Zipcode``. ``Zipcode`` has more info, but the database file is 450MB (takes more time to download). ``SimpleZipcode`` doesn't has all data points listed above, but the database file is smaller (9MB). By default ``uszipcode`` use ``SimpleZipcode``. You can use this code to choose to use the rich info ``Zipcode``:
+
+    .. code-block:: python
 
         >>> from uszipcode import SearchEngine
         >>> search = SearchEngine(simple_zipcode=False)
+
+    From 0.2.4, ``uszipcode`` **allows developer to choose which directory you want to use to download the database file**. By default, it is ``$HOME/.uszipcode``, but you can easily change it.:
+
+    .. code-block:: python
+
+        >>> search = SearchENgine(db_file_dir="/tmp")
+
+    For example, AWS Lambda doesn't allow to download file to $HOME directory, but allows to download to ``/tmp`` folder.
+
 
 **Examples**:
 
@@ -251,6 +262,19 @@ You can **easily sort your results** by any field, or distance from a coordinate
     ... sort_by=Zipcode.population, ascending=False, returns=10)
     >>> for zipcode in res:
     ...     # do whatever you want...
+
+
+Deploy Uszipcode as a Web Service
+------------------------------------------------------------------------------
+
+If you want to build a private uszipcode API server you have two choice:
+
+1. Use a VM like EC2 machine, and deploy a web api server with the machine.
+2. (RECOMMEND) Dump the sqlite database to any relational database like Postgres, MySQL, and inject the database connection info in your application server.
+
+In the feature release, I will provide an easy way that allow you to deploy uszipcode as a private web api service.
+
+Thank you.
 
 
 .. _install:

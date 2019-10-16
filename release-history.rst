@@ -4,17 +4,38 @@ Release and Version History
 ==============================================================================
 
 
-0.2.3 (TODO)
+0.2.5 (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
 
 - Get lat lng and more geo info from Google Geocoding API for **Unique** and **PO Box** zipcode.
+- Allow user to dump the data to any relational database easily and use self-hosted database to query.
 
 **Minor Improvements**
 
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.2.4 (2019-10-16)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Features and Improvements**
+
+- Now you can use ``SearchEngine(..., db_file_dir="/tmp")`` to specify where you want to put your database. By default it is ``${HOME}/.uszipcode``.
+
+**Minor Improvements**
+
+**Bugfixes**
+
+**Miscellaneous**
+
+
+0.2.3 (2019-10-07)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Miscellaneous**
+
+- move the default download dir to /tmp folder, so this database can be used in AWS Lambda.
 
 
 0.2.2 (2018-10-15)

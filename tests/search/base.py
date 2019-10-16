@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from uszipcode.search import SearchEngine
@@ -36,6 +35,18 @@ class TestSearchEngineBase(object):
     @classmethod
     def setup_class(cls):
         cls.search = SearchEngine(simple_zipcode=True)
+
+    @classmethod
+    def teardown_class(cls):
+        cls.search.close()
+
+
+class TestComplexSearchEngineBase(object):
+    search = None
+
+    @classmethod
+    def setup_class(cls):
+        cls.search = SearchEngine(simple_zipcode=False)
 
     @classmethod
     def teardown_class(cls):

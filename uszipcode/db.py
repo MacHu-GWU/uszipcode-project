@@ -23,6 +23,8 @@ except:
     from uszipcode.pkg.atomicwrites import atomic_write
     from uszipcode.pkg.sqlalchemy_mate import engine_creator
 
+SIMPLE_DB_FILE_DOWNOAD_URL = "https://datahub.io/machu-gwu/uszipcode-0.2.0-simple_db/r/simple_db.sqlite"
+DB_FILE_DOWNOAD_URL = "https://datahub.io/machu-gwu/uszipcode-0.2.0-db/r/db.sqlite"
 
 def get_simple_db_file_path(db_file_dir):
     return Path(db_file_dir, "simple_db.sqlite")
@@ -58,8 +60,8 @@ def connect_to_zipcode_db(db_file_dir):
         path=get_db_file_path(db_file_dir).abspath)
 
 
-def download_simple_db_file(db_file_dir):
-    simple_db_file_download_url = "https://datahub.io/machu-gwu/uszipcode-0.2.0-simple_db/r/simple_db.sqlite"
+def download_simple_db_file(db_file_dir, download_url=None):
+    simple_db_file_download_url = download_url if download_url else SIMPLE_DB_FILE_DOWNOAD_URL
 
     if not is_simple_db_file_exists(db_file_dir):
         print("Start downloading data for simple zipcode database, total size 9MB ...")
@@ -77,8 +79,9 @@ def download_simple_db_file(db_file_dir):
         print("  Complete!")
 
 
-def download_db_file(db_file_dir):
-    db_file_download_url = "https://datahub.io/machu-gwu/uszipcode-0.2.0-db/r/db.sqlite"
+def download_db_file(db_file_dir, download_url=None):
+    db_file_download_url = download_url if download_url else DB_FILE_DOWNOAD_URL
+
     if not is_db_file_exists(db_file_dir):
         print(
             "Start downloading data for rich info zipcode database, total size 450+MB ...")

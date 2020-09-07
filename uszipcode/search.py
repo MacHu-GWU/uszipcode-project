@@ -85,17 +85,17 @@ class SearchEngine(object):
     _state_to_city_mapper = None
     _city_to_state_mapper = None
 
-    def __init__(self, simple_zipcode=True, db_file_dir=HOME_USZIPCODE):
+    def __init__(self, simple_zipcode=True, db_file_dir=HOME_USZIPCODE, download_url=None):
         Path(db_file_dir).mkdir(exist_ok=True)
 
         if simple_zipcode:
             if not is_simple_db_file_exists(db_file_dir):
-                download_simple_db_file(db_file_dir)
+                download_simple_db_file(db_file_dir, download_url=download_url)
             engine = connect_to_simple_zipcode_db(db_file_dir)
             self.zip_klass = SimpleZipcode
         else:  # pragma: no cover
             if not is_db_file_exists(db_file_dir):
-                download_db_file(db_file_dir)
+                download_db_file(db_file_dir, download_url=download_url)
             engine = connect_to_zipcode_db(db_file_dir)
             self.zip_klass = Zipcode
         self.engine = engine

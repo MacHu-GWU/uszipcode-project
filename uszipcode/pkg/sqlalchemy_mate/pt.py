@@ -7,9 +7,9 @@ Pretty Table support.
 
 from sqlalchemy import select, Table
 from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.ext.declarative.api import DeclarativeMeta
+from sqlalchemy.orm import DeclarativeMeta
 from sqlalchemy.sql.selectable import Select
-from sqlalchemy.engine.result import ResultProxy
+from sqlalchemy.engine.result import Result
 
 try:
     from .utils import execute_query_return_result_proxy
@@ -34,7 +34,7 @@ def from_sql(sql, engine, limit=None):
     .. note::
 
         注意, from_db_cursor是从原生的数据库游标通过调用fetchall()方法来获取数据。
-        而sqlalchemy返回的是ResultProxy类。所以我们需要从中获取游标
+        而sqlalchemy返回的是Result类。所以我们需要从中获取游标
         至于为什么不能直接使用 from_db_cursor(engine.execute(sql).cursor) 的语法
         我也不知道为什么.
     """
@@ -144,7 +144,7 @@ def from_everything(everything, engine, limit=None):
     if isinstance(everything, Select):
         return from_sql(everything, engine, limit=limit)
 
-    if isinstance(everything, ResultProxy):
+    if isinstance(everything, Result):
         return from_resultproxy(everything)
 
     if isinstance(everything, list):

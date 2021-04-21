@@ -84,6 +84,9 @@ class TestSearchEngineQuery(TestSearchEngineBase):
             z.major_city == "Arlington"
             z.state_abbr == "VA"
 
+        res = self.search.by_city_and_state(city=None, state=None)
+        print(res)
+
     def test_edge_case(self):
         zipcode = self.search.by_zipcode(0)
         assert bool(zipcode) is False

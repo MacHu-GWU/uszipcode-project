@@ -8,6 +8,11 @@ import sys
 import math
 import heapq
 
+try:
+    import typing
+except:
+    pass
+
 import sqlalchemy as sa
 from collections import OrderedDict
 from sqlalchemy.orm import sessionmaker
@@ -33,10 +38,16 @@ DEFAULT_LIMIT = 5
 default number of results to return.
 """
 
-
 HOME = Path.home().abspath
 HOME_USZIPCODE = Path(HOME, ".uszipcode").abspath
 TMP = "/tmp"
+
+
+def ensure_string(name, value):
+    if value is None:
+        raise TypeError("'{}' argument can't be None!".format(name))
+    if not isinstance(value, string_types):
+        raise TypeError("'{}' argument has to be a string!".format(name))
 
 
 class SearchEngine(object):
@@ -197,8 +208,13 @@ class SearchEngine(object):
         """
         Fuzzy search correct state.
 
+        :type state: str
+
+        :type best_match: bool
         :param best_match: bool, when True, only the best matched state
             will be return. otherwise, will return all matching states.
+
+        :type min_similarity: int
         """
         result_state_short_list = list()
 
@@ -230,9 +246,14 @@ class SearchEngine(object):
         """
         Fuzzy search correct city.
 
+        :type city: str
         :param city: city name.
+
+        :type state: typing.Union[str, None]
         :param state: search city in specified state.
-        :param best_match: bool, when True, only the best matched city
+
+        :type best_match: bool
+        :param best_match: when True, only the best matched city
             will return. otherwise, will return all matching cities.
 
         **中文文档**
@@ -557,12 +578,20 @@ class SearchEngine(object):
         """
         Search zipcode by exact 5 digits zipcode. No zero padding is needed.
 
+        :type zipcode: typing.Union[str, int]
         :param zipcode: int or str, the zipcode will be automatically
             zero padding to 5 digits.
-        :param zipcode_type: str or :class`~uszipcode.model.ZipcodeType` attribute.
+
+        :type zipcode_type: str
+        :param zipcode_type: a :class`~uszipcode.model.ZipcodeType` attribute.
             by default, it returns any zipcode type.
-        :param zero_padding: bool, toggle on and off automatic zero padding.
+
+        :type zero_padding: bool
+        :param zero_padding: toggle on and off automatic zero padding.
         """
+        if zipcode is None:
+            raise TypeError("'zipcode' argument can't be None")
+
         if zero_padding:
             zipcode = str(zipcode).zfill(5)
         else:  # pragma: no cover
@@ -589,6 +618,12 @@ class SearchEngine(object):
         Search zipcode information by first N digits.
 
         Returns multiple results.
+
+        :type prefix: str
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             prefix=prefix,
@@ -606,6 +641,12 @@ class SearchEngine(object):
         Search zipcode by wildcard.
 
         Returns multiple results.
+
+        :type pattern: str
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             pattern=pattern,
@@ -623,7 +664,14 @@ class SearchEngine(object):
         Search zipcode information by fuzzy City name.
 
         My engine use fuzzy match and guess what is the city you want.
+
+        :type city: str
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
+        ensure_string("city", city)
         return self.query(
             city=city,
             sort_by=sort_by, zipcode_type=zipcode_type,
@@ -640,7 +688,14 @@ class SearchEngine(object):
         Search zipcode information by fuzzy State name.
 
         My engine use fuzzy match and guess what is the state you want.
+
+        :type state: str
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
+        ensure_string("state", state)
         return self.query(
             state=state,
             sort_by=sort_by, zipcode_type=zipcode_type,
@@ -658,7 +713,16 @@ class SearchEngine(object):
         Search zipcode information by fuzzy city and state name.
 
         My engine use fuzzy match and guess what is the state you want.
+
+        :type city: str
+        :type state: str
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
+        ensure_string("city", city)
+        ensure_string("state", state)
         return self.query(
             city=city,
             state=state,
@@ -679,9 +743,20 @@ class SearchEngine(object):
 
         Returns multiple results.
 
+        :type lat: float
         :param lat: center latitude.
+
+        :type lng: float
         :param lng: center longitude.
+
+        :type radius: float
         :param radius: only returns zipcode within X miles from ``lat``, ``lng``.
+
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
+
 
         **中文文档**
 
@@ -706,6 +781,13 @@ class SearchEngine(object):
                       returns=DEFAULT_LIMIT):
         """
         Search zipcode information by population range.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             population_lower=lower,
@@ -725,6 +807,13 @@ class SearchEngine(object):
         Search zipcode information by population density range.
 
         `population density` is `population per square miles on land`
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             population_density_lower=lower,
@@ -742,6 +831,13 @@ class SearchEngine(object):
                              returns=DEFAULT_LIMIT):
         """
         Search zipcode information by land area / sq miles range.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             land_area_in_sqmi_lower=lower,
@@ -759,6 +855,13 @@ class SearchEngine(object):
                               returns=DEFAULT_LIMIT):
         """
         Search zipcode information by water area / sq miles range.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             water_area_in_sqmi_lower=lower,
@@ -776,6 +879,13 @@ class SearchEngine(object):
                          returns=DEFAULT_LIMIT):
         """
         Search zipcode information by house of units.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             housing_units_lower=lower,
@@ -793,6 +903,13 @@ class SearchEngine(object):
                                   returns=DEFAULT_LIMIT):
         """
         Search zipcode information by occupied house of units.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             occupied_housing_units_lower=lower,
@@ -810,6 +927,13 @@ class SearchEngine(object):
                              returns=DEFAULT_LIMIT):
         """
         Search zipcode information by median home value.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             median_home_value_lower=lower,
@@ -827,6 +951,13 @@ class SearchEngine(object):
                                    returns=DEFAULT_LIMIT):
         """
         Search zipcode information by median household income.
+
+        :type lower: typing.Union[int, float]
+        :type upper: typing.Union[int, float]
+        :type zipcode_type: str
+        :type sort_by: str
+        :type ascending: bool
+        :type returns: int
         """
         return self.query(
             median_household_income_lower=lower,
@@ -836,9 +967,23 @@ class SearchEngine(object):
         )
 
     def inspect_raw_data(self, zipcode):
+        """
+        :type zipcode: typing.Union[str, int]
+
+        :rtype: dict
+        """
         sql = "SELECT * FROM {} WHERE zipcode = '{}'".format(
             self.zip_klass.__tablename__,
             zipcode,
         )
         stmt = sa.text(sql)
         return dict(self.engine.execute(stmt).fetchone())
+
+    def all(self,
+            zipcode_type=ZipcodeType.Standard,
+            sort_by=SimpleZipcode.zipcode.name,
+            ascending=True,
+            returns=DEFAULT_LIMIT):
+        return self.query(
+            returns=returns
+        )

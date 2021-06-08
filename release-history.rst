@@ -1,21 +1,45 @@
-.. _changelog:
+.. _release_history:
 
 Release and Version History
 ==============================================================================
 
 
-0.2.5 (TODO)
+0.2.7 (TODO)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Features and Improvements**
-
-- Get lat lng and more geo info from Google Geocoding API for **Unique** and **PO Box** zipcode.
-- Allow user to dump the data to any relational database easily and use self-hosted database to query.
 
 **Minor Improvements**
 
 **Bugfixes**
 
 **Miscellaneous**
+
+
+0.2.6 (2021-06-07)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Features and Improvements**
+
+- Allow developer to use different download url in ``SearchEngine(..., download_url="your-own-download-url")``. So developer can upload the db file to a private file host server.
+- Allow developer to use different database backend like mysql, postgres, oracle, mssql in ``SearchEngine(..., engine=custome_sqlachemy_engine)``. So developer can dump the sqlite to csv and load it to any database you want to use.
+
+**Minor Improvements**
+
+- rehost the database file on GitHub
+
+**Bugfixes**
+
+**Miscellaneous**
+
+- Drop support < Python3.6, only support 3.6+
+
+
+0.2.5 (2021-04-20)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Bugfixes**
+
+- fix compability issue with sqlachemy>=1.4.X
 
 
 0.2.4 (2019-10-16)

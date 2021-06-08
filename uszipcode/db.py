@@ -13,7 +13,6 @@ The dataset for ``uszipcode`` is from multiple source, and integrated by Sanhe H
 from __future__ import print_function
 
 import requests
-
 from pathlib_mate import PathCls as Path
 
 try:
@@ -23,8 +22,9 @@ except:
     from uszipcode.pkg.atomicwrites import atomic_write
     from uszipcode.pkg.sqlalchemy_mate import engine_creator
 
-SIMPLE_DB_FILE_DOWNOAD_URL = "https://datahub.io/machu-gwu/uszipcode-0.2.0-simple_db/r/simple_db.sqlite"
-DB_FILE_DOWNOAD_URL = "https://datahub.io/machu-gwu/uszipcode-0.2.0-db/r/db.sqlite"
+SIMPLE_DB_FILE_DOWNOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/0.2.6-db-file/simple_db.sqlite"
+DB_FILE_DOWNOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/0.2.6-db-file/db.sqlite"
+
 
 def get_simple_db_file_path(db_file_dir):
     return Path(db_file_dir, "simple_db.sqlite")

@@ -7,9 +7,15 @@ Pretty Table support.
 
 from sqlalchemy import select, Table
 from sqlalchemy.orm import sessionmaker, Query
-from sqlalchemy.orm import DeclarativeMeta
+try:
+    from sqlalchemy.orm import DeclarativeMeta
+except: # for sqlalchemy<1.4 compatibility
+    from sqlalchemy.ext.declarative.api import DeclarativeMeta
 from sqlalchemy.sql.selectable import Select
-from sqlalchemy.engine.result import Result
+try:
+    from sqlalchemy.engine.result import Result
+except:  # for sqlalchemy<1.4 compatibility
+    from sqlalchemy.engine.result import ResultProxy as Result
 
 try:
     from .utils import execute_query_return_result_proxy
@@ -105,7 +111,7 @@ def from_object(orm_class, engine, limit=None):
     return from_db_cursor(result_proxy.cursor)
 
 
-def from_resultproxy(result_proxy):
+def from_resultproxy(result_proxy: Result):
     """
     Construct a Prettytable from ``ResultProxy``.
 

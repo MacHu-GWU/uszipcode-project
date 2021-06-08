@@ -253,7 +253,7 @@ Rich search methods are provided for getting zipcode in the way you want.
 .. code-block:: python
 
     # Looking for Chicago and IL, but entered wrong spelling.
-    >>> res = search.by_city_and_state("cicago", "il")
+    >>> res = search.by_city_and_state("cicago", "il", returns=999) # only returns first 999 results
     >>> len(res) # 56 zipcodes in Chicago
     56
     >>> zipcode = res[0]
@@ -276,14 +276,37 @@ You can **easily sort your results** by any field, or distance from a coordinate
 Deploy Uszipcode as a Web Service
 ------------------------------------------------------------------------------
 
-If you want to build a private uszipcode API server you have two choice:
+I collect lots of feedback from organization user that people want to host the database file privately. And people may love to use different rdbms backend like mysql or psql. From ``0.2.6``, this is easy.
+
+**Host the database file privately**:
+
+1. download db file from https://github.com/MacHu-GWU/uszipcode-project/releases/tag/0.2.6-db-file
+2. reupload it to your private storage.
+3. use ``download_url`` parameter:
+
+.. code-block:: python
+
+    search = SearchEngine(download_url="your-private-host")
+
+**Use different RDBMS backend**:
+
+1. Let's use MySQL as example.
+2. Download db file.
+3. use `DBeaver <https://dbeaver.io/>`_ to connect to both sqlite and mysql.
+4. dump sqlite as csv and load it to mysql.
+5. use ``engine`` parameter
+
+.. code-block:: python
+
+    from uszipcode.pkg.sqlalchemy_mate import engine_creator
+
+    engine = create_postgresql(username, password, host, port, database)
+    search = SearchEngine(engine=engine)
+
+**Deploy uszipcode as Web API**:
 
 1. Use a VM like EC2 machine, and deploy a web api server with the machine.
 2. (RECOMMEND) Dump the sqlite database to any relational database like Postgres, MySQL, and inject the database connection info in your application server.
-
-In the feature release, I will provide an easy way that allow you to deploy uszipcode as a private web api service.
-
-Thank you.
 
 
 .. _install:

@@ -4,15 +4,15 @@
 This module allows developer to query zipcode with super clean API.
 """
 
-import sys
-import math
 import heapq
+import math
+import sys
+from collections import OrderedDict
 
 import sqlalchemy as sa
-from collections import OrderedDict
-from sqlalchemy.orm import sessionmaker
-from six import integer_types, string_types
 from pathlib_mate import Path
+from six import integer_types, string_types
+from sqlalchemy.orm import sessionmaker
 
 from .db import (
     is_simple_db_file_exists, is_db_file_exists,
@@ -20,8 +20,8 @@ from .db import (
     download_simple_db_file, download_db_file
 )
 from .model import SimpleZipcode, Zipcode, ZipcodeType
-from .state_abbr import STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT
 from .pkg.fuzzywuzzy.process import extract, extractOne
+from .state_abbr import STATE_ABBR_SHORT_TO_LONG, STATE_ABBR_LONG_TO_SHORT
 
 SORT_BY_DIST = "dist"
 """
@@ -33,10 +33,8 @@ DEFAULT_LIMIT = 5
 default number of results to return.
 """
 
-
 HOME = Path.home().abspath
 HOME_USZIPCODE = Path(HOME, ".uszipcode").abspath
-TMP = "/tmp"
 
 
 class SearchEngine(object):
@@ -49,7 +47,17 @@ class SearchEngine(object):
         available. If False, use the rich info database.
 
     :type db_file_dir: str
-    :param db_file_dir: where you want to download the sqlite database to.
+    :param db_file_dir: where you want to download the sqlite database to. This
+        property allows you to customize where you want to store the data file
+        locally. by default it is ${HOME}/.uszipcode
+
+    :type download_url: str
+    :param download_url: where you want to download the sqlite database file from.
+        This property allows you to upload the .sqlite file to your private file
+        host and download from it. In case the default download url fail.
+
+    :param engine: a sqlachemy engine object. It allows you to use any
+        backend database.
 
     Usage::
 
@@ -85,19 +93,25 @@ class SearchEngine(object):
     _state_to_city_mapper = None
     _city_to_state_mapper = None
 
-    def __init__(self, simple_zipcode=True, db_file_dir=HOME_USZIPCODE, download_url=None):
+    def __init__(self,
+                 simple_zipcode=True,
+                 db_file_dir=HOME_USZIPCODE,
+                 download_url=None,
+                 engine=None):
         Path(db_file_dir).mkdir(exist_ok=True)
 
-        if simple_zipcode:
-            if not is_simple_db_file_exists(db_file_dir):
-                download_simple_db_file(db_file_dir, download_url=download_url)
-            engine = connect_to_simple_zipcode_db(db_file_dir)
-            self.zip_klass = SimpleZipcode
-        else:  # pragma: no cover
-            if not is_db_file_exists(db_file_dir):
-                download_db_file(db_file_dir, download_url=download_url)
-            engine = connect_to_zipcode_db(db_file_dir)
-            self.zip_klass = Zipcode
+        if engine is None:
+            if simple_zipcode:
+                if not is_simple_db_file_exists(db_file_dir):
+                    download_simple_db_file(db_file_dir, download_url=download_url)
+                engine = connect_to_simple_zipcode_db(db_file_dir)
+                self.zip_klass = SimpleZipcode
+            else:  # pragma: no cover
+                if not is_db_file_exists(db_file_dir):
+                    download_db_file(db_file_dir, download_url=download_url)
+                engine = connect_to_zipcode_db(db_file_dir)
+                self.zip_klass = Zipcode
+
         self.engine = engine
         self.ses = sessionmaker(bind=engine)()
 

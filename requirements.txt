@@ -1,4 +1,4 @@
 attrs
-SQLAlchemy>=1.4.0
+SQLAlchemy
 pathlib_mate
 requests

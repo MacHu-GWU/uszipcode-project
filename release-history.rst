@@ -14,6 +14,8 @@ Release and Version History
 
 **Miscellaneous**
 
+- Update PyPI classifiers to reflect supported Python versions (3.6 through 3.9)
+
 
 0.2.6 (2021-06-07)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

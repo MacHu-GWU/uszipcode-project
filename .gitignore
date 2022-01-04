@@ -2,8 +2,8 @@
 uszipcode_venv/
 uszipcode.egg-info/
 uszipcode-*/
+tmp/
 
-playground/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -92,8 +92,6 @@ celerybeat-schedule
 venv/
 ENV/
 
-
-
 # Spyder project settings
 .spyderproject
 
@@ -150,4 +148,3 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-.vscode/settings.json

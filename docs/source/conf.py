@@ -244,8 +244,3 @@ docfly.ApiReferenceDoc(
         "%s.tests" % package_name,
     ]
 ).fly()
-
-
-def setup(app):
-    app.add_stylesheet('css/custom-style.css')
-    app.add_javascript('js/sorttable.js')

@@ -1,9 +1,13 @@
 
-.. image:: https://travis-ci.org/MacHu-GWU/uszipcode-project.svg?branch=master
-    :target: https://travis-ci.org/MacHu-GWU/uszipcode-project?branch=master
+.. image:: https://github.com/MacHu-GWU/uszipcode-project/workflows/CI/badge.svg
+    :target: https://github.com/MacHu-GWU/uszipcode-project/actions?query=workflow:CI
 
 .. image:: https://codecov.io/gh/MacHu-GWU/uszipcode-project/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/MacHu-GWU/uszipcode-project
+
+.. image:: https://readthedocs.org/projects/uszipcode/badge/?version=latest
+    :target: https://uszipcode.readthedocs.io/?badge=latest
+    :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/v/uszipcode.svg
     :target: https://pypi.python.org/pypi/uszipcode
@@ -21,13 +25,13 @@
 
 
 .. image:: https://img.shields.io/badge/Link-Document-blue.svg
-    :target: http://uszipcode.my-docs.com/index.html
+    :target: https://uszipcode.readthedocs.io/index.html
 
 .. image:: https://img.shields.io/badge/Link-API-blue.svg
-    :target: http://uszipcode.my-docs.com/py-modindex.html
+    :target: https://uszipcode.readthedocs.io/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Source_Code-blue.svg
-    :target: http://uszipcode.my-docs.com/py-modindex.html
+    :target: https://uszipcode.readthedocs.io/py-modindex.html
 
 .. image:: https://img.shields.io/badge/Link-Install-blue.svg
     :target: `install`_

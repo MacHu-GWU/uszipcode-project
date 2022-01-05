@@ -10,7 +10,7 @@ PASSWORD = "yFTFNgn%vMPQcQGjmU8DxmQt3@b7iB5P"
 
 class TestSearchEngine(SearchEngineBaseTest):
     search = SearchEngine(
-        simple_or_comprehensive=SearchEngine.SimpleOrComprehensiveArgEnum.comprehensive,
+        simple_or_comprehensive=SearchEngine.SimpleOrComprehensiveArgEnum.simple,
     )
 
     def test_cached_data(self):

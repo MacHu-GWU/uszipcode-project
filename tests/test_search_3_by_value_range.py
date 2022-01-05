@@ -7,7 +7,7 @@ from uszipcode.search import SearchEngine, ComprehensiveZipcode as Zipcode
 
 class TestSearchEngine(SearchEngineBaseTest):
     search = SearchEngine(
-        simple_or_comprehensive=SearchEngine.SimpleOrComprehensiveArgEnum.comprehensive,
+        simple_or_comprehensive=SearchEngine.SimpleOrComprehensiveArgEnum.simple,
     )
 
     def test_by_range(self):

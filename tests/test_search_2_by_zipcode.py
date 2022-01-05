@@ -2,12 +2,12 @@
 
 import pytest
 from uszipcode.tests import SearchEngineBaseTest
-from uszipcode.search import SearchEngine, SimpleZipcode, ComprehensiveZipcode
+from uszipcode.search import SearchEngine
 
 
 class TestSearchEngineQuery(SearchEngineBaseTest):
     search = SearchEngine(
-        simple_or_comprehensive=SearchEngine.SimpleOrComprehensiveArgEnum.comprehensive
+        simple_or_comprehensive=SearchEngine.SimpleOrComprehensiveArgEnum.simple
     )
 
     def test_by_zipcode(self):

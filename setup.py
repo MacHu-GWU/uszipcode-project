@@ -71,8 +71,10 @@ if __name__ == "__main__":
     # It's a directory style package
     if os.path.exists(__file__[:-8] + PKG_NAME):
         # Include all sub packages in package directory
-        PACKAGES = [PKG_NAME] + ["%s.%s" % (PKG_NAME, i)
-                                 for i in find_packages(PKG_NAME)]
+        PACKAGES = [PKG_NAME] + [
+            "%s.%s" % (PKG_NAME, i)
+            for i in find_packages(PKG_NAME)
+        ]
 
         # Include everything in package directory
         INCLUDE_PACKAGE_DATA = True
@@ -118,15 +120,16 @@ if __name__ == "__main__":
         "Operating System :: MacOS",
         "Operating System :: Unix",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ]
     """
     Full list can be found at: https://pypi.python.org/pypi?%3Aaction=list_classifiers
     """
-
 
     def read_requirements_file(path):
         """
@@ -159,7 +162,7 @@ if __name__ == "__main__":
     try:
         EXTRA_REQUIRE["docs"] = read_requirements_file("requirements-doc.txt")
     except:
-        print("'requirements-test.txt' not found!")
+        print("'requirements-doc.txt' not found!")
 
     setup(
         name=PKG_NAME,
@@ -186,54 +189,57 @@ if __name__ == "__main__":
 """
 Appendix
 --------
-::
+Frequent used classifiers List::
 
-Frequent used classifiers List = [
-    "Development Status :: 1 - Planning",
-    "Development Status :: 2 - Pre-Alpha",
-    "Development Status :: 3 - Alpha",
-    "Development Status :: 4 - Beta",
-    "Development Status :: 5 - Production/Stable",
-    "Development Status :: 6 - Mature",
-    "Development Status :: 7 - Inactive",
-
-    "Intended Audience :: Customer Service",
-    "Intended Audience :: Developers",
-    "Intended Audience :: Education",
-    "Intended Audience :: End Users/Desktop",
-    "Intended Audience :: Financial and Insurance Industry",
-    "Intended Audience :: Healthcare Industry",
-    "Intended Audience :: Information Technology",
-    "Intended Audience :: Legal Industry",
-    "Intended Audience :: Manufacturing",
-    "Intended Audience :: Other Audience",
-    "Intended Audience :: Religion",
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: System Administrators",
-    "Intended Audience :: Telecommunications Industry",
-
-    "License :: OSI Approved :: MIT License",
-    "License :: OSI Approved :: BSD License",
-    "License :: OSI Approved :: Apache Software License",
-    "License :: OSI Approved :: GNU General Public License (GPL)",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
-
-    "Natural Language :: English",
-    "Natural Language :: Chinese (Simplified)",
-
-    "Operating System :: Microsoft :: Windows",
-    "Operating System :: MacOS",
-    "Operating System :: Unix",
-
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 2",
-    "Programming Language :: Python :: 2.7",
-    "Programming Language :: Python :: 2 :: Only",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.4",
-    "Programming Language :: Python :: 3.5",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3 :: Only",
-]
+    [
+        "Development Status :: 1 - Planning",
+        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 6 - Mature",
+        "Development Status :: 7 - Inactive",
+    
+        "Intended Audience :: Customer Service",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Education",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Financial and Insurance Industry",
+        "Intended Audience :: Healthcare Industry",
+        "Intended Audience :: Information Technology",
+        "Intended Audience :: Legal Industry",
+        "Intended Audience :: Manufacturing",
+        "Intended Audience :: Other Audience",
+        "Intended Audience :: Religion",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: System Administrators",
+        "Intended Audience :: Telecommunications Industry",
+    
+        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: BSD License",
+        "License :: OSI Approved :: Apache Software License",
+        "License :: OSI Approved :: GNU General Public License (GPL)",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    
+        "Natural Language :: English",
+        "Natural Language :: Chinese (Simplified)",
+    
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: MacOS",
+        "Operating System :: Unix",
+    
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 2 :: Only",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3 :: Only",
+    ]
 """

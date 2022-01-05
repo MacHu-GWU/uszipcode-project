@@ -10,98 +10,40 @@ The dataset for ``uszipcode`` is from multiple source, and integrated by Sanhe H
 - 2015-10-01 geometry google map geocoding data from http://maps.google.com
 """
 
-from __future__ import print_function
-
 import requests
-from pathlib_mate import PathCls as Path
+from pathlib_mate import Path
+from pathlib_mate.helper import repr_data_size
+from atomicwrites import atomic_write
+import sqlalchemy_mate as sam
 
-try:
-    from .pkg.atomicwrites import atomic_write
-    from .pkg.sqlalchemy_mate import engine_creator
-except:
-    from uszipcode.pkg.atomicwrites import atomic_write
-    from uszipcode.pkg.sqlalchemy_mate import engine_creator
+SIMPLE_DB_FILE_DOWNLOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/simple_db.sqlite"
+COMPREHENSIVE_DB_FILE_DOWNLOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/comprehensive_db.sqlite"
 
-SIMPLE_DB_FILE_DOWNOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/0.2.6-db-file/simple_db.sqlite"
-DB_FILE_DOWNOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/0.2.6-db-file/db.sqlite"
-
-
-def get_simple_db_file_path(db_file_dir):
-    return Path(db_file_dir, "simple_db.sqlite")
+USZIPCODE_HOME = Path(Path.home(), ".uszipcode")
+DEFAULT_SIMPLE_DB_FILE_PATH = Path(USZIPCODE_HOME, "simple_db.sqlite")
+DEFAULT_COMPREHENSIVE_DB_FILE_PATH = Path(USZIPCODE_HOME, "comprehensive_db.sqlite")
 
 
-def get_db_file_path(db_file_dir):
-    return Path(db_file_dir, "db.sqlite")
+def download_db_file(
+    db_file_path: str,
+    download_url: str,
+    chunk_size: int,
+    progress_size: int,
+):
+    Path(db_file_path).parent.mkdir(parents=True, exist_ok=True)
 
+    print(f"Download {db_file_path} from {download_url} ...")
+    response = requests.get(download_url, stream=True)
 
-def is_simple_db_file_exists(db_file_dir):
-    simple_db_file_path = get_simple_db_file_path(db_file_dir)
-    if simple_db_file_path.exists():
-        if simple_db_file_path.size >= 5 * 1000 * 1000:
-            return True
-    return False
-
-
-def is_db_file_exists(db_file_dir):
-    db_file_path = get_db_file_path(db_file_dir)
-    if db_file_path.exists():
-        if db_file_path.size >= 100 * 1000 * 1000:
-            return True
-    return False
-
-
-def connect_to_simple_zipcode_db(db_file_dir):
-    return engine_creator.create_sqlite(
-        path=get_simple_db_file_path(db_file_dir).abspath)
-
-
-def connect_to_zipcode_db(db_file_dir):
-    return engine_creator.create_sqlite(
-        path=get_db_file_path(db_file_dir).abspath)
-
-
-def download_simple_db_file(db_file_dir, download_url=None):
-    simple_db_file_download_url = download_url if download_url else SIMPLE_DB_FILE_DOWNOAD_URL
-
-    if not is_simple_db_file_exists(db_file_dir):
-        print("Start downloading data for simple zipcode database, total size 9MB ...")
-        response = requests.get(simple_db_file_download_url, stream=True)
-        chunk_size = 1 * 1024 ** 2
-
-        counter = 0
-        with atomic_write(get_simple_db_file_path(db_file_dir).abspath, mode="wb", overwrite=True) as f:
-            for chunk in response.iter_content(chunk_size):
-                if not chunk:
-                    break
-                f.write(chunk)
-                counter += 1
-                print("  %s MB finished ..." % counter)
-        print("  Complete!")
-
-
-def download_db_file(db_file_dir, download_url=None):
-    db_file_download_url = download_url if download_url else DB_FILE_DOWNOAD_URL
-
-    if not is_db_file_exists(db_file_dir):
-        print(
-            "Start downloading data for rich info zipcode database, total size 450+MB ...")
-        response = requests.get(db_file_download_url, stream=True)
-        chunk_size = 10 * 1024 ** 2
-
-        counter = 0
-        with atomic_write(get_db_file_path(db_file_dir).abspath, mode="wb", overwrite=True) as f:
-            for chunk in response.iter_content(chunk_size):
-                if not chunk:
-                    break
-                f.write(chunk)
-                counter += 10
-                print("  %s MB finished ..." % counter)
-        print("  Complete!")
-
-
-if __name__ == "__main__":
-    """
-    """
-    # print(is_simple_db_file_exists())
-    # print(is_db_file_exists())
-    # download_db_file()
+    downloaded_size = 0
+    next_log_threshold = progress_size
+    with atomic_write(db_file_path, mode="wb", overwrite=True) as f:
+        for chunk in response.iter_content(chunk_size):
+            if not chunk:
+                break
+            f.write(chunk)
+            downloaded_size += chunk_size
+            if downloaded_size >= next_log_threshold:
+                print("  {} downloaded ...".format(repr_data_size(downloaded_size)))
+                next_log_threshold += progress_size
+    print("  Complete!")

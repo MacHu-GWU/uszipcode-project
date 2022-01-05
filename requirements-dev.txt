@@ -1,8 +1,4 @@
-pathlib_mate
-twine>=1.13.0   # make distribution archive
-wheel>=0.33.1   # make pre-compiled distribution package
-pandas
-geopy
-sfm==0.0.16
-dataIO==0.0.5
-superjson==0.0.9
+# This requirements file should only include dependencies for development
+twine                                   # make distribution archive
+wheel                                   # make pre-compiled distribution package
+python-Levenshtein

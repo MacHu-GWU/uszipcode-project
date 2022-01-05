@@ -1,6 +1,6 @@
 The MIT License (MIT)
 
-Copyright 2015 - 2019 Sanhe Hu <https://github.com/MacHu-GWU/uszipcode-project>
+Copyright 2021 Sanhe Hu <https://github.com/MacHu-GWU/uszipcode-project>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

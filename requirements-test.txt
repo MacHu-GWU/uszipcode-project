@@ -1,4 +1,3 @@
-# dependencies for test
-pytest==3.2.3       # test framework
-pytest-cov==2.5.1   # coverage test
-python-Levenshtein
+# This requirements file should only include dependencies for testing
+pytest                                  # test framework
+pytest-cov                              # coverage test

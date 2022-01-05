@@ -1,16 +1,15 @@
-sphinx==1.8.1
-
-# Theme
-
-sphinx_rtd_theme
+# This requirements file should only include dependencies for documentations
+# sphinx doc builder
+sphinx==4.3.0
 
 # Extensions
+sphinx-inline-tabs==2021.8.17b10        # allow inline tab
+sphinx-jinja==1.1.1                     # allow jinja2 template
+sphinx-copybutton==0.4.0                # add copy to clipboard button for code block
+rstobj==0.0.7                           # generate list table from data
 
-sphinx-jinja        # allow jinja2 template
-sphinx-copybutton   # add copy to clipboard button for code block
-docfly>=0.0.17      # auto API manual, auto Table of Content
-rstobj>=0.0.5       # generate list table from data
+# docfly                                # auto API manual, auto Table of Content
+docfly==1.0.2                           # sphinx-doc automation
 
-# Other
-
-pygments            # live RestructuredText preview
+# Theme
+furo==2021.8.31                         # modern doc theme

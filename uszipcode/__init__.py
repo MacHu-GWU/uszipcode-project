@@ -1,23 +1,14 @@
 # -*- coding: utf-8 -*-
 
 """
-``uszipcode`` is awesome!
+Yet the best united state zipcode programming database in Python.
 """
-
-from __future__ import print_function
-
-try:
-    from .search import (
-        SearchEngine, SimpleZipcode, Zipcode, ZipcodeType, SORT_BY_DIST,
-    )
-except Exception as e:  # pragma: no cover
-    print(e)
 
 
 from ._version import __version__
 
 __short_description__ = ("USA zipcode programmable database, includes "
-                         "up-to-date census and geometry information.")
+                         "2020 census data and geometry information.")
 __license__ = "MIT"
 __author__ = "Sanhe Hu"
 __author_email__ = "husanhe@gmail.com"

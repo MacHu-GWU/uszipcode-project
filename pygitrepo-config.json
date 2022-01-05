@@ -1,0 +1,34 @@
+{
+    // the python package name, use lowercase, digits, and underscore only
+    // this would be the name for ``pip install ${package_name}``
+    "PACKAGE_NAME": "uszipcode",
+    // the python major version you use for local development
+    "DEV_PY_VER_MAJOR": "3",
+    // the python minor version you use for local development
+    "DEV_PY_VER_MINOR": "8",
+    // the python micro version you use for local development
+    "DEV_PY_VER_MICRO": "11",
+
+    // if you use readthedocs.org to host your document website
+    // it is the project name in your document website domain
+    // https://${DOC_HOST_RTD_PROJECT_NAME}.readthedocs.io/
+    "DOC_HOST_RTD_PROJECT_NAME": "",
+
+    // if you use AWS S3 to host your document website
+    // it is the aws profile you use for doc site deployment
+    // leave empty string "" if you don't use it
+    "DOC_HOST_AWS_PROFILE": "",
+    // it is the aws s3 bucket you use to store you document files
+    "DOC_HOST_S3_BUCKET": "",
+
+    // if it is an AWS Lambda microservice project
+    // it is the aws profile you use for deployment
+    "AWS_LAMBDA_DEPLOY_AWS_PROFILE": "",
+    // it is the aws s3 bucket to store deployment artifacts
+    "AWS_LAMBDA_DEPLOY_S3_BUCKET": "",
+    // it is the docker image for AWS Lambda layer build on your local machine
+    "AWS_LAMBDA_BUILD_DOCKER_IMAGE": "",
+    // it is the working directory for temp lambda layer build in docker image
+    "AWS_LAMBDA_BUILD_DOCKER_IMAGE_WORKSPACE_DIR": ""
+}
+

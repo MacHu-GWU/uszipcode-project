@@ -4,7 +4,7 @@
 State short name and long name mapping.
 """
 
-STATE_ABBR_SHORT_TO_LONG = {
+MAPPER_STATE_ABBR_SHORT_TO_LONG = {
     "AK": "Alaska",
     "AL": "Alabama",
     "AR": "Arkansas",
@@ -61,7 +61,7 @@ STATE_ABBR_SHORT_TO_LONG = {
     "WY": "Wyoming",
 }
 
-STATE_ABBR_LONG_TO_SHORT = {
+MAPPER_STATE_ABBR_LONG_TO_SHORT = {
     long: short
-    for short, long in STATE_ABBR_SHORT_TO_LONG.items()
+    for short, long in MAPPER_STATE_ABBR_SHORT_TO_LONG.items()
 }

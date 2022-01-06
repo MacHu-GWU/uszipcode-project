@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from pytest import raises, approx
 
 
 def test():
     import uszipcode
-    pass
+
+    _ = uszipcode.SearchEngine
+    _ = uszipcode.SimpleZipcode
+    _ = uszipcode.ComprehensiveZipcode
+    _ = uszipcode.ZipcodeTypeEnum
+    _ = uszipcode.SORT_BY_DIST
 
 
 if __name__ == "__main__":

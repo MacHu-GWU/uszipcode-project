@@ -26,7 +26,8 @@ Release and Version History
 
 **Minor Improvements**
 
-- Fully adopt type hint
+- Fully adopt type hint.
+- Update docs and theme.
 
 **Bugfixes**
 
@@ -69,13 +70,6 @@ Release and Version History
 **Features and Improvements**
 
 - Now you can use ``SearchEngine(..., db_file_dir="/tmp")`` to specify where you want to put your database. By default it is ``${HOME}/.uszipcode``.
-
-**Minor Improvements**
-
-**Bugfixes**
-
-**Miscellaneous**
-
 
 0.2.3 (2019-10-07)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

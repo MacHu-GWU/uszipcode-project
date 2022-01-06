@@ -12,6 +12,7 @@ import typing
 from collections import OrderedDict
 
 import sqlalchemy as sa
+from sqlalchemy.engine import Engine
 import sqlalchemy.orm as orm
 import sqlalchemy_mate as sam
 from pathlib_mate import Path
@@ -67,23 +68,26 @@ class SearchEngine(object):
     """
     Zipcode Search Engine.
 
-    :type simple_zipcode: bool
-    :param simple_zipcode: default True, if True, use the simple zipcode
-        db. Rich Demographics, Real Estate, Employment, Education info is not
-        available. If False, use the rich info database.
+    :type simple_or_comprehensive: SearchEngine.SimpleOrComprehensiveArgEnum
+    :param simple_or_comprehensive: default SearchEngine.SimpleOrComprehensiveArgEnum,
+        use the simple zipcode db. Rich Demographics, Real Estate, Employment,
+        Education info are not available. if
+        SearchEngine.SimpleOrComprehensiveArgEnum.comprehensive,
+        use the rich info database.
 
-    :type db_file_dir: str
-    :param db_file_dir: where you want to download the sqlite database to. This
+    :type db_file_path: str
+    :param db_file_path: where you want to download the sqlite database to. This
         property allows you to customize where you want to store the data file
-        locally. by default it is ${HOME}/.uszipcode
+        locally. by default it is ${HOME}/.uszipcode/...
 
     :type download_url: str
     :param download_url: where you want to download the sqlite database file from.
         This property allows you to upload the .sqlite file to your private file
         host and download from it. In case the default download url fail.
 
+    :type engine: Engine
     :param engine: a sqlachemy engine object. It allows you to use any
-        backend database.
+        backend database instead of the default sqlite database.
 
     Usage::
 
@@ -104,7 +108,7 @@ class SearchEngine(object):
 
         >>> from uszipcode import SearchEngine, SimpleZipcode, ComprehensiveZipcode
         >>> search = SearchEngine()
-        >>> search.ses.query(SimpleZipcode).filter(SimpleZipcode.zipcode=="10001")
+        >>> search.ses.scalar(SimpleZipcode).filter(SimpleZipcode.zipcode=="10001")
 
     .. note::
 
@@ -128,8 +132,9 @@ class SearchEngine(object):
     def __init__(
         self,
         simple_or_comprehensive: SimpleOrComprehensiveArgEnum = SimpleOrComprehensiveArgEnum.simple,
-        db_file_path: str = None,
-        download_url: str = None,
+        db_file_path: typing.Union[str, None] = None,
+        download_url: typing.Union[str, None] = None,
+        engine: Engine = None,
     ):
         validate_enum_arg(
             self.SimpleOrComprehensiveArgEnum,
@@ -138,9 +143,18 @@ class SearchEngine(object):
         )
         self.simple_or_comprehensive = simple_or_comprehensive
 
-        self.db_file_path: str = db_file_path
-        self.download_url: str = download_url
-        self._download_db_file_if_not_exists()
+        if isinstance(engine, Engine):
+            self.db_file_path = None
+            self.download_url = None
+            self.engine = engine
+        else:
+            self.db_file_path = db_file_path
+            self.download_url = download_url
+            self._download_db_file_if_not_exists()
+            self.engine = sam.EngineCreator().create_sqlite(path=self.db_file_path)
+        self.eng = self.engine
+        self.session = orm.Session(self.engine)
+        self.ses = self.session
 
         self.zip_klass: typing.Union[SimpleZipcode, ComprehensiveZipcode]
         if self.simple_or_comprehensive is self.SimpleOrComprehensiveArgEnum.simple:
@@ -169,10 +183,6 @@ class SearchEngine(object):
                     chunk_size=1024 * 1024,
                     progress_size=50 * 1024 * 1024,
                 )
-        self.engine = sam.EngineCreator().create_sqlite(path=self.db_file_path)
-        self.eng = self.engine
-        self.session = orm.Session(self.engine)
-        self.ses = self.session
 
     def __enter__(self):  # pragma: no cover
         return self
@@ -331,9 +341,9 @@ class SearchEngine(object):
     def find_city(
         self,
         city: str,
-        state: str=None,
-        best_match: bool=True,
-        min_similarity: int=70,
+        state: str = None,
+        best_match: bool = True,
+        min_similarity: int = 70,
     ) -> typing.List[str]:
         """
         Fuzzy search correct city.
@@ -371,7 +381,7 @@ class SearchEngine(object):
         return result_city_list
 
     @staticmethod
-    def _resolve_sort_by(sort_by, flag_radius_query):
+    def _resolve_sort_by(sort_by: str, flag_radius_query: bool):
         """
         Result ``sort_by`` argument.
 
@@ -398,39 +408,39 @@ class SearchEngine(object):
 
     def query(
         self,
-        zipcode=None,
-        prefix=None,
-        pattern=None,
-        city=None,
-        state=None,
-        lat=None,
-        lng=None,
+        zipcode: typing.Union[int, float] = None,
+        prefix: str = None,
+        pattern: str = None,
+        city: str = None,
+        state: str = None,
+        lat: typing.Union[int, float] = None,
+        lng: typing.Union[int, float] = None,
         radius=None,
 
-        population_lower=None,
-        population_upper=None,
-        population_density_lower=None,
-        population_density_upper=None,
+        population_lower: int = None,
+        population_upper: int = None,
+        population_density_lower: int = None,
+        population_density_upper: int = None,
 
-        land_area_in_sqmi_lower=None,
-        land_area_in_sqmi_upper=None,
-        water_area_in_sqmi_lower=None,
-        water_area_in_sqmi_upper=None,
+        land_area_in_sqmi_lower: int = None,
+        land_area_in_sqmi_upper: int = None,
+        water_area_in_sqmi_lower: int = None,
+        water_area_in_sqmi_upper: int = None,
 
-        housing_units_lower=None,
-        housing_units_upper=None,
-        occupied_housing_units_lower=None,
-        occupied_housing_units_upper=None,
+        housing_units_lower: int = None,
+        housing_units_upper: int = None,
+        occupied_housing_units_lower: int = None,
+        occupied_housing_units_upper: int = None,
 
-        median_home_value_lower=None,
-        median_home_value_upper=None,
-        median_household_income_lower=None,
-        median_household_income_upper=None,
+        median_home_value_lower: int = None,
+        median_home_value_upper: int = None,
+        median_household_income_lower: int = None,
+        median_household_income_upper: int = None,
 
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.zipcode.name,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.zipcode.name,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Query zipcode the simple way.
@@ -682,7 +692,7 @@ class SearchEngine(object):
     def by_zipcode(
         self,
         zipcode: typing.Union[int, str],
-        zero_padding=True,
+        zero_padding: bool = True,
     ) -> typing.Union[SimpleZipcode, ComprehensiveZipcode, None]:
         """
         Search zipcode by exact 5 digits zipcode. No zero padding is needed.
@@ -701,11 +711,11 @@ class SearchEngine(object):
 
     def by_prefix(
         self,
-        prefix,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.zipcode.name,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        prefix: str,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.zipcode.name,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by first N digits.
@@ -720,11 +730,11 @@ class SearchEngine(object):
 
     def by_pattern(
         self,
-        pattern,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.zipcode.name,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        pattern: str,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.zipcode.name,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode by wildcard.
@@ -739,11 +749,11 @@ class SearchEngine(object):
 
     def by_city(
         self,
-        city,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.zipcode.name,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        city: str,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.zipcode.name,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by fuzzy City name.
@@ -758,11 +768,11 @@ class SearchEngine(object):
 
     def by_state(
         self,
-        state,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.zipcode.name,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        state: str,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.zipcode.name,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by fuzzy State name.
@@ -777,12 +787,12 @@ class SearchEngine(object):
 
     def by_city_and_state(
         self,
-        city,
-        state,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.zipcode.name,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        city: str,
+        state: str,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.zipcode.name,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by fuzzy city and state name.
@@ -798,13 +808,13 @@ class SearchEngine(object):
 
     def by_coordinates(
         self,
-        lat,
-        lng,
-        radius=25.0,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SORT_BY_DIST,
-        ascending=True,
-        returns=DEFAULT_LIMIT,
+        lat: typing.Union[int, float],
+        lng: typing.Union[int, float],
+        radius: typing.Union[int, float] = 25.0,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SORT_BY_DIST,
+        ascending: bool = True,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information near a coordinates on a map.
@@ -831,12 +841,12 @@ class SearchEngine(object):
 
     def by_population(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.population.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.population.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by population range.
@@ -850,12 +860,12 @@ class SearchEngine(object):
 
     def by_population_density(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.population_density.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.population_density.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by population density range.
@@ -871,12 +881,12 @@ class SearchEngine(object):
 
     def by_land_area_in_sqmi(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.land_area_in_sqmi.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.land_area_in_sqmi.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by land area / sq miles range.
@@ -890,12 +900,12 @@ class SearchEngine(object):
 
     def by_water_area_in_sqmi(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.water_area_in_sqmi.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.water_area_in_sqmi.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by water area / sq miles range.
@@ -909,12 +919,12 @@ class SearchEngine(object):
 
     def by_housing_units(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.housing_units.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.housing_units.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by house of units.
@@ -928,12 +938,12 @@ class SearchEngine(object):
 
     def by_occupied_housing_units(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.occupied_housing_units.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.occupied_housing_units.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by occupied house of units.
@@ -947,12 +957,12 @@ class SearchEngine(object):
 
     def by_median_home_value(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.median_home_value.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.median_home_value.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by median home value.
@@ -966,12 +976,12 @@ class SearchEngine(object):
 
     def by_median_household_income(
         self,
-        lower=-1,
-        upper=2 ** 31,
-        zipcode_type=ZipcodeTypeEnum.Standard,
-        sort_by=SimpleZipcode.median_household_income.name,
-        ascending=False,
-        returns=DEFAULT_LIMIT,
+        lower: int = -1,
+        upper: int = 2 ** 31,
+        zipcode_type: ZipcodeTypeEnum = ZipcodeTypeEnum.Standard,
+        sort_by: str = SimpleZipcode.median_household_income.name,
+        ascending: bool = False,
+        returns: int = DEFAULT_LIMIT,
     ):
         """
         Search zipcode information by median household income.
@@ -983,10 +993,10 @@ class SearchEngine(object):
             ascending=ascending, returns=returns,
         )
 
-    def inspect_raw_data(self, zipcode):
+    def inspect_raw_data(self, zipcode: str):
         sql = "SELECT * FROM {} WHERE zipcode = '{}'".format(
             self.zip_klass.__tablename__,
-            zipcode,
+            str(zipcode).zfill(5),
         )
         stmt = sa.text(sql)
         return dict(self.engine.execute(stmt).fetchone())

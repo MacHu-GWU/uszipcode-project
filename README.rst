@@ -236,6 +236,8 @@ For example, AWS Lambda doesn't allow to download file to $HOME directory, but a
 
 By default, the database file are hosted on GitHub. But you can host it elsewhere like your private storage.
 
+.. code-block:: python
+
     >>> search = SearchEngine(download_url="https://your-private-storage.sqlite")
 
 **Examples**:

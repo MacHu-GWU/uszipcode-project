@@ -25,7 +25,6 @@
 
 ------
 
-
 .. image:: https://img.shields.io/badge/Link-Document-blue.svg
     :target: https://uszipcode.readthedocs.io/index.html
 
@@ -194,7 +193,6 @@ The Data point
 
 Example Usage
 ------------------------------------------------------------------------------
-
 **Get Zipcode Statistics and Demographic Data**
 
 .. code-block:: python
@@ -353,7 +351,7 @@ You can **easily sort your results** by any field, or distance from a coordinate
     ...     # do whatever you want...
 
 
-Deploy Uszipcode as a Web Service
+Deploy uszipcode as a Web Service
 ------------------------------------------------------------------------------
 
 I collect lots of feedback from organization user that people want to host the database file privately. And people may love to use different rdbms backend like mysql or psql. From ``0.2.6``, this is easy.

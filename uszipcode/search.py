@@ -136,11 +136,17 @@ class SearchEngine(object):
         download_url: typing.Union[str, None] = None,
         engine: Engine = None,
     ):
+        if simple_or_comprehensive == 'simple':
+            simple_or_comprehensive = self.SimpleOrComprehensiveArgEnum.simple
+        if simple_or_comprehensive == 'comprehensive':
+            simple_or_comprehensive = self.SimpleOrComprehensiveArgEnum.comprehensive
+
         validate_enum_arg(
             self.SimpleOrComprehensiveArgEnum,
             "simple_or_comprehensive",
             simple_or_comprehensive,
         )
+
         self.simple_or_comprehensive = simple_or_comprehensive
 
         if isinstance(engine, Engine):
@@ -482,6 +488,23 @@ class SearchEngine(object):
             :class:`~uszipcode.model.ComprehensiveZipcode`.
         """
         filters = list()
+
+        if isinstance(lat, str) or isinstance(lng, str):
+            try:
+                lat = float(lat)
+                lng = float(lng)
+            except ValueError:
+                msg = ("Both values of lat ({}) and lng ({}) "
+                       "must be int-like or float-like".format(lat, lng))
+                raise ValueError(msg)
+
+        if isinstance(radius, str):
+            try:
+                radius = float(radius)
+            except ValueError:
+                msg = ("The value of radius ({}) is not a valid "
+                       "int-like or float-like string".format(radius))
+                raise ValueError(msg)
 
         # by coordinates
         _n_radius_param_not_null = sum([

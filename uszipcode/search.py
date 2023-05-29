@@ -532,10 +532,6 @@ class SearchEngine(object):
 
         # by city or state
         if (state is not None) and (city is not None):
-            state = self.find_state(state, best_match=True)[0]
-            city = self.find_city(city, state, best_match=True)[0]
-            filters.append(self.zip_klass.state == state)
-            filters.append(self.zip_klass.major_city == city)
             try:
                 state = self.find_state(state, best_match=True)[0]
                 city = self.find_city(city, state, best_match=True)[0]

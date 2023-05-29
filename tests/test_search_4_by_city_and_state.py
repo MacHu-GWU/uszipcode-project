@@ -121,6 +121,10 @@ class TestSearchEngine(SearchEngineBaseTest):
         res = self.search.by_population(upper=-1)
         assert len(res) == 0
 
+        # State below the confidence threshold should return empty list
+        res = self.search.by_city_and_state("Albany", "NJ")
+        assert len(res) == 0
+
     def test_bad_param(self):
         with pytest.raises(ValueError):
             self.search.query(zipcode="10001", prefix="10001", pattern="10001")

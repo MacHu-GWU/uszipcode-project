@@ -193,9 +193,9 @@ I collect lots of feedback from organization user that people want to host the d
 
 .. code-block:: python
 
-    import sqlalchemy_mate as sam
+    from sqlalchemy_mate.api import EngineCreator
 
-    engine = sam.EngineCreator(username, password, host, port, database)..create_postgresql_pg8000()
+    engine = EngineCreator(username, password, host, port, database)..create_postgresql_pg8000()
     search = SearchEngine(engine=engine)
 
 **Deploy uszipcode as Web API**:

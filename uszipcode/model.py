@@ -27,7 +27,7 @@ class ZipcodeTypeEnum(enum.Enum):
 
 
 @total_ordering
-class AbstractSimpleZipcode(Base, sam.ExtendedBase):
+class AbstractSimpleZipcode(Base, sam.api.ExtendedBase):
     """
     Base class for Zipcode.
     """

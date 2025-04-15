@@ -3,10 +3,11 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 import sqlalchemy_mate as sam
+import sqlalchemy_mate.api
 from uszipcode.model import SimpleZipcode, ComprehensiveZipcode
 
 db_file_path = "/Users/sanhehu/.crawl_uszipcode/comprehensive.sqlite"
-engine = sam.EngineCreator().create_sqlite(path=db_file_path)
+engine = sam.api.EngineCreator().create_sqlite(path=db_file_path)
 
 Zipcode = ComprehensiveZipcode
 with orm.Session(engine) as ses:

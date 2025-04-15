@@ -4,5 +4,5 @@ pathlib_mate
 atomicwrites
 fuzzywuzzy
 haversine>=2.5.0
-SQLAlchemy>=1.4.0
-sqlalchemy_mate>=1.4.28.3
+SQLAlchemy>=2.0.30
+sqlalchemy_mate>=2.0.0.1

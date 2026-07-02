@@ -13,16 +13,16 @@ from datetime import date
 from setuptools import setup, find_packages
 
 # --- import your package ---
-import uszipcode as package
+import zipcode3 as package
 
 if __name__ == "__main__":
     # --- Automatically generate setup parameters ---
     # Your package name
-    PKG_NAME = package.__name__
+    PKG_NAME = "zipcode3"
 
     # Your GitHub user name
     try:
-        GITHUB_USERNAME = package.__github_username__
+        GITHUB_USERNAME = "EricSchles"
     except:
         GITHUB_USERNAME = "Unknown-Github-Username"
 
@@ -45,22 +45,22 @@ if __name__ == "__main__":
 
     # Author and Maintainer
     try:
-        AUTHOR = package.__author__
+        AUTHOR = "EricSchles"
     except:
         AUTHOR = "Unknown"
 
     try:
-        AUTHOR_EMAIL = package.__author_email__
+        AUTHOR_EMAIL = "ericschles@gmail.com"
     except:
         AUTHOR_EMAIL = None
 
     try:
-        MAINTAINER = package.__maintainer__
+        MAINTAINER = "EricSchles"
     except:
         MAINTAINER = "Unknown"
 
     try:
-        MAINTAINER_EMAIL = package.__maintainer_email__
+        MAINTAINER_EMAIL = "ericschles@gmail.com"
     except:
         MAINTAINER_EMAIL = None
 
@@ -239,6 +239,7 @@ Frequent used classifiers List::
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3 :: Only",
     ]
 """

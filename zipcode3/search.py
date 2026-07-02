@@ -14,8 +14,7 @@ from collections import OrderedDict
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 import sqlalchemy.orm as orm
-import sqlalchemy_mate as sam
-import sqlalchemy_mate.api 
+from sqlalchemy_mate import api 
 
 from pathlib_mate import Path
 from fuzzywuzzy.process import extract, extractOne
@@ -153,7 +152,7 @@ class SearchEngine(object):
             self.db_file_path = db_file_path
             self.download_url = download_url
             self._download_db_file_if_not_exists()
-            self.engine = sam.api.EngineCreator().create_sqlite(path=self.db_file_path)
+            self.engine = api.EngineCreator().create_sqlite(path=self.db_file_path)
         self.eng = self.engine
         self.session = orm.Session(self.engine)
         self.ses = self.session

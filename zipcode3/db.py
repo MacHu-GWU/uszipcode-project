@@ -14,7 +14,7 @@ import requests
 from pathlib_mate import Path
 from pathlib_mate.helper import repr_data_size
 from atomicwrites import atomic_write
-import sqlalchemy_mate as sam
+
 
 SIMPLE_DB_FILE_DOWNLOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/simple_db.sqlite"
 COMPREHENSIVE_DB_FILE_DOWNLOAD_URL = "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/comprehensive_db.sqlite"

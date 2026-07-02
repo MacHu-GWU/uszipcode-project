@@ -8,7 +8,8 @@ from pathlib_mate import Path
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 import sqlalchemy_mate as sam
-import sqlalchemy_mate.api
+from sqlalchemy_mate import api
+from sqlalchemy_mate.types import api as types_api
 from .state_abbr import (
     MAPPER_STATE_ABBR_SHORT_TO_LONG,
 )
@@ -28,7 +29,7 @@ class ZipcodeTypeEnum(enum.Enum):
 
 
 @total_ordering
-class AbstractSimpleZipcode(Base, sam.api.ExtendedBase):
+class AbstractSimpleZipcode(Base, api.ExtendedBase):
     """
     Base class for Zipcode.
     """
@@ -38,7 +39,7 @@ class AbstractSimpleZipcode(Base, sam.api.ExtendedBase):
     zipcode_type = sa.Column(sa.String)
     major_city = sa.Column(sa.String)
     post_office_city = sa.Column(sa.String)
-    common_city_list = sa.Column(sam.types.api.CompressedJSONType)
+    common_city_list = sa.Column(types_api.CompressedJSONType)
     county = sa.Column(sa.String)
     state = sa.Column(sa.String)
 
@@ -47,7 +48,7 @@ class AbstractSimpleZipcode(Base, sam.api.ExtendedBase):
 
     timezone = sa.Column(sa.String)
     radius_in_miles = sa.Column(sa.Float)
-    area_code_list = sa.Column(sam.types.api.CompressedJSONType)
+    area_code_list = sa.Column(types_api.CompressedJSONType)
 
     population = sa.Column(sa.Integer)
     population_density = sa.Column(sa.Float)
@@ -150,61 +151,61 @@ class AbstractSimpleZipcode(Base, sam.api.ExtendedBase):
 class AbstractComprehensiveZipcode(AbstractSimpleZipcode):
     __abstract__ = True
 
-    polygon = sa.Column(sam.types.api.CompressedJSONType)
+    polygon = sa.Column(types_api.CompressedJSONType)
 
     # Stats and Demographics
-    population_by_year = sa.Column(sam.types.api.CompressedJSONType)
-    population_by_age = sa.Column(sam.types.api.CompressedJSONType)
-    population_by_gender = sa.Column(sam.types.api.CompressedJSONType)
-    population_by_race = sa.Column(sam.types.api.CompressedJSONType)
-    head_of_household_by_age = sa.Column(sam.types.api.CompressedJSONType)
-    families_vs_singles = sa.Column(sam.types.api.CompressedJSONType)
-    households_with_kids = sa.Column(sam.types.api.CompressedJSONType)
-    children_by_age = sa.Column(sam.types.api.CompressedJSONType)
+    population_by_year = sa.Column(types_api.CompressedJSONType)
+    population_by_age = sa.Column(types_api.CompressedJSONType)
+    population_by_gender = sa.Column(types_api.CompressedJSONType)
+    population_by_race = sa.Column(types_api.CompressedJSONType)
+    head_of_household_by_age = sa.Column(types_api.CompressedJSONType)
+    families_vs_singles = sa.Column(types_api.CompressedJSONType)
+    households_with_kids = sa.Column(types_api.CompressedJSONType)
+    children_by_age = sa.Column(types_api.CompressedJSONType)
 
     # Real Estate and Housing
-    housing_type = sa.Column(sam.types.api.CompressedJSONType)
-    year_housing_was_built = sa.Column(sam.types.api.CompressedJSONType)
-    housing_occupancy = sa.Column(sam.types.api.CompressedJSONType)
-    vacancy_reason = sa.Column(sam.types.api.CompressedJSONType)
-    owner_occupied_home_values = sa.Column(sam.types.api.CompressedJSONType)
-    rental_properties_by_number_of_rooms = sa.Column(sam.types.api.CompressedJSONType)
+    housing_type = sa.Column(types_api.CompressedJSONType)
+    year_housing_was_built = sa.Column(types_api.CompressedJSONType)
+    housing_occupancy = sa.Column(types_api.CompressedJSONType)
+    vacancy_reason = sa.Column(types_api.CompressedJSONType)
+    owner_occupied_home_values = sa.Column(types_api.CompressedJSONType)
+    rental_properties_by_number_of_rooms = sa.Column(types_api.CompressedJSONType)
 
-    monthly_rent_including_utilities_studio_apt = sa.Column(sam.types.api.CompressedJSONType)
-    monthly_rent_including_utilities_1_b = sa.Column(sam.types.api.CompressedJSONType)
-    monthly_rent_including_utilities_2_b = sa.Column(sam.types.api.CompressedJSONType)
-    monthly_rent_including_utilities_3plus_b = sa.Column(sam.types.api.CompressedJSONType)
+    monthly_rent_including_utilities_studio_apt = sa.Column(types_api.CompressedJSONType)
+    monthly_rent_including_utilities_1_b = sa.Column(types_api.CompressedJSONType)
+    monthly_rent_including_utilities_2_b = sa.Column(types_api.CompressedJSONType)
+    monthly_rent_including_utilities_3plus_b = sa.Column(types_api.CompressedJSONType)
 
     # Employment, Income, Earnings, and Work
-    employment_status = sa.Column(sam.types.api.CompressedJSONType)
-    average_household_income_over_time = sa.Column(sam.types.api.CompressedJSONType)
-    household_income = sa.Column(sam.types.api.CompressedJSONType)
-    annual_individual_earnings = sa.Column(sam.types.api.CompressedJSONType)
+    employment_status = sa.Column(types_api.CompressedJSONType)
+    average_household_income_over_time = sa.Column(types_api.CompressedJSONType)
+    household_income = sa.Column(types_api.CompressedJSONType)
+    annual_individual_earnings = sa.Column(types_api.CompressedJSONType)
 
     sources_of_household_income____percent_of_households_receiving_income = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
     sources_of_household_income____average_income_per_household_by_income_source = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
 
     household_investment_income____percent_of_households_receiving_investment_income = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
     household_investment_income____average_income_per_household_by_income_source = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
 
     household_retirement_income____percent_of_households_receiving_retirement_incom = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
     household_retirement_income____average_income_per_household_by_income_source = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
 
-    source_of_earnings = sa.Column(sam.types.api.CompressedJSONType)
+    source_of_earnings = sa.Column(types_api.CompressedJSONType)
     means_of_transportation_to_work_for_workers_16_and_over = sa.Column(
-        sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
     travel_time_to_work_in_minutes = sa.Column(sam.types.api.CompressedJSONType)
 
     # Schools and Education
     educational_attainment_for_population_25_and_over = sa.Column(
-        sam.types.api.CompressedJSONType)
-    school_enrollment_age_3_to_17 = sa.Column(sam.types.api.CompressedJSONType)
+        types_api.CompressedJSONType)
+    school_enrollment_age_3_to_17 = sa.Column(types_api.CompressedJSONType)
 
 
 class SimpleZipcode(AbstractSimpleZipcode):

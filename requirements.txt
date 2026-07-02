@@ -3,6 +3,7 @@ requests
 pathlib_mate
 atomicwrites
 fuzzywuzzy
-haversine>=2.5.0
+haversine>=2.9.0
 SQLAlchemy>=2.0.30
-sqlalchemy_mate>=2.0.0.1
+sqlalchemy-mate>=2.0.0.1
+botocore

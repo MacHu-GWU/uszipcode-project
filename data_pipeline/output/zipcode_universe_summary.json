@@ -1,0 +1,58 @@
+{
+  "generated_at_utc": "2026-10-28T07:54:11+00:00",
+  "parameters": {
+    "sources": [
+      "census_zcta",
+      "hud",
+      "zbp",
+      "irs",
+      "v2"
+    ],
+    "zbp_year": 2023,
+    "irs_years": [
+      2022
+    ]
+  },
+  "zip_codes_total": 42730,
+  "zip_codes_in_any_government_source": 39864,
+  "zip_codes_only_in_v2": 2866,
+  "zip_codes_per_source": {
+    "census_zcta": 33791,
+    "hud": 39484,
+    "zbp": 34953,
+    "irs": 27588,
+    "v2": 42724
+  },
+  "zip_codes_in_military_prefixes": 787,
+  "zip_codes_without_city": 0,
+  "v2_coverage_by_type": {
+    "STANDARD": {
+      "in_v2": 30001,
+      "in_a_government_source": 29748,
+      "share": 0.9916
+    },
+    "PO BOX": {
+      "in_v2": 9397,
+      "in_a_government_source": 8709,
+      "share": 0.9268
+    },
+    "UNIQUE": {
+      "in_v2": 2539,
+      "in_a_government_source": 1401,
+      "share": 0.5518
+    },
+    "MILITARY": {
+      "in_v2": 787,
+      "in_a_government_source": 0,
+      "share": 0.0
+    }
+  },
+  "not_in_v2": [
+    "18768",
+    "77352",
+    "84048",
+    "85144",
+    "90140",
+    "90205"
+  ]
+}

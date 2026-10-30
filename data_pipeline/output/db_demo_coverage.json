@@ -1,0 +1,81 @@
+{
+  "pk_set": "demo",
+  "pks": 3,
+  "columns": 6,
+  "fields": {
+    "lat": {
+      "crawler": "census-gazetteer",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "lng": {
+      "crawler": "census-gazetteer",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "land_area_in_sqmi": {
+      "crawler": "census-gazetteer",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_units": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    }
+  },
+  "crawlers": {
+    "census-gazetteer": {
+      "source_rows": 33791,
+      "rows_in_pk_set": 2,
+      "rows_outside_pk_set": 33789,
+      "downloads": {
+        "2025_Gaz_zcta_national.zip": {
+          "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip",
+          "bytes": 952026,
+          "sha256": "51516a4283bab5cd2376eec75609ddc4b363a18297e8adeeaac7b03cf7c84dbe",
+          "fetched_at_utc": "2026-10-30T08:34:12Z"
+        }
+      }
+    },
+    "census-dhc": {
+      "source_rows": 33774,
+      "rows_in_pk_set": 2,
+      "rows_outside_pk_set": 33772,
+      "downloads": {
+        "dhc2020_zcta_P1_H1.json": {
+          "url": "https://api.census.gov/data/2020/dec/dhc?get=P1_001N,H1_001N&for=zip%20code%20tabulation%20area:*",
+          "bytes": 827289,
+          "sha256": "82c6b53c4bb3bd02e56d03c6d8625f46b4a2b4860fd2246816e9cc74f717d6bb",
+          "fetched_at_utc": "2026-10-30T08:34:19Z"
+        }
+      }
+    }
+  },
+  "pks_by_non_null_fields": {
+    "0": 1,
+    "5": 2
+  },
+  "pks_without_any_value": [
+    "20013"
+  ],
+  "files": {
+    "sqlite": "db_demo.sqlite",
+    "csv": "db_demo.csv"
+  }
+}

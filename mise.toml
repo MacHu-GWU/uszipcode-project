@@ -1,0 +1,40 @@
+# Tasks of the uszipcode 3.0 data pipeline (data_pipeline/). Run them from anywhere in the repo:
+#   mise run pipeline-check          check the Field catalog, the claims and these tasks
+#   mise run crawler-<name>          re-run one crawler (cached download; add -- --refresh to download again)
+#   mise run pipeline-build          build the database for the demo PK set (add -- --pk-set full for all ZIPs)
+# Every crawler registered in data_pipeline/database/registry.py needs a crawler-<name> task below;
+# `mise run pipeline-check` fails and prints the block to add when one is missing.
+# The pipeline needs Python 3.11+ (it reads this file with tomllib) and pytest for the tests;
+# it uses whatever `python` is active, so no version is pinned here.
+
+[env]
+PYTHONUTF8 = "1"
+
+[tasks.zipcode-universe]
+description = "Build the primary-key list of every ZIP code (data_pipeline/output/zipcode_universe.csv)"
+run = "python -m data_pipeline.zipcode_universe"
+
+[tasks.pipeline-check]
+description = "Check the Field catalog, the crawler claims and the crawler-* tasks; print the catalog"
+run = "python -m data_pipeline.database check"
+
+[tasks.pipeline-test]
+description = "Run the offline tests of the data pipeline"
+run = "python -m pytest data_pipeline/tests -q"
+
+[tasks.crawl-all]
+description = "Run every crawler, one after another"
+run = "python -m data_pipeline.database crawl --all"
+
+[tasks.pipeline-build]
+description = "Join the crawler outputs onto a PK set (default: demo) and write the database"
+run = "python -m data_pipeline.database build"
+
+# ---- one task per crawler -------------------------------------------------------------------------
+[tasks.crawler-census-gazetteer]
+description = "Census Gazetteer 2025 ZCTA -> lat, lng, land_area_in_sqmi"
+run = "python -m data_pipeline.database crawl census-gazetteer"
+
+[tasks.crawler-census-dhc]
+description = "2020 Census DHC -> population, housing_units"
+run = "python -m data_pipeline.database crawl census-dhc"

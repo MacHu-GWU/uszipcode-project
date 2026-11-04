@@ -14,9 +14,9 @@ follow the 2.x column names where the meaning is the same. Census values are
 tabulated by ZCTA, so the descriptions say "ZCTA".
 """
 
-from . import lat, lng, land_area_in_sqmi, population, housing_units
+from . import zipcode_type, major_city, state, lat, lng, land_area_in_sqmi, population, housing_units
 
 #: every module of this folder, in column order; ``check`` fails if one is left out (rule L1)
-MODULES = (lat, lng, land_area_in_sqmi, population, housing_units)
+MODULES = (zipcode_type, major_city, state, lat, lng, land_area_in_sqmi, population, housing_units)
 
 FIELDS = [field for module in MODULES for field in module.FIELDS]

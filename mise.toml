@@ -2,7 +2,7 @@
 #   mise run pipeline-check          check the Field catalog, the claims and these tasks
 #   mise run crawler-<name>          re-run one crawler (cached download; add -- --refresh to download again)
 #   mise run pipeline-build          build the database for the demo PK set (add -- --pk-set full for all ZIPs)
-# Every crawler registered in data_pipeline/database/registry.py needs a crawler-<name> task below;
+# Every crawler registered in data_pipeline/database/crawlers/__init__.py needs a crawler-<name> task below;
 # `mise run pipeline-check` fails and prints the block to add when one is missing.
 # First time in a clone: `mise trust`, `mise install`, `mise run pipeline-setup`.
 
@@ -44,3 +44,7 @@ run = "python -m data_pipeline.database crawl census-gazetteer"
 [tasks.crawler-census-dhc]
 description = "2020 Census DHC -> population, housing_units"
 run = "python -m data_pipeline.database crawl census-dhc"
+
+[tasks.crawler-zip-basics]
+description = "HUD-USPS crosswalk, Census ZBP, uszipcode 2.x -> zipcode_type, major_city, state"
+run = "python -m data_pipeline.database crawl zip-basics"

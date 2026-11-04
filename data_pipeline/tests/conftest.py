@@ -5,8 +5,8 @@ Shared fixtures: no test may reach the network or the real home folder.
 
 - every socket connect raises, and ``fetch.urlopen`` raises until a test installs a FakeOpener;
 - ``fetch.sleep`` records the waits instead of sleeping (fixture ``sleeps``);
-- the home folder is an empty tmp folder and ``CENSUS_API_KEY`` is unset, so the
-  real ``~/.census_key`` is never read.
+- the home folder is an empty tmp folder and the key variables are unset, so the
+  real ``~/.census_key`` and ``~/.hud_token`` are never read.
 """
 
 import socket
@@ -30,6 +30,7 @@ def offline(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))
     monkeypatch.delenv("CENSUS_API_KEY", raising=False)
+    monkeypatch.delenv("HUD_API_TOKEN", raising=False)
 
 
 @pytest.fixture(autouse=True)

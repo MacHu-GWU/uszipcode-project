@@ -1,8 +1,29 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 6,
+  "columns": 9,
   "fields": {
+    "zipcode_type": {
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
+      "empty_in_source": 0
+    },
+    "major_city": {
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
+      "empty_in_source": 0
+    },
+    "state": {
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
+      "empty_in_source": 0
+    },
     "lat": {
       "crawler": "census-gazetteer",
       "non_null": 2,
@@ -65,15 +86,38 @@
           "fetched_at_utc": "2026-10-30T08:34:19Z"
         }
       }
+    },
+    "zip-basics": {
+      "source_rows": 42730,
+      "rows_in_pk_set": 3,
+      "rows_outside_pk_set": 42727,
+      "downloads": {
+        "hud_zip_county_all.json": {
+          "url": "https://www.huduser.gov/hudapi/public/usps?type=2&query=All",
+          "bytes": 7804619,
+          "sha256": "233b59ac27be71a824b0bc2a85fd864473ff4c8bee15796f4a7ada14a50dc4a6",
+          "fetched_at_utc": "2026-11-04T17:10:23Z"
+        },
+        "v2_simple_db.sqlite": {
+          "url": "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/simple_db.sqlite",
+          "bytes": 10727424,
+          "sha256": "43383f108ef14dccd925107bc77705f622b1014111ad5c9e5e2a6837bb7f64ff",
+          "fetched_at_utc": "2026-11-04T17:10:43Z"
+        },
+        "zbp23totals.zip": {
+          "url": "https://www2.census.gov/programs-surveys/cbp/datasets/2023/zbp23totals.zip",
+          "bytes": 803810,
+          "sha256": "109c181205bef49a972935fa059d8b067754cb4a0c2fceff7280b4b3c665e6e8",
+          "fetched_at_utc": "2026-11-04T17:10:29Z"
+        }
+      }
     }
   },
   "pks_by_non_null_fields": {
-    "0": 1,
-    "5": 2
+    "3": 1,
+    "8": 2
   },
-  "pks_without_any_value": [
-    "20013"
-  ],
+  "pks_without_any_value": [],
   "files": {
     "sqlite": "db_demo.sqlite",
     "csv": "db_demo.csv"

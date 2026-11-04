@@ -169,6 +169,10 @@ def parse_float(value) -> typing.Optional[float]:
     return float(value)
 
 
+def upper_text(value: str) -> str:
+    return value.strip().upper()
+
+
 def column(name: str, convert: typing.Optional[typing.Callable] = None):
     """An ``extract`` function: one source column. A missing column is an error: the source changed."""
     def extract(row: SourceRow):

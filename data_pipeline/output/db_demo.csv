@@ -1,4 +1,4 @@
-zipcode,lat,lng,land_area_in_sqmi,population,housing_units
-10001,40.750649,-73.997298,0.624,32612,18926
-20013,,,,,
-20037,38.892459,-77.053811,0.732,14945,9689
+zipcode,zipcode_type,major_city,state,lat,lng,land_area_in_sqmi,population,housing_units
+10001,STANDARD,NEW YORK,NY,40.750649,-73.997298,0.624,32612,18926
+20013,PO BOX,WASHINGTON,DC,,,,,
+20037,STANDARD,WASHINGTON,DC,38.892459,-77.053811,0.732,14945,9689

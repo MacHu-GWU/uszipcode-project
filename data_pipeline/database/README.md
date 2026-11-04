@@ -185,8 +185,9 @@ The registry is not tied to these numbers: the tests build fake registries of 1 
 `FIELDS` is built by a loop, one Field per number. See `test_a_module_can_generate_a_group_of_fields`.
 
 Forgetting a step fails `mise run pipeline-check` or the tests (L1, K1, K3 or M1). As a measure of the
-pattern: `zip-basics` was added with one crawler module, three Field modules, one line in each
-`__init__.py` and one mise task, without touching the functionality.
+pattern: `zip-basics` was added with one crawler module, three Field modules, two lines in each
+`__init__.py` and one mise task. The only change to the functionality was a small text helper,
+`upper_text`, in `core.py`.
 
 ## Decisions
 

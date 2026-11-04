@@ -1,33 +1,30 @@
 # -*- coding: utf-8 -*-
 
 """
-The registry: the list of crawlers, and the checks that tie it to the Field catalog
-and to ``mise.toml``.
+The checks that tie the Field catalog, the crawlers and ``mise.toml`` together.
 
 ``validate()`` collects every problem instead of stopping at the first one. Each
 problem is one sentence ``[ID] what is wrong: how to fix it``. Importing a module
 validates nothing; ``check``, ``crawl`` and ``build`` call ``require_valid()`` first.
 
-Rules: F1-F5 Fields, C1-C8 crawlers, K1-K3 claims (every Field claimed exactly
-once), M0-M2 mise tasks (every crawler has ``crawler-<name>`` and vice versa).
+Rules: F1-F7 Fields, C1-C8 crawlers, K1-K3 claims (every Field claimed exactly
+once), M0-M2 mise tasks (every crawler has ``crawler-<name>`` and vice versa),
+L1 (every module of ``fields/`` and ``crawlers/`` is listed in its ``MODULES``).
 """
 
 import collections
 import difflib
 import os
+import pkgutil
 import re
 import typing
 import urllib.parse
 
 from .core import Crawler, Field, RegistryError, SQL_TYPES
-from .fields import FIELDS
-from .crawlers import census_gazetteer, census_dhc
-
-#: every crawler, in the order ``crawl --all`` runs them
-CRAWLERS = [census_gazetteer.CRAWLER, census_dhc.CRAWLER]
 
 TASK_PREFIX = "crawler-"
 MAX_DOWNLOADS = 100
+SQLITE_MAX_COLUMNS = 2000  # the default SQLITE_MAX_COLUMN, including the zipcode column
 FIELD_NAME = re.compile(r"^[a-z][a-z0-9_]{0,59}$")
 CRAWLER_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 FILENAME = re.compile(r"^[A-Za-z0-9._-]{1,60}$")
@@ -67,6 +64,11 @@ def _check_fields(fields: typing.Sequence[Field]) -> typing.List[str]:
             problems.append("[F4] Field %r has dtype %s: use int, float or str." % (f.name, getattr(f.dtype, "__name__", f.dtype)))
         if not (f.description or "").strip():
             problems.append('[F5] Field %r has an empty description: describe it (say "ZCTA" for Census values).' % f.name)
+        if not callable(f.extract):
+            problems.append("[F6] Field %r has no extract function: say how to read it from a source row." % f.name)
+    if len(fields) + 1 > SQLITE_MAX_COLUMNS:
+        problems.append("[F7] The catalog has %d Fields, but SQLite allows %d columns including zipcode: "
+                        "keep history in a separate table." % (len(fields), SQLITE_MAX_COLUMNS))
     return problems
 
 
@@ -124,7 +126,7 @@ def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Craw
             if name in known:
                 claims[name].append(c.name)
             else:
-                problems.append("[K1] Crawler %r claims %r, which is not in FIELDS%s: add the Field to fields.py or fix the name."
+                problems.append("[K1] Crawler %r claims %r, which is not in FIELDS%s: add the Field's module to fields/ or fix the name."
                                 % (c.name, name, _did_you_mean(name, catalog)))
     for name in dict.fromkeys(catalog):  # catalog order, without duplicates
         claimants = claims.get(name, [])
@@ -185,6 +187,14 @@ def require_valid(fields, crawlers, mise_toml) -> None:
     problems = validate(fields, crawlers, mise_toml)
     if problems:
         raise RegistryError(problems)
+
+
+def unlisted_modules(package) -> typing.List[str]:
+    """A module left out of its package's ``MODULES`` would silently not exist: rule L1."""
+    folder = package.__name__.rsplit(".", 1)[-1]
+    listed = {m.__name__.rsplit(".", 1)[-1] for m in package.MODULES}
+    return ["[L1] %s/%s.py is not listed in MODULES in %s/__init__.py: add it." % (folder, name, folder)
+            for _, name, _ in pkgutil.iter_modules(package.__path__) if name not in listed]
 
 
 def describe(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler]) -> str:

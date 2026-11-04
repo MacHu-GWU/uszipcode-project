@@ -11,6 +11,8 @@ Command line of the database step (run from the repository root)::
 The mise tasks in ``mise.toml`` call these commands; ``mise run crawler-<name>``
 runs ``crawl <name>``. Exit codes: 0 success, 2 registry / contract / PK-set
 problems, 1 download and file problems. Expected errors print no traceback.
+
+This module knows no Field and no crawler: ``__main__.py`` passes them in.
 """
 
 import argparse
@@ -20,10 +22,9 @@ import sys
 import typing
 
 from . import build as build_mod
+from .checks import describe, require_valid, unlisted_modules, validate
 from .core import Paths, PipelineError, RegistryError
 from .crawl import run_crawler
-from .registry import CRAWLERS, describe, require_valid, validate
-from .fields import FIELDS
 
 
 def _rel(path: str) -> str:
@@ -57,15 +58,16 @@ def _crawl_line(s: dict) -> str:
         s["crawler"], s["files"], how, s["rows"], s["skipped_keys"], _rel(s["path"]))
 
 
-def main(argv: typing.Optional[typing.List[str]] = None, fields=None, crawlers=None,
-         paths: typing.Optional[Paths] = None) -> int:
-    fields = FIELDS if fields is None else fields
-    crawlers = CRAWLERS if crawlers is None else crawlers
+def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths] = None,
+         packages: typing.Sequence = ()) -> int:
+    """``packages``: the Python packages of the Fields and crawlers, for rule L1 of ``check``."""
     paths = Paths.default() if paths is None else paths
     args = _parser().parse_args(argv)
     try:
         if args.command == "check":
             problems = validate(fields, crawlers, paths.mise_toml)
+            for package in packages:
+                problems += unlisted_modules(package)
             if problems:
                 raise RegistryError(problems)
             print("%d Fields, %d crawlers, every Field claimed once, mise tasks match." % (len(fields), len(crawlers)))

@@ -17,10 +17,10 @@ import re
 import sqlite3
 import typing
 
-from ..zipcode_universe.sources import normalize_zip
+from ..zipcodes import normalize_zip
+from .checks import owners, require_valid
 from .core import Crawler, Field, Paths, PkSetError, SQL_TYPES
 from .crawl import read_meta, read_output, replace, write_csv, write_json
-from .registry import owners, require_valid
 
 #: the minimal example: two standard ZIPs and a PO box ZIP without a ZCTA (so no Census values)
 DEMO_PKS = ("10001", "20013", "20037")

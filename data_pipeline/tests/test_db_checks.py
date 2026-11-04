@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Registry checks: every rule F1-F5, C1-C8, K1-K3 and M0-M2 fails on its own example,
+The checks: every rule F1-F7, C1-C8, K1-K3 and M0-M2 fails on its own example,
 and the real registry passes.
 """
 
@@ -9,10 +9,12 @@ import dataclasses
 
 import pytest
 
+from data_pipeline.database import crawlers, fields
+from data_pipeline.database.checks import require_valid, task_command, validate
 from data_pipeline.database.cli import main
-from data_pipeline.database.core import Crawler, Download, Field, Paths, RegistryError, Secret
+from data_pipeline.database.core import Crawler, Download, Field, Paths, RegistryError, Secret, column
+from data_pipeline.database.crawlers import CRAWLERS
 from data_pipeline.database.fields import FIELDS
-from data_pipeline.database.registry import CRAWLERS, require_valid, task_command, validate
 
 
 def test_real_registry_is_valid():
@@ -20,9 +22,9 @@ def test_real_registry_is_valid():
 
 
 def test_check_prints_the_catalog(capsys):
-    assert main(["check"]) == 0
+    assert main(["check"], FIELDS, CRAWLERS, packages=(fields, crawlers)) == 0
     out = capsys.readouterr().out
-    assert out.startswith("5 Fields, 2 crawlers, every Field claimed once, mise tasks match.")
+    assert out.startswith("%d Fields, %d crawlers, every Field claimed once, mise tasks match." % (len(FIELDS), len(CRAWLERS)))
     for f in FIELDS:
         assert any(line.split()[:2] == [f.name, f.dtype.__name__] for line in out.splitlines())
     assert "population" in out and "census-dhc" in out and "census-gazetteer" in out
@@ -33,6 +35,10 @@ def _parse(files):
     return []
 
 
+def _field(name, dtype=int, description="a number", extract=column("x")):
+    return Field(name, dtype, description, extract=extract)
+
+
 def _download(name="a.csv", url=None, **kw):
     return Download(name, url or "https://data.test/" + name, **kw)
 
@@ -41,7 +47,7 @@ def _crawler(name="src-a", fields=("a", "b"), downloads=None):
     return Crawler(name, tuple(fields), tuple(downloads if downloads is not None else (_download(name + ".csv"),)), _parse)
 
 
-BASE_FIELDS = (Field("a", int, "A count"), Field("b", float, "B share"))
+BASE_FIELDS = (_field("a"), _field("b", float))
 SECRET = dict(env="FAKE_KEY", file="~/.fake_key", signup_url="https://signup.test/")
 
 
@@ -51,16 +57,20 @@ def _mise(names):
 
 # rule id, expected text, Fields, crawlers, mise.toml text (None: tasks for every crawler)
 CASES = [
-    ("F1", "Field name 'Pop' is not snake_case", BASE_FIELDS + (Field("Pop", int, "x"),),
+    ("F1", "Field name 'Pop' is not snake_case", BASE_FIELDS + (_field("Pop"),),
      [_crawler(fields=("a", "b", "Pop"))], None),
-    ("F2", "Field name 'zipcode' is reserved for the primary key", BASE_FIELDS + (Field("zipcode", str, "x"),),
+    ("F2", "Field name 'zipcode' is reserved for the primary key", BASE_FIELDS + (_field("zipcode", str),),
      [_crawler(fields=("a", "b", "zipcode"))], None),
-    ("F3", "Field 'a' is defined twice in FIELDS: keep one.", BASE_FIELDS + (Field("a", int, "again"),),
+    ("F3", "Field 'a' is defined twice in FIELDS: keep one.", BASE_FIELDS + (_field("a"),),
      [_crawler()], None),
-    ("F4", "Field 'c' has dtype bool: use int, float or str.", BASE_FIELDS + (Field("c", bool, "flag"),),
+    ("F4", "Field 'c' has dtype bool: use int, float or str.", BASE_FIELDS + (_field("c", bool),),
      [_crawler(fields=("a", "b", "c"))], None),
-    ("F5", "Field 'c' has an empty description", BASE_FIELDS + (Field("c", int, "  "),),
+    ("F5", "Field 'c' has an empty description", BASE_FIELDS + (_field("c", int, "  "),),
      [_crawler(fields=("a", "b", "c"))], None),
+    ("F6", "Field 'c' has no extract function: say how to read it from a source row.",
+     BASE_FIELDS + (_field("c", extract=None),), [_crawler(fields=("a", "b", "c"))], None),
+    ("F7", "The catalog has 2000 Fields, but SQLite allows 2000 columns including zipcode",
+     tuple(_field("f%d" % i) for i in range(2000)), [_crawler(fields=tuple("f%d" % i for i in range(2000)))], None),
     ("C1", "Crawler name 'Src_A' is not kebab-case", BASE_FIELDS, [_crawler("Src_A")], None),
     ("C1", "Crawler name '%s' is not kebab-case" % ("a" * 31), BASE_FIELDS, [_crawler("a" * 31)], None),
     ("C2", "Crawler name 'src-a' is used 2 times: names must be unique.", BASE_FIELDS,
@@ -89,11 +99,11 @@ CASES = [
      [_crawler(fields=("a",), downloads=(_download("a.csv"),)),
       _crawler("src-b", fields=("b",), downloads=(_download("a.csv"),))], None),
     ("K1", "Crawler 'src-a' claims 'populaton', which is not in FIELDS (did you mean 'population'?)",
-     (Field("population", int, "people"),), [_crawler(fields=("populaton", "population"))], None),
+     (_field("population"),), [_crawler(fields=("populaton", "population"))], None),
     ("K2", "Field 'a' is claimed 2 times (src-a, src-b): exactly one crawler may claim it.", BASE_FIELDS,
      [_crawler(), _crawler("src-b", fields=("a",))], None),
     ("K3", "Field 'c' is not claimed by any crawler: add it to one crawler's fields.",
-     BASE_FIELDS + (Field("c", str, "C name"),), [_crawler()], None),
+     BASE_FIELDS + (_field("c", str),), [_crawler()], None),
     ("M0", "mise.toml not found at", BASE_FIELDS, [_crawler()], "<missing>"),
     ("M0", "mise.toml is not valid TOML", BASE_FIELDS, [_crawler()], "[tasks.crawler-src-a\n"),
     ("M1", "Crawler 'src-a' has no mise task: add to mise.toml\n[tasks.crawler-src-a]\nrun = \"%s\"" % task_command("src-a"),
@@ -124,9 +134,8 @@ def test_the_valid_base_has_no_problem(tmp_path):
 def test_all_problems_are_reported_together(tmp_path):
     path = tmp_path / "mise.toml"
     path.write_text("", encoding="utf-8")
-    fields = list(BASE_FIELDS) + [Field("housing_units", int, "units")]
     with pytest.raises(RegistryError) as e:
-        require_valid(fields, [_crawler()], str(path))
+        require_valid(list(BASE_FIELDS) + [_field("housing_units")], [_crawler()], str(path))
     assert [p[:4] for p in e.value.problems] == ["[K3]", "[M1]"]
     assert str(e.value).splitlines() == [
         "registry check failed: 2 problem(s)",
@@ -139,12 +148,12 @@ def test_all_problems_are_reported_together(tmp_path):
 
 def test_check_fails_with_exit_code_2(tmp_path, capsys):
     paths = dataclasses.replace(Paths.under(str(tmp_path)), mise_toml=str(tmp_path / "mise.toml"))
-    (tmp_path / "mise.toml").write_text(_mise(["census-gazetteer"]), encoding="utf-8")
-    assert main(["check"], paths=paths) == 2
+    (tmp_path / "mise.toml").write_text(_mise([c.name for c in CRAWLERS[:-1]]), encoding="utf-8")
+    assert main(["check"], FIELDS, CRAWLERS, paths=paths) == 2
     err = capsys.readouterr().err
-    assert "registry check failed: 1 problem(s)" in err and "[M1] Crawler 'census-dhc' has no mise task" in err
-    assert main(["crawl", "census-dhc"], paths=paths) == 2  # crawl and build check first
-    assert main(["build"], paths=paths) == 2
+    assert "registry check failed: 1 problem(s)" in err and "[M1] Crawler '%s' has no mise task" % CRAWLERS[-1].name in err
+    assert main(["crawl", CRAWLERS[-1].name], FIELDS, CRAWLERS, paths=paths) == 2  # crawl and build check first
+    assert main(["build"], FIELDS, CRAWLERS, paths=paths) == 2
 
 
 def test_task_command():

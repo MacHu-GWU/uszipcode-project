@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 
 """
-census-gazetteer: Census Gazetteer ZCTA file -> lat, lng, land_area_in_sqmi.
+census-gazetteer: Census Gazetteer ZCTA file.
 
 One download (about 1 MB, no key). The zip holds one pipe-delimited text file with
 the header ``GEOID|GEOIDFQ|ALAND|AWATER|ALAND_SQMI|AWATER_SQMI|INTPTLAT|INTPTLONG``.
+A source row is one line of that file, keyed by ``GEOID``.
 """
 
 import csv
 import io
 import zipfile
 
-from ..core import Crawler, Download, parse_float
+from ..core import Crawler, Download
 
 URL = (
     "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"
     "2025_Gazetteer/2025_Gaz_zcta_national.zip"
 )
 FILENAME = "2025_Gaz_zcta_national.zip"
-COLUMNS = {"lat": "INTPTLAT", "lng": "INTPTLONG", "land_area_in_sqmi": "ALAND_SQMI"}
 
 
 def parse(files):
@@ -29,16 +29,10 @@ def parse(files):
         text = z.read(members[0]).decode("utf-8")
     reader = csv.reader(io.StringIO(text), delimiter="|")
     header = [h.strip() for h in next(reader)]
-    missing = [c for c in ["GEOID"] + list(COLUMNS.values()) if c not in header]
-    if missing:
-        raise ValueError("Gazetteer header has no column %s: %s" % (", ".join(missing), "|".join(header)))
     i_geoid = header.index("GEOID")
-    index = {field: header.index(column) for field, column in COLUMNS.items()}
     for row in reader:
-        if not row:
-            continue
-        row = [cell.strip() for cell in row]
-        yield row[i_geoid], {field: parse_float(row[i]) for field, i in index.items()}
+        if row:
+            yield row[i_geoid].strip(), dict(zip(header, [cell.strip() for cell in row]))
 
 
 CRAWLER = Crawler(

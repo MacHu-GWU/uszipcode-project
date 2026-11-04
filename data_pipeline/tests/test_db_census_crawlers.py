@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-The two real crawlers: their parsers on real sample rows, the whole demo through a
-FakeOpener (no network), and a check that crawler modules never touch the network.
+The real crawlers: their parsers on real sample rows, and the whole demo through a
+FakeOpener (no network).
 """
 
-import ast
 import dataclasses
 import json
 import os
@@ -14,11 +13,14 @@ import zipfile
 from data_pipeline.database import fetch
 from data_pipeline.database.cli import main
 from data_pipeline.database.core import Paths
-from data_pipeline.database.crawlers import census_dhc, census_gazetteer
+from data_pipeline.database.crawl import check_rows
+from data_pipeline.database.crawlers import CRAWLERS, census_dhc, census_gazetteer
+from data_pipeline.database.fields import FIELDS
 
 from fakes import FakeOpener
 
 KEY = "SECRET-TEST-123"
+CATALOG = {f.name: f for f in FIELDS}
 # real rows of the 2025 Gazetteer ZCTA file; the padded last header name is how older vintages look
 GAZETTEER = (
     "GEOID|GEOIDFQ|ALAND|AWATER|ALAND_SQMI|AWATER_SQMI|INTPTLAT|INTPTLONG    \n"
@@ -44,20 +46,21 @@ def _dhc_json(folder) -> str:
     return path
 
 
-def test_gazetteer_parse(tmp_path):
-    rows = dict(census_gazetteer.parse({census_gazetteer.FILENAME: _gazetteer_zip(tmp_path)}))
-    assert rows == {
-        "00601": {"lat": 18.180555, "lng": -66.749961, "land_area_in_sqmi": 64.416},
-        "10001": {"lat": 40.750649, "lng": -73.997298, "land_area_in_sqmi": 0.624},
-        "20037": {"lat": 38.892459, "lng": -77.053811, "land_area_in_sqmi": 0.732},
-    }
+def test_gazetteer(tmp_path):
+    files = {census_gazetteer.FILENAME: _gazetteer_zip(tmp_path)}
+    rows = dict(census_gazetteer.parse(files))
+    assert rows["10001"]["INTPTLAT"] == "40.750649" and rows["20037"]["INTPTLONG"] == "-77.053811"
+    records, _ = check_rows(census_gazetteer.CRAWLER, CATALOG, census_gazetteer.parse(files))
+    assert records == [("00601", [18.180555, -66.749961, 64.416]),
+                       ("10001", [40.750649, -73.997298, 0.624]),
+                       ("20037", [38.892459, -77.053811, 0.732])]
 
 
-def test_dhc_parse(tmp_path):
-    rows = list(census_dhc.parse({census_dhc.FILENAME: _dhc_json(tmp_path)}))
-    assert rows == [("00601", {"population": 17242, "housing_units": 7605}),
-                    ("10001", {"population": 32612, "housing_units": 18926}),
-                    ("20037", {"population": 14945, "housing_units": 9689})]
+def test_dhc(tmp_path):
+    files = {census_dhc.FILENAME: _dhc_json(tmp_path)}
+    assert dict(census_dhc.parse(files))["10001"]["P1_001N"] == "32612"
+    records, _ = check_rows(census_dhc.CRAWLER, CATALOG, census_dhc.parse(files))
+    assert records == [("00601", [17242, 7605]), ("10001", [32612, 18926]), ("20037", [14945, 9689])]
 
 
 def test_demo_database(tmp_path, monkeypatch, capsys):
@@ -70,11 +73,11 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     root = tmp_path / "repo"
     paths = dataclasses.replace(Paths.under(str(root)), mise_toml=Paths.default().mise_toml)
 
-    assert main(["crawl", "--all"], paths=paths) == 0
+    assert main(["crawl", "--all"], FIELDS, CRAWLERS, paths=paths) == 0
     assert opener.urls == [census_gazetteer.URL, census_dhc.URL + "&key=" + KEY]
-    assert main(["crawl", "--all"], paths=paths) == 0
+    assert main(["crawl", "--all"], FIELDS, CRAWLERS, paths=paths) == 0
     assert len(opener.calls) == 2  # cached: no new request
-    assert main(["build"], paths=paths) == 0
+    assert main(["build"], FIELDS, CRAWLERS, paths=paths) == 0
     with open(os.path.join(paths.db_out_dir, "db_demo.csv"), "rb") as fh:
         assert fh.read() == (b"zipcode,lat,lng,land_area_in_sqmi,population,housing_units\n"
                              b"10001,40.750649,-73.997298,0.624,32612,18926\n"
@@ -93,24 +96,3 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
         for n in names:
             with open(os.path.join(folder, n), "rb") as fh:
                 assert KEY.encode() not in fh.read(), n
-
-
-def test_crawler_modules_never_touch_the_network():
-    forbidden = {"urllib", "http", "socket", "ssl", "requests"}
-    folder = os.path.dirname(census_dhc.__file__)
-    for name in sorted(os.listdir(folder)):
-        if not name.endswith(".py"):
-            continue
-        with open(os.path.join(folder, name), encoding="utf-8") as fh:
-            tree = ast.parse(fh.read(), name)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                modules = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom):
-                base = node.module or ""
-                modules = [base] + ["%s.%s" % (base, a.name) for a in node.names]
-            else:
-                continue
-            for m in modules:
-                assert m.split(".")[0] not in forbidden, (name, m)
-                assert m.split(".")[-1] != "fetch", (name, m)

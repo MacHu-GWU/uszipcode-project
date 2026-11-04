@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Run one crawler: fetch (cached) -> parse (offline) -> check the output contract -> write.
+Run one crawler: fetch (cached) -> parse (offline) -> each claimed Field reads its
+value from the source rows -> check the output contract -> write.
 
 The output contract (rules D1-D6) is checked before anything is written; on any
 error the previous output stays. A crawler output is ``<name>.csv`` (header
@@ -11,13 +12,14 @@ Keys are normalized with ``normalize_zip``; keys that are not ZIPs (``00000``,
 ``99999``, text) are skipped and counted.
 """
 
+import collections.abc
 import csv
 import json
 import math
 import os
 import typing
 
-from ..zipcode_universe.sources import normalize_zip
+from ..zipcodes import normalize_zip
 from . import fetch
 from .core import ContractError, Crawler, Field, Paths, PipelineError
 
@@ -51,19 +53,18 @@ def _coerce(field: Field, value):
 def check_rows(crawler: Crawler, catalog: typing.Dict[str, Field],
                rows: typing.Iterable) -> typing.Tuple[typing.List[tuple], dict]:
     """
-    Apply rules D1-D6 to the rows of ``parse()``.
+    Let each claimed Field read its value from the source rows of ``parse()`` and apply rules D1-D6.
     Returns ``(records, stats)``: records are ``(zipcode, [value per claimed Field])`` sorted by zipcode.
     """
     claims = list(crawler.fields)
-    claimed = set(claims)
     errors, records, first_row = [], {}, {}
     skipped, skipped_examples, n_rows = 0, [], 0
     for i, row in enumerate(rows, start=1):
         n_rows += 1
-        if not (isinstance(row, tuple) and len(row) == 2 and isinstance(row[1], dict)):
-            errors.append("row %d: parse() must yield (zipcode, {field: value}), got %r" % (i, row))
+        if not (isinstance(row, tuple) and len(row) == 2 and isinstance(row[1], collections.abc.Mapping)):
+            errors.append("row %d: parse() must yield (zipcode, {column: value}), got %r" % (i, row))
             continue
-        key, values = row
+        key, source_row = row
         z = normalize_zip(key)
         if z is None:
             skipped += 1
@@ -74,12 +75,16 @@ def check_rows(crawler: Crawler, catalog: typing.Dict[str, Field],
             errors.append("[D1] row %d: zipcode %s appears again (first at row %d): aggregate multi-row sources in parse()"
                           % (i, z, first_row[z]))
             continue
-        for k in values:
-            if k not in claimed:
-                errors.append("[D2] row %d, zipcode %s: %r is not a Field of crawler %r" % (i, z, k, crawler.name))
         out = []
         for name in claims:
-            value, error = _coerce(catalog[name], values.get(name))
+            try:
+                raw_value = catalog[name].extract(source_row)
+            except Exception as e:  # the source column is gone, or a value cannot be converted
+                errors.append("[D2] row %d, zipcode %s, field %s: cannot read it from the source row: %s: %s"
+                              % (i, z, name, type(e).__name__, e))
+                out.append(None)
+                continue
+            value, error = _coerce(catalog[name], raw_value)
             if error:
                 errors.append("[%s] row %d, zipcode %s, field %s: %s" % (error[0], i, z, name, error[1]))
             out.append(value)

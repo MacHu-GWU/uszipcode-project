@@ -9,12 +9,18 @@ import os
 import pytest
 
 from data_pipeline.database import fetch
-from data_pipeline.database.core import ContractError, Crawler, Download, Field, Paths
+from data_pipeline.database.core import ContractError, Crawler, Download, Field, Paths, column, parse_int
 from data_pipeline.database.crawl import check_rows, read_meta, read_output, run_crawler, write_output
 
 from fakes import FakeOpener
 
-FIELDS = [Field("n", int, "a count"), Field("x", float, "a share"), Field("s", str, "a name")]
+
+def _get(name):
+    return lambda row: row.get(name)
+
+
+FIELDS = [Field("n", int, "a count", extract=_get("n")), Field("x", float, "a share", extract=_get("x")),
+          Field("s", str, "a name", extract=_get("s"))]
 CATALOG = {f.name: f for f in FIELDS}
 URL = "https://data.test/src.csv"
 
@@ -39,7 +45,6 @@ GOOD = ("10001", {"n": 1, "x": 0.5, "s": "a"})
 @pytest.mark.parametrize("rule, rows, text", [
     ("D1", [GOOD, ("10001", {"n": 2})], "zipcode 10001 appears again (first at row 1)"),
     ("D1", [("501", {"n": 1, "x": 1.0, "s": "a"}), ("00501", {"n": 2})], "zipcode 00501 appears again"),
-    ("D2", [GOOD, ("20037", {"n": 1, "zz": 2})], "row 2, zipcode 20037: 'zz' is not a Field of crawler 'src'"),
     ("D3", [GOOD, ("20037", {"n": "12"})], "row 2, zipcode 20037, field n: '12' is not an int"),
     ("D4", [("10001", {"n": 1, "x": 0.5}), ("20037", {"n": 2, "s": " "})], "Field 's' is NULL in every row"),
     ("D5", [], "parse() returned no usable rows (0 rows, 0 skipped keys)"),
@@ -53,8 +58,25 @@ def test_each_rule(rule, rows, text):
     assert any(line.strip().startswith("[%s]" % rule) and text in line for line in message.splitlines()), message
 
 
+@pytest.mark.parametrize("row, text", [
+    ({"other": "5"}, "KeyError: 'P1_001N'"),  # the source renamed the column
+    ({"P1_001N": "abc"}, "ValueError: invalid literal"),  # the value cannot be converted
+])
+def test_rule_d2_a_field_cannot_read_its_value(row, text):
+    field = Field("n", int, "a count", extract=column("P1_001N", parse_int))
+    crawler = Crawler("src", ("n",), (Download("src.csv", URL),), lambda files: [])
+    with pytest.raises(ContractError) as e:
+        check_rows(crawler, {"n": field}, [("20037", row)])
+    assert "[D2] row 1, zipcode 20037, field n: cannot read it from the source row: " + text in str(e.value)
+
+
+def test_source_rows_may_have_other_columns():
+    records, _ = _check([("10001", {"n": 1, "x": 0.5, "s": "a", "NAME": "ignored", "P2_001N": "9"})])
+    assert records == [("10001", [1, 0.5, "a"])]
+
+
 def test_first_20_errors_are_listed():
-    rows = [GOOD] + [("%05d" % (20000 + i), {"n": 1, "bad": i}) for i in range(21)]
+    rows = [GOOD] + [("%05d" % (20000 + i), {"n": "bad"}) for i in range(21)]
     lines = _error(rows).splitlines()
     assert lines[0] == "crawler 'src': output contract failed: 21 problem(s)"
     assert len(lines) == 1 + 20 + 1 and lines[-1].strip() == "... and 1 more"

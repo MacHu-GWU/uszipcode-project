@@ -16,8 +16,8 @@ import os
 import typing
 import urllib.error
 
-from data_pipeline.database.core import Crawler, Download, Field, Paths
-from data_pipeline.database.registry import task_command
+from data_pipeline.database.checks import task_command
+from data_pipeline.database.core import Crawler, Download, Field, Paths, column
 
 
 class _Response:
@@ -101,12 +101,21 @@ def _value(dtype: type, k: int, i: int, bump: int):
     return "v%d_%d%s" % (k, i, "b" * bump)
 
 
-def _parser(filename: str, fields: typing.List[Field]):
+def _parser(filename: str):
     def parse(files):
         with open(files[filename], encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
-                yield row["zipcode"], {f.name: None if row[f.name] == "" else f.dtype(row[f.name]) for f in fields}
+                yield row["zipcode"], row
     return parse
+
+
+def _convert(dtype: type):
+    return lambda cell: None if cell == "" else dtype(cell)
+
+
+def _field(i: int) -> Field:
+    name, dtype = "f%02d" % (i + 1), DTYPES[i % 3]
+    return Field(name, dtype, "fake field %d" % (i + 1), extract=column(name, _convert(dtype)))
 
 
 class FakeWorld:
@@ -121,14 +130,14 @@ class FakeWorld:
         assert n_fields >= n_crawlers >= 1 and n_pks >= 1
         self.root, self.n, self.m, self.k = root, n_pks, n_fields, n_crawlers
         self.pks = ["%05d" % (501 + 37 * k) for k in range(n_pks)]
-        self.fields = [Field("f%02d" % (i + 1), DTYPES[i % 3], "fake field %d" % (i + 1)) for i in range(n_fields)]
+        self.fields = [_field(i) for i in range(n_fields)]
         self.crawlers, self.served = [], {}
         for j in range(n_crawlers):
             claimed = [f for i, f in enumerate(self.fields) if i % n_crawlers == j]
             filename = "fake-%d.csv" % (j + 1)
             download = Download(filename, "https://fake.test/" + filename, magic=b"zipcode,")
             self.crawlers.append(Crawler("fake-%d" % (j + 1), tuple(f.name for f in claimed), (download,),
-                                         _parser(filename, claimed)))
+                                         _parser(filename)))
             self.served[download.url] = self.source_bytes(j)
         self.paths = Paths.under(root)
         os.makedirs(root, exist_ok=True)

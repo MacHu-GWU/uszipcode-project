@@ -36,7 +36,7 @@ def _read(path):
         return fh.read()
 
 
-@pytest.mark.parametrize("n_pks, n_fields, n_crawlers", [(1, 1, 1), (3, 5, 2), (30, 10, 4), (300, 64, 8)])
+@pytest.mark.parametrize("n_pks, n_fields, n_crawlers", [(1, 1, 1), (3, 5, 2), (30, 10, 4), (300, 64, 8), (5, 300, 3)])
 def test_end_to_end(tmp_path, monkeypatch, capsys, n_pks, n_fields, n_crawlers):
     world = make_fake_world(str(tmp_path / "world"), n_pks, n_fields, n_crawlers)
     opener = FakeOpener(world.served)

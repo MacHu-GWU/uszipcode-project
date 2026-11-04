@@ -3,10 +3,11 @@
 """
 Building blocks of the crawler registry. Nothing in this module does I/O.
 
-- :class:`Field`: one column of the final database.
+- :class:`Field`: one column of the final database, and how to read it from a
+  row of its source. Each Field lives in its own module in ``fields/``.
 - :class:`Download`: one file a crawler fetches, optionally with a :class:`Secret`.
 - :class:`Crawler`: one data source: its name, the Fields it claims, its downloads
-  and a pure ``parse()`` function that reads the downloaded files.
+  and a pure ``parse()`` function that turns the downloaded files into source rows.
 - :class:`Paths`: where caches, crawler outputs and databases live.
 - the errors raised by the pipeline, each with the exit code the CLI returns.
 """
@@ -18,15 +19,24 @@ import typing
 #: SQLite column type for each allowed Field dtype
 SQL_TYPES = {int: "INTEGER", float: "REAL", str: "TEXT"}
 
+#: one source row: {column of the source: raw value}. The source's own names, untouched.
+SourceRow = typing.Mapping[str, typing.Any]
+
 
 @dataclasses.dataclass(frozen=True)
 class Field:
-    """One column of the database. ``FIELDS`` in ``fields.py`` lists all of them."""
+    """
+    One column of the database. ``extract`` reads the value from a source row
+    (None means no value). ``examples`` are ``(source row, expected value)`` pairs,
+    run by the tests, so a module also shows what its source looks like.
+    """
 
     name: str
     dtype: type  # int | float | str
     description: str
     unit: str = ""
+    extract: typing.Optional[typing.Callable[[SourceRow], typing.Any]] = None
+    examples: typing.Tuple[typing.Tuple[dict, typing.Any], ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -50,8 +60,8 @@ class Download:
     secret: typing.Optional[Secret] = None
 
 
-#: what ``Crawler.parse`` yields: (key in the source, {field name: value or None})
-Row = typing.Tuple[str, typing.Dict[str, typing.Any]]
+#: what ``Crawler.parse`` yields: (key in the source, source row)
+Row = typing.Tuple[str, SourceRow]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -61,7 +71,8 @@ class Crawler:
 
     ``parse`` receives ``{filename: local path}`` for every declared download and
     yields :data:`Row`. It never sees the PK set and never opens a URL: the
-    framework downloads the files, once, before ``parse`` runs.
+    framework downloads the files, once, before ``parse`` runs. It does not know
+    the Fields either: each claimed Field reads its value from the source row.
     """
 
     name: str  # kebab-case; the mise task is crawler-<name>
@@ -156,3 +167,21 @@ def parse_float(value) -> typing.Optional[float]:
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     return float(value)
+
+
+def column(name: str, convert: typing.Optional[typing.Callable] = None):
+    """An ``extract`` function: one source column. A missing column is an error: the source changed."""
+    def extract(row: SourceRow):
+        return convert(row[name]) if convert else row[name]
+    return extract
+
+
+def first_value(*names: str, convert: typing.Optional[typing.Callable] = None):
+    """An ``extract`` function for a fallback: the first non-blank value among these columns."""
+    def extract(row: SourceRow):
+        for name in names:
+            value = row.get(name)
+            if value is not None and not (isinstance(value, str) and not value.strip()):
+                return convert(value) if convert else value
+        return None
+    return extract

@@ -4,11 +4,17 @@
 #   mise run pipeline-build          build the database for the demo PK set (add -- --pk-set full for all ZIPs)
 # Every crawler registered in data_pipeline/database/registry.py needs a crawler-<name> task below;
 # `mise run pipeline-check` fails and prints the block to add when one is missing.
-# The pipeline needs Python 3.11+ (it reads this file with tomllib) and pytest for the tests;
-# it uses whatever `python` is active, so no version is pinned here.
+# First time in a clone: `mise trust`, `mise install`, `mise run pipeline-setup`.
+
+[tools]
+python = "3.12"
 
 [env]
 PYTHONUTF8 = "1"
+
+[tasks.pipeline-setup]
+description = "Install pytest into the Python of this project (needed once, for pipeline-test)"
+run = "python -m pip install pytest"
 
 [tasks.zipcode-universe]
 description = "Build the primary-key list of every ZIP code (data_pipeline/output/zipcode_universe.csv)"

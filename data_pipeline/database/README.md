@@ -149,7 +149,7 @@ zipcode,zipcode_type,major_city,state,lat,lng,land_area_in_sqmi,population,housi
 NULL. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json) counts
 it under `not_in_source` for those Fields.
 
-With `--pk-set full` (42,730 ZIPs, 3 seconds, no downloads):
+With `--pk-set full` (42,730 ZIPs, about 1 second, no downloads):
 
 | Fields | ZIPs with a value |
 |---|---|

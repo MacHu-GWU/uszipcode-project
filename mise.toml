@@ -53,6 +53,14 @@ run = "python -m data_pipeline.database crawl census-acs5"
 description = "IRS SOI ZIP Code Data, latest tax year -> shares and averages of 11 income sources"
 run = "python -m data_pipeline.database crawl irs-soi"
 
+[tasks.crawler-census-acs5-history]
+description = "ACS 5-year 2011-2024 -> history: population, median income, home value and rent by year"
+run = "python -m data_pipeline.database crawl census-acs5-history"
+
+[tasks.crawler-census-decennial]
+description = "Census 2000, 2010 and 2020 -> history: population by census year"
+run = "python -m data_pipeline.database crawl census-decennial"
+
 [tasks.crawler-zip-basics]
 description = "HUD-USPS crosswalk, Census counties and ZBP, uszipcode 2.x -> ZIP type, city, state, county"
 run = "python -m data_pipeline.database crawl zip-basics"

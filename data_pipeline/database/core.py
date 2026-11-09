@@ -78,6 +78,10 @@ class Crawler:
     yields :data:`Row`. It never sees the PK set and never opens a URL: the
     framework downloads the files, once, before ``parse`` runs. It does not know
     the Fields either: each claimed Field reads its value from the source row.
+
+    A history crawler (``history=True``) fills the history table, keyed by
+    (zipcode, year): each source row has a ``year`` column, and it claims Fields of
+    ``HISTORY_FIELDS`` instead of ``FIELDS``.
     """
 
     name: str  # kebab-case; the mise task is crawler-<name>
@@ -85,6 +89,7 @@ class Crawler:
     downloads: typing.Tuple[Download, ...]
     parse: typing.Callable[[typing.Dict[str, str]], typing.Iterable[Row]]
     description: str = ""
+    history: bool = False
 
 
 @dataclasses.dataclass(frozen=True)

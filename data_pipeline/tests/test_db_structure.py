@@ -19,6 +19,7 @@ from data_pipeline.database import crawlers, fields
 from data_pipeline.database.checks import unlisted_modules, validate
 from data_pipeline.database.core import Crawler, Download, Field, column, parse_int
 from data_pipeline.database.crawl import check_rows
+from data_pipeline.database.fields import history
 
 DATABASE = "data_pipeline.database"
 DATABASE_DIR = os.path.dirname(os.path.dirname(crawlers.__file__))
@@ -77,15 +78,20 @@ def test_a_crawler_never_reads_a_value_itself():
             assert ".extract" not in fh.read(), name
 
 
-@pytest.mark.parametrize("name, path", _modules(os.path.dirname(fields.__file__)))
-def test_a_field_module_imports_only_core(name, path):
-    for imported in _imports(path, DATABASE + ".fields"):
+FIELD_MODULE_FILES = ([(n, p, DATABASE + ".fields") for n, p in _modules(os.path.dirname(fields.__file__))]
+                      + [("history/" + n, p, DATABASE + ".fields.history")
+                         for n, p in _modules(os.path.dirname(history.__file__))])
+
+
+@pytest.mark.parametrize("name, path, package", FIELD_MODULE_FILES, ids=[f[0] for f in FIELD_MODULE_FILES])
+def test_a_field_module_imports_only_core(name, path, package):
+    for imported in _imports(path, package):
         assert imported.split(".")[0] not in NETWORK, (name, imported)
         if _inside(imported, "data_pipeline"):
             assert imported == DATABASE + ".core" or imported.startswith(DATABASE + ".core."), (name, imported)
 
 
-@pytest.mark.parametrize("module", fields.MODULES, ids=lambda m: m.__name__.rsplit(".", 1)[-1])
+@pytest.mark.parametrize("module", fields.MODULES + history.MODULES, ids=lambda m: m.__name__.split(".", 3)[-1])
 def test_a_field_module_is_named_after_its_field(module):
     short = module.__name__.rsplit(".", 1)[-1]
     assert isinstance(module.FIELDS, tuple) and module.FIELDS
@@ -93,7 +99,7 @@ def test_a_field_module_is_named_after_its_field(module):
         assert field.name == short or field.name.startswith(short + "_")
 
 
-@pytest.mark.parametrize("field", fields.FIELDS, ids=lambda f: f.name)
+@pytest.mark.parametrize("field", fields.FIELDS + history.HISTORY_FIELDS, ids=lambda f: f.name)
 def test_the_examples_of_every_field_pass(field):
     assert field.examples, "add at least one example of the source row"
     for source_row, expected in field.examples:
@@ -103,7 +109,7 @@ def test_the_examples_of_every_field_pass(field):
 
 
 def test_every_real_module_is_listed():
-    assert unlisted_modules(fields) == [] and unlisted_modules(crawlers) == []
+    assert unlisted_modules(fields) == [] and unlisted_modules(history) == [] and unlisted_modules(crawlers) == []
 
 
 def test_an_unlisted_module_is_reported(tmp_path):

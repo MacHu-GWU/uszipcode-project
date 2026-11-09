@@ -121,6 +121,37 @@ def test_output_files_are_exact_and_stable(tmp_path):
     assert sorted(os.listdir(out)) == ["src.csv", "src.json"]
 
 
+def _history_crawler():
+    return Crawler("hist", ("n",), (Download("h.csv", "https://data.test/h.csv"),), lambda files: [], history=True)
+
+
+def test_history_rows_are_keyed_by_zipcode_and_year(tmp_path):
+    rows = [("20037", {"year": 2012, "n": 2}), ("20037", {"year": "2011", "n": 1}), ("501", {"year": 2011, "n": 3}),
+            ("00000", {"year": 2011, "n": 4})]
+    records, stats = check_rows(_history_crawler(), CATALOG, rows)
+    assert records == [(("00501", 2011), [3]), (("20037", 2011), [1]), (("20037", 2012), [2])]
+    assert stats["rows"] == 3 and stats["skipped_keys"] == 1
+    out = str(tmp_path / "out")
+    path = write_output(_history_crawler(), records, dict(stats, crawler="hist"), out)
+    with open(path, "rb") as fh:
+        assert fh.read() == b"zipcode,year,n\n00501,2011,3\n20037,2011,1\n20037,2012,2\n"
+    assert read_output(_history_crawler(), CATALOG, out) == {
+        ("00501", 2011): {"n": 3}, ("20037", 2011): {"n": 1}, ("20037", 2012): {"n": 2}}
+
+
+@pytest.mark.parametrize("rows, text", [
+    ([("20037", {"n": 1})], "[D7] row 1, zipcode 20037: a history source row needs a year, got None"),
+    ([("20037", {"year": "20x1", "n": 1})], "[D7] row 1, zipcode 20037: a history source row needs a year, got '20x1'"),
+    ([("20037", {"year": 1850, "n": 1})], "[D7] row 1, zipcode 20037: a history source row needs a year, got 1850"),
+    ([("20037", {"year": 2011, "n": 1}), ("20037", {"year": 2011, "n": 2})],
+     "[D1] row 2: zipcode 20037, year 2011 appears again (first at row 1)"),
+])
+def test_history_rules(rows, text):
+    with pytest.raises(ContractError) as e:
+        check_rows(_history_crawler(), CATALOG, rows)
+    assert text in str(e.value)
+
+
 def _parse_ok(files):
     yield "10001", {"n": 1, "x": 0.5, "s": "a"}
     yield "20037", {"n": 2, "x": None, "s": "b"}

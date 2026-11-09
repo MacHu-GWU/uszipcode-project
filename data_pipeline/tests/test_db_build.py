@@ -13,8 +13,9 @@ import pytest
 
 from data_pipeline.database import build as build_mod
 from data_pipeline.database import fetch
+from data_pipeline.database.checks import task_command
 from data_pipeline.database.cli import main
-from data_pipeline.database.core import ContractError, Field, Paths, PipelineError, PkSetError
+from data_pipeline.database.core import ContractError, Crawler, Download, Field, Paths, PipelineError, PkSetError
 
 from fakes import FakeOpener, make_fake_world
 
@@ -203,6 +204,47 @@ def test_a_failing_derived_field_stops_the_build(world):
         build_mod.build(list(world.fields) + [broken], world.crawlers, world.paths, pk_set=world.pk_csv)
     assert "derived Fields failed: 3 problem(s)" in str(e.value)
     assert "[B4] derived Field broken, zipcode 00501: ZeroDivisionError: division by zero" in str(e.value)
+
+
+def test_history_table(world, monkeypatch):
+    yearly = Field("h", int, "a yearly count", extract=lambda row: int(row["h"]) if row["h"] else None)
+
+    def parse(files):
+        with open(files["hist.csv"], encoding="utf-8", newline="") as fh:
+            for row in csv.DictReader(fh):
+                yield row["zipcode"], row
+
+    hist = Crawler("fake-history", ("h",), (Download("hist.csv", "https://fake.test/hist.csv", magic=b"zipcode,"),),
+                   parse, history=True)
+    body = "zipcode,year,h\n00501,2011,1\n00501,2012,2\n00538,2012,\n99001,2012,9\n"
+    monkeypatch.setattr(fetch, "urlopen", FakeOpener({"https://fake.test/hist.csv": body.encode()}))
+    with open(world.paths.mise_toml, "a", encoding="utf-8") as fh:
+        fh.write('[tasks.crawler-fake-history]\nrun = "%s"\n' % task_command("fake-history"))
+    crawlers = world.crawlers + [hist]
+    kw = dict(fields=world.fields, crawlers=crawlers, paths=world.paths, history_fields=[yearly])
+    assert main(["crawl", "fake-history"], **kw) == 0
+    coverage = build_mod.build(world.fields, crawlers, world.paths, pk_set=world.pk_csv, history_fields=[yearly])
+
+    con = sqlite3.connect(coverage["files"]["sqlite"])
+    try:
+        rows = con.execute("SELECT * FROM zipcode_history ORDER BY zipcode, year").fetchall()
+        info = con.execute("PRAGMA table_info(zipcode_history)").fetchall()
+        main_rows = con.execute("SELECT COUNT(*) FROM zipcode_data").fetchone()[0]
+    finally:
+        con.close()
+    assert rows == [("00501", 2011, 1), ("00501", 2012, 2), ("00538", 2012, None)]  # 99001 is outside the PK set
+    assert [(c[1], c[2], c[5]) for c in info] == [("zipcode", "TEXT", 1), ("year", "INTEGER", 2), ("h", "INTEGER", 0)]
+    assert main_rows == 3 and coverage["columns"] == 1 + len(world.fields)
+    with open(coverage["files"]["history_csv"], "rb") as fh:
+        assert fh.read() == b"zipcode,year,h\n00501,2011,1\n00501,2012,2\n00538,2012,\n"
+    h = coverage["history"]
+    assert (h["table"], h["rows"], h["pks"], h["years"]) == ("zipcode_history", 3, 2, [2011, 2012])
+    assert h["fields"]["h"] == {"crawler": "fake-history", "non_null": 2, "years": [2011, 2012]}
+    assert {k: v for k, v in h["crawlers"]["fake-history"].items() if k != "downloads"} == {
+        "source_rows": 4, "rows_in_pk_set": 3, "rows_outside_pk_set": 1}
+    assert "fake-history" not in coverage["crawlers"]
+    assert "History table zipcode_history: 3 rows (zipcode x year) for 2 PKs, years 2011-2012" \
+        in build_mod.describe_coverage(coverage)
 
 
 def test_locked_database_gives_a_friendly_message(world, monkeypatch, capsys):

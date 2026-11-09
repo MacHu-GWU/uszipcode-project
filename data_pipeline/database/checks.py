@@ -23,6 +23,8 @@ import urllib.parse
 
 from .core import Crawler, Field, RegistryError, SQL_TYPES
 
+MAIN_CATALOG, HISTORY_CATALOG = "FIELDS", "HISTORY_FIELDS"
+MAIN_KEY, HISTORY_KEY = ("zipcode",), ("zipcode", "year")
 TASK_PREFIX = "crawler-"
 MAX_DOWNLOADS = 100
 SQLITE_MAX_COLUMNS = 2000  # the default SQLITE_MAX_COLUMN, including the zipcode column
@@ -51,15 +53,16 @@ def _did_you_mean(word: str, options: typing.Iterable[str]) -> str:
     return " (did you mean %r?)" % close[0] if close else ""
 
 
-def _check_fields(fields: typing.Sequence[Field]) -> typing.List[str]:
+def _check_fields(fields: typing.Sequence[Field], catalog: str = MAIN_CATALOG) -> typing.List[str]:
     problems, seen = [], set()
+    key = HISTORY_KEY if catalog == HISTORY_CATALOG else MAIN_KEY
     for f in fields:
         if not FIELD_NAME.match(f.name or ""):
             problems.append("[F1] Field name %r is not snake_case (a-z, 0-9, _; starts with a letter): rename it." % f.name)
-        if f.name == "zipcode":
-            problems.append("[F2] Field name 'zipcode' is reserved for the primary key: rename the Field.")
+        if f.name in key:
+            problems.append("[F2] Field name %r is reserved for the primary key: rename the Field." % f.name)
         if f.name in seen:
-            problems.append("[F3] Field %r is defined twice in FIELDS: keep one." % f.name)
+            problems.append("[F3] Field %r is defined twice in %s: keep one." % (f.name, catalog))
         seen.add(f.name)
         if f.dtype not in SQL_TYPES:
             problems.append("[F4] Field %r has dtype %s: use int, float or str." % (f.name, getattr(f.dtype, "__name__", f.dtype)))
@@ -67,9 +70,11 @@ def _check_fields(fields: typing.Sequence[Field]) -> typing.List[str]:
             problems.append('[F5] Field %r has an empty description: describe it (say "ZCTA" for Census values).' % f.name)
         if not callable(f.extract):
             problems.append("[F6] Field %r has no extract function: say how to read it from a source row." % f.name)
-    if len(fields) + 1 > SQLITE_MAX_COLUMNS:
-        problems.append("[F7] The catalog has %d Fields, but SQLite allows %d columns including zipcode: "
-                        "keep history in a separate table." % (len(fields), SQLITE_MAX_COLUMNS))
+        if f.inputs and catalog == HISTORY_CATALOG:
+            problems.append("[K5] Field %r of %s is derived: derived Fields belong to FIELDS." % (f.name, catalog))
+    if len(fields) + len(key) > SQLITE_MAX_COLUMNS:
+        problems.append("[F7] The catalog has %d Fields, but SQLite allows %d columns including %s: "
+                        "keep history in a separate table." % (len(fields), SQLITE_MAX_COLUMNS, " and ".join(key)))
     return problems
 
 
@@ -117,19 +122,21 @@ def _check_crawlers(crawlers: typing.Sequence[Crawler]) -> typing.List[str]:
     return problems
 
 
-def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler]) -> typing.List[str]:
+def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler],
+                  catalog_name: str = MAIN_CATALOG) -> typing.List[str]:
     problems = []
     catalog = [f.name for f in fields]
     known = set(catalog)
     derived = {f.name: f for f in fields if f.inputs}
+    kind = "history crawler" if catalog_name == HISTORY_CATALOG else "crawler"
     claims = collections.defaultdict(list)
     for c in crawlers:
         for name in c.fields:
             if name in known:
                 claims[name].append(c.name)
             else:
-                problems.append("[K1] Crawler %r claims %r, which is not in FIELDS%s: add the Field's module to fields/ or fix the name."
-                                % (c.name, name, _did_you_mean(name, catalog)))
+                problems.append("[K1] Crawler %r claims %r, which is not in %s%s: add the Field's module to fields/ or fix the name."
+                                % (c.name, name, catalog_name, _did_you_mean(name, catalog)))
     for name in dict.fromkeys(catalog):  # catalog order, without duplicates
         claimants = claims.get(name, [])
         if name in derived:
@@ -140,13 +147,14 @@ def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Craw
             problems.append("[K2] Field %r is claimed %d times (%s): exactly one crawler may claim it."
                             % (name, len(claimants), ", ".join(claimants)))
         elif not claimants:
-            problems.append("[K3] Field %r is not claimed by any crawler: add it to one crawler's fields." % name)
-    for i, f in enumerate(fields):
-        earlier = catalog[:i]
-        for name in f.inputs:
-            if name not in earlier:
-                problems.append("[K5] Field %r is derived from %r, which is not a Field before it in FIELDS%s: "
-                                "derive only from earlier Fields." % (f.name, name, _did_you_mean(name, earlier)))
+            problems.append("[K3] Field %r is not claimed by any %s: add it to one %s's fields." % (name, kind, kind))
+    if catalog_name == MAIN_CATALOG:
+        for i, f in enumerate(fields):
+            earlier = catalog[:i]
+            for name in f.inputs:
+                if name not in earlier:
+                    problems.append("[K5] Field %r is derived from %r, which is not a Field before it in FIELDS%s: "
+                                    "derive only from earlier Fields." % (f.name, name, _did_you_mean(name, earlier)))
     return problems
 
 
@@ -187,16 +195,26 @@ def _check_mise(crawlers: typing.Sequence[Crawler], mise_toml: str) -> typing.Li
 
 
 def validate(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler],
-             mise_toml: typing.Optional[str]) -> typing.List[str]:
-    """Every problem of the catalog, the crawlers, the claims and (unless ``mise_toml`` is None) the mise tasks."""
-    problems = _check_fields(fields) + _check_crawlers(crawlers) + _check_claims(fields, crawlers)
+             mise_toml: typing.Optional[str], history_fields: typing.Sequence[Field] = ()) -> typing.List[str]:
+    """
+    Every problem of the catalogs, the crawlers, the claims and (unless ``mise_toml`` is None) the mise
+    tasks. History crawlers claim from ``history_fields``, the other crawlers from ``fields``.
+    """
+    main = [c for c in crawlers if not c.history]
+    history = [c for c in crawlers if c.history]
+    problems = _check_fields(fields)
+    if history_fields or history:
+        problems += _check_fields(history_fields, HISTORY_CATALOG)
+    problems += _check_crawlers(crawlers) + _check_claims(fields, main)
+    if history_fields or history:
+        problems += _check_claims(history_fields, history, HISTORY_CATALOG)
     if mise_toml is not None:
         problems += _check_mise(crawlers, mise_toml)
     return problems
 
 
-def require_valid(fields, crawlers, mise_toml) -> None:
-    problems = validate(fields, crawlers, mise_toml)
+def require_valid(fields, crawlers, mise_toml, history_fields=()) -> None:
+    problems = validate(fields, crawlers, mise_toml, history_fields)
     if problems:
         raise RegistryError(problems)
 

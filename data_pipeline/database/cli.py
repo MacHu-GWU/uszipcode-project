@@ -59,13 +59,17 @@ def _crawl_line(s: dict) -> str:
 
 
 def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths] = None,
-         packages: typing.Sequence = ()) -> int:
-    """``packages``: the Python packages of the Fields and crawlers, for rule L1 of ``check``."""
+         packages: typing.Sequence = (), history_fields=()) -> int:
+    """
+    ``packages``: the Python packages of the Fields and crawlers, for rule L1 of ``check``.
+    ``history_fields``: the catalog of the history table, claimed by the history crawlers.
+    """
     paths = Paths.default() if paths is None else paths
     args = _parser().parse_args(argv)
+    history = [c for c in crawlers if c.history]
     try:
         if args.command == "check":
-            problems = validate(fields, crawlers, paths.mise_toml)
+            problems = validate(fields, crawlers, paths.mise_toml, history_fields)
             for package in packages:
                 problems += unlisted_modules(package)
             if problems:
@@ -73,13 +77,16 @@ def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths]
             n_derived = sum(1 for f in fields if f.inputs)
             print("%d Fields, %d crawlers, every Field claimed once%s, mise tasks match."
                   % (len(fields), len(crawlers), " or derived (%d)" % n_derived if n_derived else ""))
-            print(describe(fields, crawlers))
+            print(describe(fields, [c for c in crawlers if not c.history]))
+            if history:
+                print("History table: %d Fields from %d history crawlers." % (len(history_fields), len(history)))
+                print(describe(history_fields, history))
             return 0
         if args.command == "crawl":
             if bool(args.name) == bool(args.all):
                 print("crawl needs exactly one of NAME or --all", file=sys.stderr)
                 return 2
-            require_valid(fields, crawlers, paths.mise_toml)
+            require_valid(fields, crawlers, paths.mise_toml, history_fields)
             if args.all:
                 selected = list(crawlers)
             else:
@@ -93,14 +100,15 @@ def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths]
             if args.force and not args.refresh:
                 print("--force only has an effect together with --refresh", file=sys.stderr)
             for crawler in selected:
-                summary = run_crawler(crawler, fields, paths, refresh=args.refresh, force=args.force)
+                summary = run_crawler(crawler, history_fields if crawler.history else fields, paths,
+                                      refresh=args.refresh, force=args.force)
                 print(_crawl_line(summary), flush=True)
             return 0
         if args.command == "build":
-            coverage = build_mod.build(fields, crawlers, paths, pk_set=args.pk_set)
+            coverage = build_mod.build(fields, crawlers, paths, pk_set=args.pk_set, history_fields=history_fields)
             print(build_mod.describe_coverage(coverage))
-            print("wrote %s, %s and %s" % (_rel(coverage["files"]["sqlite"]), _rel(coverage["files"]["csv"]),
-                                           _rel(coverage["files"]["sqlite"][:-len(".sqlite")] + "_coverage.json")))
+            written = list(coverage["files"].values()) + [coverage["files"]["sqlite"][:-len(".sqlite")] + "_coverage.json"]
+            print("wrote %s and %s" % (", ".join(_rel(p) for p in written[:-1]), _rel(written[-1])))
             return 0
     except PipelineError as e:
         print(str(e), file=sys.stderr)

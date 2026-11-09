@@ -19,8 +19,11 @@ from data_pipeline.database import fetch
 from data_pipeline.database.cli import main
 from data_pipeline.database.core import Paths
 from data_pipeline.database.crawl import check_rows
-from data_pipeline.database.crawlers import CRAWLERS, census_acs5, census_dhc, census_gazetteer, irs_soi, zip_basics
+from data_pipeline.database.crawlers import (
+    CRAWLERS, census_acs5, census_acs5_history, census_decennial, census_dhc, census_gazetteer, irs_soi, zip_basics,
+)
 from data_pipeline.database.fields import FIELDS
+from data_pipeline.database.fields.history import HISTORY_FIELDS
 
 from fakes import FakeOpener
 
@@ -214,6 +217,46 @@ def test_irs_tax_year_is_in_the_url_and_file_name():
     assert old.downloads[0].filename == "22zpallnoagi.csv" and old.fields == irs_soi.CRAWLER.fields
 
 
+def _census_json(header_variables, values_by_zcta, key_column="zip code tabulation area") -> bytes:
+    rows = [list(header_variables) + [key_column]]
+    rows += [[values.get(v, "1") for v in header_variables] + [zcta] for zcta, values in values_by_zcta.items()]
+    return json.dumps(rows).encode()
+
+
+# real 20037 values of the research: ACS 2011 vintage and the three censuses
+ACS_HISTORY_20037 = {2011: {"B01003_001E": "13642", "B19013_001E": "78081", "B25077_001E": "546500", "B25064_001E": "1659"}}
+CENSUS_20037 = {2000: "12642", 2010: "14642", 2020: "14945"}
+
+
+def _history_responses() -> dict:
+    """url -> body for every download of the two history crawlers."""
+    out = {}
+    for year, d in zip(census_acs5_history.YEARS, census_acs5_history.CRAWLER.downloads):
+        out[d.url] = _census_json(census_acs5_history.VARIABLES,
+                                  {"10001": {}, "20037": ACS_HISTORY_20037.get(year, {})})
+    for (year, (_, variable)), d in zip(census_decennial.CENSUSES.items(), census_decennial.CRAWLER.downloads):
+        out[d.url] = _census_json([variable], {"10001": {}, "20037": {variable: CENSUS_20037[year]}})
+    return out
+
+
+def test_history_crawlers(tmp_path):
+    served = _history_responses()
+    for crawler in (census_acs5_history.CRAWLER, census_decennial.CRAWLER):
+        files = {}
+        for d in crawler.downloads:
+            files[d.filename] = str(tmp_path / d.filename)
+            with open(files[d.filename], "wb") as fh:
+                fh.write(served[d.url])
+        records, _ = check_rows(crawler, {f.name: f for f in HISTORY_FIELDS}, crawler.parse(files))
+        values = {key: dict(zip(crawler.fields, v)) for key, v in records}
+        if crawler is census_decennial.CRAWLER:
+            assert [values[("20037", y)]["census_population"] for y in (2000, 2010, 2020)] == [12642, 14642, 14945]
+            assert len(records) == 6
+        else:
+            assert values[("20037", 2011)]["acs_population"] == 13642 and values[("20037", 2011)]["median_rent"] == 1659
+            assert sorted({y for _, y in values}) == list(range(2011, 2025)) and len(records) == 2 * 14
+
+
 def test_acs_vintage_is_in_the_urls_and_file_names():
     old = census_acs5.crawler_for(2023)
     assert all("/data/2023/acs/acs5?" in d.url and d.filename.startswith("acs5_2023_") for d in old.downloads)
@@ -264,6 +307,7 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     acs = _acs_responses()
     served.update({d.url: acs[d.filename] for d in census_acs5.CRAWLER.downloads})
     served[irs_soi.CRAWLER.downloads[0].url] = _irs_csv().encode()
+    served.update(_history_responses())
     served.update({d.url: _read(files[d.filename]) for d in zip_basics.CRAWLER.downloads})
     opener = FakeOpener(served)
     monkeypatch.setattr(fetch, "urlopen", opener)
@@ -272,13 +316,23 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     root = tmp_path / "repo"
     paths = dataclasses.replace(Paths.under(str(root)), mise_toml=Paths.default().mise_toml)
 
-    assert main(["crawl", "--all"], FIELDS, CRAWLERS, paths=paths) == 0
+    kw = dict(paths=paths, history_fields=HISTORY_FIELDS)
+    assert main(["crawl", "--all"], FIELDS, CRAWLERS, **kw) == 0
     downloads = [d for c in CRAWLERS for d in c.downloads]
     assert opener.urls == [d.url + ("&key=" + KEY if d.secret and d.secret.query_param else "") for d in downloads]
     assert opener.calls[downloads.index(zip_basics.CRAWLER.downloads[0])][1]["Authorization"] == "Bearer " + TOKEN
-    assert main(["crawl", "--all"], FIELDS, CRAWLERS, paths=paths) == 0
+    assert main(["crawl", "--all"], FIELDS, CRAWLERS, **kw) == 0
     assert len(opener.calls) == len(downloads)  # cached: no new request
-    assert main(["build"], FIELDS, CRAWLERS, paths=paths) == 0
+    assert main(["build"], FIELDS, CRAWLERS, **kw) == 0
+
+    with open(os.path.join(paths.db_out_dir, "db_demo_history.csv"), encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        assert reader.fieldnames == ["zipcode", "year"] + [f.name for f in HISTORY_FIELDS]
+        history = {(r["zipcode"], int(r["year"])): r for r in reader}
+    years = [2000, 2010] + list(range(2011, 2025))
+    assert sorted(history) == [(z, y) for z in ("10001", "20037") for y in years]  # 20013 has no ZCTA: no history
+    assert [history[("20037", y)]["census_population"] for y in (2000, 2010, 2020)] == ["12642", "14642", "14945"]
+    assert history[("20037", 2011)]["median_home_value"] == "546500" and history[("20037", 2000)]["acs_population"] == ""
 
     with open(os.path.join(paths.db_out_dir, "db_demo.csv"), encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)

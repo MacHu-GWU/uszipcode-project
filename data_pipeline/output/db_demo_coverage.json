@@ -2246,8 +2246,322 @@
     "300": 2
   },
   "pks_without_any_value": [],
+  "history": {
+    "table": "zipcode_history",
+    "rows": 32,
+    "pks": 2,
+    "columns": 11,
+    "years": [
+      2000,
+      2010,
+      2011,
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "fields": {
+      "census_population": {
+        "crawler": "census-decennial",
+        "non_null": 6,
+        "years": [
+          2000,
+          2010,
+          2020
+        ]
+      },
+      "acs_population": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "acs_population_moe": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "median_household_income": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "median_household_income_moe": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "median_home_value": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "median_home_value_moe": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "median_rent": {
+        "crawler": "census-acs5-history",
+        "non_null": 28,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "median_rent_moe": {
+        "crawler": "census-acs5-history",
+        "non_null": 27,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      }
+    },
+    "crawlers": {
+      "census-acs5-history": {
+        "source_rows": 466292,
+        "rows_in_pk_set": 28,
+        "rows_outside_pk_set": 466264,
+        "downloads": {
+          "acs5_2011_zcta_history.json": {
+            "url": "https://api.census.gov/data/2011/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2486900,
+            "sha256": "90b9a7cd17a4ad9c7d19191c2366c24dba3bba98e6abb3eb95607cd224e74f33",
+            "fetched_at_utc": "2026-11-09T17:28:07Z"
+          },
+          "acs5_2012_zcta_history.json": {
+            "url": "https://api.census.gov/data/2012/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2482756,
+            "sha256": "d560aede12918dcdcd313c01691641022d00beb79750dc1368557ae150ca8b60",
+            "fetched_at_utc": "2026-11-09T17:28:15Z"
+          },
+          "acs5_2013_zcta_history.json": {
+            "url": "https://api.census.gov/data/2013/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2503147,
+            "sha256": "3ba96681aa99421d2e790c22a64e4150b9e2f7c204a42fcc5a7e32fc3de50312",
+            "fetched_at_utc": "2026-11-09T17:28:22Z"
+          },
+          "acs5_2014_zcta_history.json": {
+            "url": "https://api.census.gov/data/2014/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2499878,
+            "sha256": "2988b82bc04070750d53df525c7600ed1a4ed7e55f3f80d94060cb868d73df45",
+            "fetched_at_utc": "2026-11-09T17:28:30Z"
+          },
+          "acs5_2015_zcta_history.json": {
+            "url": "https://api.census.gov/data/2015/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2482438,
+            "sha256": "634a3f40103c7d005641a700b141367d3a31a9a41c7b70892221cf65c2e50df9",
+            "fetched_at_utc": "2026-11-09T17:28:38Z"
+          },
+          "acs5_2016_zcta_history.json": {
+            "url": "https://api.census.gov/data/2016/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2520405,
+            "sha256": "c63f315a1211cf3aa0c1d2b2f7ac3fd76e692f3d703b6a73c80be0fe1bd68ef1",
+            "fetched_at_utc": "2026-11-09T17:28:46Z"
+          },
+          "acs5_2017_zcta_history.json": {
+            "url": "https://api.census.gov/data/2017/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2529530,
+            "sha256": "8028a0a15351af62d7954825aee7c181f7b8fbf2249acea9e2546480d6108910",
+            "fetched_at_utc": "2026-11-09T17:28:55Z"
+          },
+          "acs5_2018_zcta_history.json": {
+            "url": "https://api.census.gov/data/2018/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2533500,
+            "sha256": "56bea440eb23277286d91f278a35405daa65a400ec0bf661ac011e4ce6a7e2f9",
+            "fetched_at_utc": "2026-11-09T17:29:02Z"
+          },
+          "acs5_2019_zcta_history.json": {
+            "url": "https://api.census.gov/data/2019/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2541721,
+            "sha256": "c5d2afa54a9e03a022b098e9f6c73a0977d3fc7725f0fe657296184b7121ffa6",
+            "fetched_at_utc": "2026-11-09T17:29:10Z"
+          },
+          "acs5_2020_zcta_history.json": {
+            "url": "https://api.census.gov/data/2020/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2397452,
+            "sha256": "05b14da672290bf8531fc6563ee2a9c6040d560bf5fdf5ca5488c74ad70e787d",
+            "fetched_at_utc": "2026-11-09T17:29:18Z"
+          },
+          "acs5_2021_zcta_history.json": {
+            "url": "https://api.census.gov/data/2021/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2469575,
+            "sha256": "a53f39951fb08eeda3536dfc4080031cab4f76533c87ccc63933e410fd9a7598",
+            "fetched_at_utc": "2026-11-09T17:29:26Z"
+          },
+          "acs5_2022_zcta_history.json": {
+            "url": "https://api.census.gov/data/2022/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2483570,
+            "sha256": "8bf889511d4c06ed01ccec3a730617a7001da748fb8f5ffb6385da0242f85546",
+            "fetched_at_utc": "2026-11-09T17:29:34Z"
+          },
+          "acs5_2023_zcta_history.json": {
+            "url": "https://api.census.gov/data/2023/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2492979,
+            "sha256": "7e215776c68fb562e6fb046f7fd427d83e706c7b5b844a5081183534d2891116",
+            "fetched_at_utc": "2026-11-09T17:29:42Z"
+          },
+          "acs5_2024_zcta_history.json": {
+            "url": "https://api.census.gov/data/2024/acs/acs5?get=B01003_001E,B01003_001M,B19013_001E,B19013_001M,B25077_001E,B25077_001M,B25064_001E,B25064_001M&for=zip%20code%20tabulation%20area:*",
+            "bytes": 2500512,
+            "sha256": "54b65976b470a932110ceb5282b034cc55437b392d57c53d8eff806301f9d5c2",
+            "fetched_at_utc": "2026-11-09T17:29:50Z"
+          }
+        }
+      },
+      "census-decennial": {
+        "source_rows": 98932,
+        "rows_in_pk_set": 6,
+        "rows_outside_pk_set": 98926,
+        "downloads": {
+          "census2000_zcta_population.json": {
+            "url": "https://api.census.gov/data/2000/dec/sf1?get=P001001&for=zip%20code%20tabulation%20area:*",
+            "bytes": 592239,
+            "sha256": "60ed0e27eb1a6607be18e6e582130973fcfd27f286e8f9c6ee3c8abb7610e7dd",
+            "fetched_at_utc": "2026-11-09T17:27:35Z"
+          },
+          "census2010_zcta_population.json": {
+            "url": "https://api.census.gov/data/2010/dec/sf1?get=P001001&for=zip%20code%20tabulation%20area:*",
+            "bytes": 594295,
+            "sha256": "9c8b25976c4d619b63fe7b7089b1b98dcc4a7594761aae8607093d5e43ffbb63",
+            "fetched_at_utc": "2026-11-09T17:27:40Z"
+          },
+          "census2020_zcta_population.json": {
+            "url": "https://api.census.gov/data/2020/dec/dhc?get=P1_001N&for=zip%20code%20tabulation%20area:*",
+            "bytes": 604966,
+            "sha256": "9fe84dc582cb44953925b8e2a85e3a6e630010bfe2f1587bf345f0ce2384ca3b",
+            "fetched_at_utc": "2026-11-09T17:27:45Z"
+          }
+        }
+      }
+    }
+  },
   "files": {
     "sqlite": "db_demo.sqlite",
-    "csv": "db_demo.csv"
+    "csv": "db_demo.csv",
+    "history_csv": "db_demo_history.csv"
   }
 }

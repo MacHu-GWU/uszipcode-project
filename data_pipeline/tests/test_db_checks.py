@@ -14,15 +14,16 @@ from data_pipeline.database.checks import require_valid, task_command, validate
 from data_pipeline.database.cli import main
 from data_pipeline.database.core import Crawler, Download, Field, Paths, RegistryError, Secret, column
 from data_pipeline.database.crawlers import CRAWLERS
-from data_pipeline.database.fields import FIELDS
+from data_pipeline.database.fields import FIELDS, history
+from data_pipeline.database.fields.history import HISTORY_FIELDS
 
 
 def test_real_registry_is_valid():
-    assert validate(FIELDS, CRAWLERS, Paths.default().mise_toml) == []
+    assert validate(FIELDS, CRAWLERS, Paths.default().mise_toml, HISTORY_FIELDS) == []
 
 
 def test_check_prints_the_catalog(capsys):
-    assert main(["check"], FIELDS, CRAWLERS, packages=(fields, crawlers)) == 0
+    assert main(["check"], FIELDS, CRAWLERS, packages=(fields, history, crawlers), history_fields=HISTORY_FIELDS) == 0
     out = capsys.readouterr().out
     n_derived = sum(1 for f in FIELDS if f.inputs)
     assert out.startswith("%d Fields, %d crawlers, every Field claimed once or derived (%d), mise tasks match."
@@ -30,6 +31,9 @@ def test_check_prints_the_catalog(capsys):
     for f in FIELDS:
         assert any(line.split()[:2] == [f.name, f.dtype.__name__] for line in out.splitlines())
     assert "population" in out and "census-dhc" in out and "census-gazetteer" in out
+    assert "History table: %d Fields from 2 history crawlers." % len(HISTORY_FIELDS) in out
+    assert any(line.split()[:2] == ["census_population", "int"] and line.split()[-1] == "census-decennial"
+               for line in out.splitlines())
 
 
 # ------------------------------------------------------------------------------- one rule at a time
@@ -161,11 +165,40 @@ def test_all_problems_are_reported_together(tmp_path):
 def test_check_fails_with_exit_code_2(tmp_path, capsys):
     paths = dataclasses.replace(Paths.under(str(tmp_path)), mise_toml=str(tmp_path / "mise.toml"))
     (tmp_path / "mise.toml").write_text(_mise([c.name for c in CRAWLERS[:-1]]), encoding="utf-8")
-    assert main(["check"], FIELDS, CRAWLERS, paths=paths) == 2
+    kw = dict(paths=paths, history_fields=HISTORY_FIELDS)
+    assert main(["check"], FIELDS, CRAWLERS, **kw) == 2
     err = capsys.readouterr().err
     assert "registry check failed: 1 problem(s)" in err and "[M1] Crawler '%s' has no mise task" % CRAWLERS[-1].name in err
-    assert main(["crawl", CRAWLERS[-1].name], FIELDS, CRAWLERS, paths=paths) == 2  # crawl and build check first
-    assert main(["build"], FIELDS, CRAWLERS, paths=paths) == 2
+    assert main(["crawl", CRAWLERS[-1].name], FIELDS, CRAWLERS, **kw) == 2  # crawl and build check first
+    assert main(["build"], FIELDS, CRAWLERS, **kw) == 2
+
+
+# --------------------------------------------------------------------------------------- history table
+def _history_crawler(name="hist-a", fields=("h",)):
+    return Crawler(name, tuple(fields), (_download(name + ".csv"),), _parse, history=True)
+
+
+@pytest.mark.parametrize("history_fields, crawlers, rule, text", [
+    ((_field("h"),), [_history_crawler(fields=("a",))], "K1",
+     "Crawler 'hist-a' claims 'a', which is not in HISTORY_FIELDS"),
+    ((_field("h"), _field("g")), [_history_crawler()], "K3",
+     "Field 'g' is not claimed by any history crawler: add it to one history crawler's fields."),
+    ((_field("h"), _field("year")), [_history_crawler(fields=("h", "year"))], "F2",
+     "Field name 'year' is reserved for the primary key"),
+    ((_field("h"), Field("g", float, "h per h", extract=column("h"), inputs=("h",))), [_history_crawler()], "K5",
+     "Field 'g' of HISTORY_FIELDS is derived: derived Fields belong to FIELDS."),
+])
+def test_history_rules(tmp_path, history_fields, crawlers, rule, text):
+    path = tmp_path / "mise.toml"
+    path.write_text(_mise(["src-a"] + [c.name for c in crawlers]), encoding="utf-8")
+    problems = validate(list(BASE_FIELDS), [_crawler()] + crawlers, str(path), list(history_fields))
+    assert any(p.startswith("[%s] " % rule) and text in p for p in problems), problems
+
+
+def test_a_field_name_may_be_in_both_catalogs(tmp_path):
+    path = tmp_path / "mise.toml"
+    path.write_text(_mise(["src-a", "hist-a"]), encoding="utf-8")
+    assert validate(list(BASE_FIELDS), [_crawler(), _history_crawler(fields=("a",))], str(path), [_field("a")]) == []
 
 
 def test_task_command():

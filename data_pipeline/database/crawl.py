@@ -25,6 +25,7 @@ from . import fetch
 from .core import ContractError, Crawler, Field, Paths, PipelineError
 
 MAX_LISTED = 20
+MAX_CELL_CHARS = 1 << 26  # a text value may be long (a GeoJSON boundary); the csv module allows 131,072 by default
 
 
 def _null(value) -> bool:
@@ -197,6 +198,7 @@ def read_output(crawler: Crawler, catalog: typing.Dict[str, Field],
     names = list(crawler.fields)
     dtypes = [catalog[name].dtype for name in names]
     out = {}
+    csv.field_size_limit(max(csv.field_size_limit(), MAX_CELL_CHARS))
     with open(csv_path, encoding="utf-8", newline="") as fh:
         reader = csv.reader(fh)
         header = next(reader, [])

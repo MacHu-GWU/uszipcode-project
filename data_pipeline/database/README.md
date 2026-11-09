@@ -109,6 +109,7 @@ Files:
 |---|---|---|---|
 | `zip-basics` | [HUD-USPS crosswalk](https://www.huduser.gov/portal/datasets/usps_crosswalk.html), Census Gazetteer counties, Census ZBP, uszipcode 2.x | 4 files, 20 MB, token for HUD | `zipcode_type` (2.x only), `major_city`, `state` (HUD, else ZBP, else 2.x), `county` (HUD's main county with the Gazetteer name, else 2.x), `county_fips` (HUD) |
 | `census-gazetteer` | Census [2025 Gazetteer, ZCTA file](https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip) | 1 file, 0.9 MB, no key | `lat`, `lng` (ZCTA internal point), `land_area_in_sqmi`, `water_area_in_sqmi` |
+| `zcta-geometry` | Census [TIGER/Line 2025 ZCTA](https://www2.census.gov/geo/tiger/TIGER2025/ZCTA520/) (full-resolution boundaries), Census [cartographic boundary file 2020 ZCTA, 1:500,000](https://www2.census.gov/geo/tiger/GENZ2020/shp/), BTS [NTAD Time Zones](https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Time_Zones/FeatureServer/0) | 3 files, 605 MB, no key | `bounds_west`, `bounds_east`, `bounds_north`, `bounds_south` (the box of each TIGER/Line record), `timezone` (the BTS zone that contains the ZCTA internal point), `polygon` (GeoJSON of the generalized boundary; the last column) |
 | `census-dhc` | 2020 Census DHC through the [Census Data API](https://api.census.gov/data/2020/dec/dhc.html) | 4 requests (at most 50 variables each), 31 MB, key | `population`, `housing_units`, `occupied_housing_units` and 10 distributions, 128 columns: `population_by_gender_*` (2), `population_by_age_*` (36), `children_by_age_*` (42), `population_by_race_*` (7), `families_vs_singles_*` (5), `households_with_kids_*` (2), `head_of_household_by_age_*` (16), `housing_type_*` (7, group quarters), `housing_occupancy_*` (4), `vacancy_reason_*` (7) |
 | `census-acs5` | [ACS 5-year](https://api.census.gov/data/2024/acs/acs5.html), latest vintage (`YEAR = 2024`: 2020-2024, dollars of 2024) | 6 requests (at most 50 variables each), 36 MB, key | `median_age`, `median_home_value`, `median_household_income`, `median_rent`, each with its `_moe` (90% margin of error), `poverty_rate`, and 11 distributions, 128 columns: `owner_occupied_home_values_*` (11), `year_housing_was_built_*` (10), `rental_properties_by_number_of_rooms_*` (4), `monthly_rent_including_utilities_*` (28), `household_income_*` (7), `annual_individual_earnings_*` (40), `employment_status_*` (3), `means_of_transportation_to_work_*` (6), `travel_time_to_work_in_minutes_*` (8), `educational_attainment_*` (8), `school_enrollment_age_3_to_17_*` (3) |
 | `irs-soi` | IRS [SOI ZIP Code Data](https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-zip-code-data-soi), latest tax year (`YEAR = 2023`) | 1 file, 40 MB, no key | for 11 income sources, the share of tax returns with it and the average amount among them (22 columns): `sources_of_household_income_*` (wages, business, partnership and S corporation, unemployment), `household_investment_income_*` (interest, ordinary and qualified dividends, capital gains), `household_retirement_income_*` (IRA distributions, pensions and annuities, Social Security) |
@@ -135,6 +136,16 @@ the modules were generated from its bucket definitions and the values below matc
 2.x name plus a bucket would pass 60 characters, the module has a shorter name and says which 2.x field
 it stands for (`means_of_transportation_to_work`, `educational_attainment`).
 
+The geometry is that of the 2020 ZCTAs, so a ZIP without a ZCTA has none, and no time zone either.
+`bounds_*` is the box of the full-resolution boundary, water included. `polygon` is GeoJSON text (longitude
+first, 6 decimals) of the boundary as the Census Bureau generalized it for 1:500,000 maps; nothing is
+simplified here. It is the last column, because it is by far the longest (up to 177,237 characters, for
+99615). `timezone` is the standard-time zone of BTS (`Eastern`, `Central`, `Mountain`, `Pacific`, `Alaska`,
+`Hawaii-Aleutian`, `Atlantic`, `Chamorro`, `Samoa`): it does not say whether a place observes daylight
+saving time (Arizona is `Mountain`), and the research found 493 ZCTAs whose boundary touches a second zone.
+The shapefiles are read by a small reader in [`crawlers/zcta_geometry.py`](crawlers/zcta_geometry.py), with
+the standard library only.
+
 ## Politeness
 
 Enforced in [`fetch.py`](fetch.py), the only module that opens a URL; crawlers cannot change it.
@@ -144,6 +155,9 @@ Enforced in [`fetch.py`](fetch.py), the only module that opens a URL; crawlers c
 - Downloads run one at a time, 2 s apart, with a User-Agent that names this project.
 - Retries only on connection errors, timeouts, 429 and 5xx: 5 attempts, waits of 5, 15, 45 and 90 s
   (`Retry-After` is honoured up to 300 s). Any other 4xx fails at once.
+- A connection that drops in the middle of a file is resumed: the next request asks only for the missing
+  bytes (HTTP `Range`, with `If-Range`, so a file that changed meanwhile comes whole again). An attempt that
+  brought new bytes does not count as a failure; at most 30 requests per file.
 - The body must start with the declared magic bytes (`PK\x03\x04` for a zip, `[[` for the Census API),
   so an HTML error page is never cached. A failed download keeps the previous file.
 - `--refresh` is refused if the crawler downloaded less than 24 h ago (`--force` overrides). There is
@@ -181,26 +195,27 @@ if not (B1-B3), and that every derived value passes the same type rules (B4).
 
 ## Result (run of 2026-11-09)
 
-`mise run crawl-all` makes 33 requests the first time and 0 after that. `mise run pipeline-build`
-then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 301 columns. Its first columns:
+`mise run crawl-all` makes 36 requests the first time (about 770 MB; the TIGER/Line file alone is 529 MB
+and took 10 minutes here) and 0 after that. `mise run pipeline-build` then writes
+[`db_demo.csv`](../output/db_demo.csv): 3 rows x 307 columns. Its first columns:
 
 ```
-zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,land_area_in_sqmi,water_area_in_sqmi,population,...
-10001,STANDARD,NEW YORK,NY,New York County,36061,40.750649,-73.997298,0.624,0.0,32612,...
-20013,PO BOX,WASHINGTON,DC,District of Columbia,11001,,,,,,...
-20037,STANDARD,WASHINGTON,DC,District of Columbia,11001,38.892459,-77.053811,0.732,0.231,14945,...
+zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,timezone,land_area_in_sqmi,water_area_in_sqmi,bounds_west,bounds_east,bounds_north,bounds_south,population,...
+10001,STANDARD,NEW YORK,NY,New York County,36061,40.750649,-73.997298,Eastern,0.624,0.0,-74.010148,-73.984076,40.759686,40.743451,32612,...
+20013,PO BOX,WASHINGTON,DC,District of Columbia,11001,,,,,,,,,,,...
+20037,STANDARD,WASHINGTON,DC,District of Columbia,11001,38.892459,-77.053811,Eastern,0.732,0.231,-77.064696,-77.04624,38.910414,38.87131,14945,...
 ```
 
 20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA and no IRS row,
-so its other 295 columns are NULL, and it has no row in the history table. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
+so its other 301 columns are NULL, and it has no row in the history table. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
 counts it under `not_in_source` for those Fields. For 20037 the 2020-2024 ACS gives a median age of 30.4,
 a median home value of $685,300, a median household income of $111,153 and a median rent of $2,538; in tax
 year 2023, 81.2% of its returns had wages, averaging $128,954. Its population density is 20,417 people per
 square mile. [`db_demo_history.csv`](../output/db_demo_history.csv) has 16 years each for 10001 and 20037
 (2000, 2010, 2011-2024): for 20037 the censuses counted 12,642, 14,642 and 14,945 people.
 
-With `--pk-set full` (42,730 ZIPs, no downloads; 30 to 50 seconds, most of it for the 532,117 rows of the
-history table):
+With `--pk-set full` (42,730 ZIPs, no downloads; about 50 seconds, most of it for the 532,117 rows of the
+history table and the 138 MB of boundaries; `db_full.sqlite` is 227 MB):
 
 | Fields | ZIPs with a value |
 |---|---|
@@ -208,7 +223,7 @@ history table):
 | `zipcode_type` | 42,724 (the 6 ZIPs newer than 2.x have none) |
 | `county` | 41,866 |
 | `county_fips` | 39,475 (HUD only) |
-| `lat`, `lng`, `land_area_in_sqmi`, `water_area_in_sqmi` | 33,791 |
+| `lat`, `lng`, `land_area_in_sqmi`, `water_area_in_sqmi`, `timezone`, the 4 `bounds_*`, `polygon` | 33,791 |
 | `population`, `population_density`, the housing counts and the 128 DHC distribution columns | 33,774 |
 | the 128 ACS distribution columns | 33,772 |
 | `poverty_rate`, `median_age`, `median_household_income`, `median_home_value`, `median_rent` | 32,878, 32,820, 30,547, 30,260, 25,751 |
@@ -232,6 +247,14 @@ Checked against earlier work:
 - The history crawlers match the research history tables: 466,292 ACS rows (3,730,336 values) exactly, and
   98,932 census rows exactly; the research also kept 1,140 census rows whose codes are not ZIPs (`006HH`,
   `006XX`: water and unassigned areas of the 2000 census), which the crawler skips.
+- `zcta-geometry`: the 4 `bounds_*` and `timezone` match the research database exactly for all 33,791 ZCTAs
+  (the research read the same TIGER/Line and BTS files with shapely). The TIGER/Line internal point equals
+  `lat`/`lng` of the Gazetteer to its 6 decimals for every ZCTA, so `timezone` is the zone at `lat`/`lng`. Every
+  internal point lies inside its box. The research simplified the full boundaries itself (about 30 m);
+  `polygon` uses the Census generalized file instead: 5,954,485 points (the research had 6,097,831), every
+  ring oriented as RFC 7946 asks, and an area (in degrees, converted at the ZCTA's latitude) within 0.973 to
+  1.005 of the Gazetteer land + water area for 90% of ZCTAs (median 1.001). For 47 ZCTAs on coasts and islands
+  (for example 02668 and 04108) the internal point falls just outside the generalized shape.
 - `county_fips` differs from the research database for 10 ZIPs. For 9 of them HUD gives only a 2-digit
   state code (island areas such as 96799, and 77352), which is now NULL. For 51603 two counties tie
   exactly, and the lower code is taken.
@@ -302,3 +325,14 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
    in all). Add them to the history table (average income per return over time, as 2.x showed)?
 7. **ZCTA basis in the history table.** The ZCTA set of a value follows from its source and year (see
    above). Should the table carry it as a column, as the research database did?
+8. **Where `polygon` lives, and how detailed it is.** It is a text column of the main table now (138 MB of
+   the 183 MB `db_full.csv`), as the boundary was in the 2.x comprehensive database. Keep it there, or move it
+   to its own table or file so that the main table stays small? And is the Census 1:500,000 generalization
+   right, or should the full TIGER/Line boundary be simplified to a chosen tolerance instead (the research
+   used about 30 m)?
+9. **Time zone of ZIPs without a ZCTA.** The 8,939 ZIPs of the full PK set without a ZCTA (PO box, unique,
+   military and others) have no internal point, so no time zone (20013 has none). The research used the internal point of the ZIP's main county, which
+   `zip-basics` knows; that is wrong where a county spans two zones. In this registry a fallback between two
+   crawlers would be two Fields plus one derived Field that takes the first non-NULL. Add it?
+10. **529 MB for four numbers.** The TIGER/Line file is downloaded only for the exact `bounds_*`. The 67 MB
+    generalized file alone would give a box that is close but not exact. Keep the exact box?

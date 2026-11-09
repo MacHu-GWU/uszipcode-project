@@ -121,6 +121,15 @@ def test_output_files_are_exact_and_stable(tmp_path):
     assert sorted(os.listdir(out)) == ["src.csv", "src.json"]
 
 
+def test_a_long_text_value_reads_back(tmp_path):
+    """A boundary as GeoJSON can be far longer than the 131,072 characters the csv module allows by default."""
+    long = '{"type":"Polygon","coordinates":[[%s]]}' % ",".join(["[-77.064696,38.87131]"] * 20000)
+    records, stats = _check([("20037", {"n": 1, "x": 0.5, "s": long})])
+    out = str(tmp_path / "out")
+    write_output(_crawler(), records, dict(stats, crawler="src"), out)
+    assert len(long) > 131072 and read_output(_crawler(), CATALOG, out)["20037"]["s"] == long
+
+
 def _history_crawler():
     return Crawler("hist", ("n",), (Download("h.csv", "https://data.test/h.csv"),), lambda files: [], history=True)
 

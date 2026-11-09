@@ -9,11 +9,14 @@ those files into source rows. It imports only ``..core``, ``..fields`` and
 ``...zipcodes``: it cannot open a URL and never reads a value itself.
 """
 
-from . import census_gazetteer, census_dhc, census_acs5, irs_soi, zip_basics, census_acs5_history, census_decennial
+from . import (
+    census_gazetteer, census_dhc, census_acs5, irs_soi, zip_basics, census_acs5_history, census_decennial, zcta_geometry,
+)
 
 #: every module of this folder; ``check`` fails if one is left out (rule L1).
 #: History crawlers (``history=True``) fill the history table and claim from ``HISTORY_FIELDS``.
-MODULES = (census_gazetteer, census_dhc, census_acs5, irs_soi, zip_basics, census_acs5_history, census_decennial)
+MODULES = (census_gazetteer, census_dhc, census_acs5, irs_soi, zip_basics, census_acs5_history, census_decennial,
+           zcta_geometry)
 
 #: every crawler, in the order ``crawl --all`` runs them
 CRAWLERS = [m.CRAWLER for m in MODULES]

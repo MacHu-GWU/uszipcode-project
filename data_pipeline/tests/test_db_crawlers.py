@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sqlite3
+import struct
 import zipfile
 
 import pytest
@@ -21,6 +22,7 @@ from data_pipeline.database.core import Paths
 from data_pipeline.database.crawl import check_rows
 from data_pipeline.database.crawlers import (
     CRAWLERS, census_acs5, census_acs5_history, census_decennial, census_dhc, census_gazetteer, irs_soi, zip_basics,
+    zcta_geometry,
 )
 from data_pipeline.database.fields import FIELDS
 from data_pipeline.database.fields.history import HISTORY_FIELDS
@@ -153,6 +155,86 @@ def _zip_basics_files(folder) -> dict:
 def _read(path) -> bytes:
     with open(path, "rb") as fh:
         return fh.read()
+
+
+# ---------------------------------------------------------------------------- shapefiles for zcta-geometry
+def _dbf(columns, rows) -> bytes:
+    """A dBase III file of text columns."""
+    widths = [max([1] + [len(r[i]) for r in rows]) for i in range(len(columns))]
+    out = bytearray(struct.pack("<4BIHH20x", 3, 126, 1, 1, len(rows), 33 + 32 * len(columns), 1 + sum(widths)))
+    for name, width in zip(columns, widths):
+        out += struct.pack("<11sc4xBB14x", name.encode(), b"C", width, 0)
+    out += b"\r"
+    for r in rows:
+        out += b" " + b"".join(value.encode().ljust(width) for value, width in zip(r, widths))
+    return bytes(out + b"\x1a")
+
+
+def _shp(shapes) -> bytes:
+    """A polygon shapefile; a shape is None (null shape) or a list of closed rings of (x, y)."""
+    records = bytearray()
+    for number, shape in enumerate(shapes, start=1):
+        if shape is None:
+            content = struct.pack("<i", 0)
+        else:
+            points = [p for ring in shape for p in ring]
+            xs, ys = [p[0] for p in points], [p[1] for p in points]
+            starts = [sum(len(r) for r in shape[:i]) for i in range(len(shape))]
+            content = struct.pack("<i4d2i", 5, min(xs), min(ys), max(xs), max(ys), len(shape), len(points))
+            content += struct.pack("<%di" % len(shape), *starts) + b"".join(struct.pack("<2d", *p) for p in points)
+        records += struct.pack(">2i", number, len(content) // 2) + content
+    header = struct.pack(">i20xi", 9994, (100 + len(records)) // 2) + struct.pack("<2i8d", 1000, 5, *[0.0] * 8)
+    return header + bytes(records)
+
+
+def _shapefile_zip(path, stem, columns, rows, shapes) -> str:
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(stem + ".shp", _shp(shapes))
+        z.writestr(stem + ".dbf", _dbf(columns, rows))
+        z.writestr(stem + ".shp.iso.xml", "<metadata/>")
+    return path
+
+
+def _box(west, south, east, north):
+    """A clockwise ring (an outer ring in a shapefile)."""
+    return [(west, south), (west, north), (east, north), (east, south), (west, south)]
+
+
+# the real boxes and internal points of 20037 and 10001; 99546 is a made-up shape across the 180th meridian
+BOX_20037, BOX_10001 = (-77.064696, 38.87131, -77.04624, 38.910414), (-74.010148, 40.743451, -73.984076, 40.759686)
+TIGER_ROWS = [("20037", "+38.8924590", "-077.0538110"), ("10001", "+40.7506490", "-073.9972980"),
+              ("99546", "+51.8800000", "+179.8000000"), ("00000", "", "")]
+TIGER_SHAPES = [[_box(*BOX_20037)], [_box(*BOX_10001)],
+                [_box(179.5, 51.8, 180.0, 51.9), _box(-180.0, 51.8, -179.5, 51.9)], None]
+HOLE = [(-77.06, 38.89), (-77.05, 38.89), (-77.05, 38.90), (-77.06, 38.90), (-77.06, 38.89)]  # counter-clockwise
+CB_ROWS = [("10001",), ("20037",), ("00601",)]
+CB_SHAPES = [[_box(-74.01, 40.74, -74.0, 40.75), _box(-73.99, 40.75, -73.98, 40.76)],
+             [_box(*BOX_20037), HOLE],
+             [_box(-66.8366661, 18.11, -66.66, 18.25)]]
+TIME_ZONES = {"type": "FeatureCollection", "features": [
+    {"type": "Feature", "properties": {"zone": "Central", "utc": "-06:00"},
+     "geometry": {"type": "Polygon", "coordinates": [[[-90, 30], [-80, 30], [-80, 45], [-90, 45], [-90, 30]]]}},
+    {"type": "Feature", "properties": {"zone": "Eastern", "utc": "-05:00"},
+     "geometry": {"type": "MultiPolygon", "coordinates": [
+         [[[-80, 30], [-70, 30], [-70, 45], [-80, 45], [-80, 30]],
+          [[-77.06, 38.85], [-77.0, 38.85], [-77.0, 38.88], [-77.06, 38.88], [-77.06, 38.85]]],  # a hole
+         [[[-67, 17], [-65, 17], [-65, 19], [-67, 19]]]]}},  # an open ring: closed when read
+]}
+
+
+def _geometry_files(folder) -> dict:
+    folder = str(folder)
+    bts = os.path.join(folder, zcta_geometry.BTS_FILENAME)
+    with open(bts, "w", encoding="utf-8") as fh:
+        json.dump(TIME_ZONES, fh)
+    return {
+        zcta_geometry.TIGER_FILENAME: _shapefile_zip(os.path.join(folder, zcta_geometry.TIGER_FILENAME),
+                                                     "tl_2025_us_zcta520", ("ZCTA5CE20", "INTPTLAT20", "INTPTLON20"),
+                                                     TIGER_ROWS, TIGER_SHAPES),
+        zcta_geometry.CB_FILENAME: _shapefile_zip(os.path.join(folder, zcta_geometry.CB_FILENAME),
+                                                  "cb_2020_us_zcta520_500k", ("ZCTA5CE20",), CB_ROWS, CB_SHAPES),
+        zcta_geometry.BTS_FILENAME: bts,
+    }
 
 
 def test_gazetteer(tmp_path):
@@ -298,6 +380,44 @@ def test_zip_basics_merges_the_sources(tmp_path):
     assert stats["non_null"]["county_fips"] == 4
 
 
+def test_zcta_geometry(tmp_path):
+    files = _geometry_files(tmp_path)
+    rows = dict(zcta_geometry.parse(files))
+    assert sorted(rows) == ["00000", "00601", "10001", "20037", "99546"]
+    assert {k: rows["20037"][k] for k in ("INTPTLAT20", "INTPTLON20", "zone", "utc")} \
+        == {"INTPTLAT20": "+38.8924590", "INTPTLON20": "-077.0538110", "zone": "Eastern", "utc": "-05:00"}
+    assert rows["00601"]["Xmin"] is None and rows["00601"]["zone"] is None  # only in the cartographic file
+    records, stats = check_rows(zcta_geometry.CRAWLER, CATALOG, zcta_geometry.parse(files))
+    records = dict(records)
+    assert records["20037"][:5] == [-77.064696, -77.04624, 38.910414, 38.87131, "Eastern"]
+    assert json.loads(records["20037"][5]) == {"type": "Polygon", "coordinates": [  # reversed: RFC 7946 orientation
+        [[-77.064696, 38.87131], [-77.04624, 38.87131], [-77.04624, 38.910414], [-77.064696, 38.910414],
+         [-77.064696, 38.87131]],
+        [[-77.06, 38.89], [-77.06, 38.9], [-77.05, 38.9], [-77.05, 38.89], [-77.06, 38.89]]]}
+    assert json.loads(records["10001"][5])["type"] == "MultiPolygon" and records["10001"][4] == "Eastern"
+    assert records["99546"][:5] == [179.5, -179.5, 51.9, 51.8, None]  # across the 180th meridian; no zone
+    assert json.loads(records["00601"][5])["coordinates"][0][0] == [-66.836666, 18.11]  # 6 decimals
+    assert stats["skipped_keys"] == 1  # 00000
+
+
+def test_time_zone_lookup():
+    zones = zcta_geometry.TimeZones(TIME_ZONES["features"])
+    assert zones.find(-77.053811, 38.892459)["zone"] == "Eastern"
+    assert zones.find(-87.6, 41.9)["zone"] == "Central"
+    assert zones.find(-77.03, 38.86) == {}  # in the hole of Eastern
+    assert zones.find(-66.0, 18.0)["zone"] == "Eastern"  # in the open ring, closed when read
+    assert zones.find(-100.0, 40.0) == {}
+
+
+def test_a_hole_goes_to_the_outer_ring_around_it():
+    small, big = _box(-1, -1, 1, 1), _box(-10, -10, 10, 10)
+    hole = [(-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5), (-0.5, -0.5)]
+    content = _shp([[big, small, hole]])[108:]  # the first record, after the file and record headers
+    geometry = json.loads(zcta_geometry.to_geojson(content))
+    assert geometry["type"] == "MultiPolygon"
+    assert [len(p) for p in geometry["coordinates"]] == [1, 2]  # the hole is in the small ring, not the big one
+
+
 def test_demo_database(tmp_path, monkeypatch, capsys):
     """The real registry and the repo mise.toml, with the sample files served by a FakeOpener."""
     files = _zip_basics_files(tmp_path)
@@ -309,6 +429,8 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     served[irs_soi.CRAWLER.downloads[0].url] = _irs_csv().encode()
     served.update(_history_responses())
     served.update({d.url: _read(files[d.filename]) for d in zip_basics.CRAWLER.downloads})
+    geometry = _geometry_files(tmp_path)
+    served.update({d.url: _read(geometry[d.filename]) for d in zcta_geometry.CRAWLER.downloads})
     opener = FakeOpener(served)
     monkeypatch.setattr(fetch, "urlopen", opener)
     monkeypatch.setenv("CENSUS_API_KEY", KEY)

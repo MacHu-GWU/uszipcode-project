@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 301,
+  "columns": 307,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -52,6 +52,13 @@
       "not_in_source": 1,
       "empty_in_source": 0
     },
+    "timezone": {
+      "crawler": "zcta-geometry",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
     "land_area_in_sqmi": {
       "crawler": "census-gazetteer",
       "non_null": 2,
@@ -61,6 +68,34 @@
     },
     "water_area_in_sqmi": {
       "crawler": "census-gazetteer",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "bounds_west": {
+      "crawler": "zcta-geometry",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "bounds_east": {
+      "crawler": "zcta-geometry",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "bounds_north": {
+      "crawler": "zcta-geometry",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "bounds_south": {
+      "crawler": "zcta-geometry",
       "non_null": 2,
       "share": 0.6667,
       "not_in_source": 1,
@@ -2106,6 +2141,13 @@
       "share": 0.6667,
       "not_in_source": 1,
       "empty_in_source": 0
+    },
+    "polygon": {
+      "crawler": "zcta-geometry",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
     }
   },
   "crawlers": {
@@ -2239,11 +2281,36 @@
           "fetched_at_utc": "2026-11-04T17:10:29Z"
         }
       }
+    },
+    "zcta-geometry": {
+      "source_rows": 33791,
+      "rows_in_pk_set": 2,
+      "rows_outside_pk_set": 33789,
+      "downloads": {
+        "cb_2020_us_zcta520_500k.zip": {
+          "url": "https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_zcta520_500k.zip",
+          "bytes": 66655314,
+          "sha256": "c69a4ede8aebebfc7ed3a98a9075c6aaa1b75d514a129bc5c662fd806d2f3d17",
+          "fetched_at_utc": "2026-11-09T19:49:01Z"
+        },
+        "ntad_time_zones.geojson": {
+          "url": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Time_Zones/FeatureServer/0/query?where=1%3D1&outFields=zone,utc&outSR=4326&f=geojson",
+          "bytes": 9333309,
+          "sha256": "17ce2092016c13e029619e8ca5dfb244881ba3edd2b5c2c11d4fb847e6eb5391",
+          "fetched_at_utc": "2026-11-09T19:49:06Z"
+        },
+        "tl_2025_us_zcta520.zip": {
+          "url": "https://www2.census.gov/geo/tiger/TIGER2025/ZCTA520/tl_2025_us_zcta520.zip",
+          "bytes": 529118424,
+          "sha256": "e87129634eefe8719ef06ce4cfdf6588520be2e359360e590aaae90e4afb1911",
+          "fetched_at_utc": "2026-11-09T19:47:34Z"
+        }
+      }
     }
   },
   "pks_by_non_null_fields": {
     "5": 1,
-    "300": 2
+    "306": 2
   },
   "pks_without_any_value": [],
   "history": {

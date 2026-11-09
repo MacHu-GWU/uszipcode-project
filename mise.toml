@@ -64,3 +64,7 @@ run = "python -m data_pipeline.database crawl census-decennial"
 [tasks.crawler-zip-basics]
 description = "HUD-USPS crosswalk, Census counties and ZBP, uszipcode 2.x -> ZIP type, city, state, county"
 run = "python -m data_pipeline.database crawl zip-basics"
+
+[tasks.crawler-zcta-geometry]
+description = "Census TIGER/Line and cartographic ZCTA boundaries, BTS time zones -> bounding box, time zone, polygon"
+run = "python -m data_pipeline.database crawl zcta-geometry"

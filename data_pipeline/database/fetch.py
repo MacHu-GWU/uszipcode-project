@@ -11,6 +11,9 @@ Politeness rules, enforced here for every crawler:
   that names the project;
 - retries only on connection errors, timeouts, 429 and 5xx, with growing waits
   (``Retry-After`` is honoured); any other 4xx fails at once;
+- when a connection drops in the middle of a file, the next request asks only for
+  the rest (HTTP ``Range``, with ``If-Range`` so that a file changed meanwhile is
+  sent whole again); an attempt that brought new bytes is not counted as a failure;
 - the body must start with ``Download.magic``, so an HTML error page is never cached;
 - ``--refresh`` downloads again at most once per ``REFRESH_COOLDOWN_H`` hours
   (``--force`` overrides); there is no loop, schedule or watch mode.
@@ -35,8 +38,9 @@ from .core import Crawler, Download, DownloadError, Secret
 USER_AGENT = "uszipcode-data-pipeline (+https://github.com/MacHu-GWU/uszipcode-project)"
 REQUEST_INTERVAL_S = 2
 TIMEOUT_S = 300
-ATTEMPTS = 5
-BACKOFF_S = (5, 15, 45, 90)  # waits after attempts 1..4
+ATTEMPTS = 5  # failed attempts in a row that bring no new bytes
+MAX_REQUESTS = 30  # requests per file in all, resumed ones included
+BACKOFF_S = (5, 15, 45, 90)  # waits after failures 1..4
 RETRY_AFTER_MAX_S = 300
 REFRESH_COOLDOWN_H = 24
 CHUNK = 1 << 20
@@ -111,6 +115,37 @@ def _remove(path: str) -> None:
         os.remove(path)
 
 
+def _continues(response, offset: int) -> bool:
+    """True if ``response`` is the rest of the file from byte ``offset`` (206 with a matching Content-Range)."""
+    content_range = (response.headers.get("Content-Range") or "").replace(" ", "")
+    return getattr(response, "status", None) == 206 and content_range.startswith("bytes%d-" % offset)
+
+
+class _Part:
+    """The ``.part`` file of one download: what has arrived so far, with its hash."""
+
+    def __init__(self, path: str):
+        self.path = path
+        self.restart()
+
+    def restart(self) -> None:
+        _remove(self.path)
+        self.digest, self.size, self.head = hashlib.sha256(), 0, b""
+
+    def receive(self, response) -> None:
+        with open(self.path, "ab") as fh:
+            fh.truncate(self.size)  # drop the end of a chunk whose write failed
+            while True:
+                chunk = response.read(CHUNK)
+                if not chunk:
+                    return
+                if len(self.head) < 16:
+                    self.head += chunk[:16 - len(self.head)]
+                fh.write(chunk)
+                self.digest.update(chunk)
+                self.size += len(chunk)
+
+
 def _download(crawler_name: str, d: Download, path: str) -> typing.Tuple[dict, int]:
     """Download one file to ``path``; returns (manifest entry, number of requests made)."""
     secret = read_secret(d.secret, crawler_name) if d.secret else None
@@ -120,53 +155,62 @@ def _download(crawler_name: str, d: Download, path: str) -> typing.Tuple[dict, i
     elif d.secret:
         headers["Authorization"] = "Bearer " + secret
     where = "%s: %s" % (crawler_name, d.filename)
-    part = path + ".part"
+    part = _Part(path + ".part")
+    validator = last_modified = etag = None  # validator: what If-Range sends when resuming
+    requests = failures = most = 0
     last_error = ""
-    for attempt in range(1, ATTEMPTS + 1):
+    while True:
+        requests += 1
         retry_after = None
+        ask = dict(headers)
+        if part.size and validator:
+            ask.update({"Range": "bytes=%d-" % part.size, "If-Range": validator})
+        elif part.size:
+            part.restart()
         try:
-            request = urllib.request.Request(url, headers=headers)
-            with urlopen(request, timeout=TIMEOUT_S) as response:
-                digest, size, head = hashlib.sha256(), 0, b""
-                with open(part, "wb") as fh:
-                    while True:
-                        chunk = response.read(CHUNK)
-                        if not chunk:
-                            break
-                        if len(head) < 16:
-                            head += chunk[:16 - len(head)]
-                        digest.update(chunk)
-                        size += len(chunk)
-                        fh.write(chunk)
-                last_modified = response.headers.get("Last-Modified")
-                etag = response.headers.get("ETag")
-            if size == 0 or not head.startswith(d.magic):
-                _remove(part)
+            with urlopen(urllib.request.Request(url, headers=ask), timeout=TIMEOUT_S) as response:
+                if part.size and not _continues(response, part.size):
+                    part.restart()  # the whole file again: ranges not supported, or it changed
+                last_modified = response.headers.get("Last-Modified") or last_modified
+                etag = response.headers.get("ETag") or etag
+                validator = validator or etag or last_modified
+                part.receive(response)
+            if part.size == 0 or not part.head.startswith(d.magic):
+                head = part.head[:max(len(d.magic), 4)]
+                part.restart()
                 hint = " (check %s or %s)" % (d.secret.env, d.secret.file) if d.secret else ""
                 raise DownloadError("%s: response starts with %r, expected %r; not cached%s"
-                                    % (where, head[:max(len(d.magic), 4)], d.magic, hint))
+                                    % (where, head, d.magic, hint))
             try:
-                os.replace(part, path)
+                os.replace(part.path, path)
             except PermissionError:
                 raise DownloadError("%s: cannot replace %s: close programs that have it open and run again"
                                     % (where, path)) from None
-            entry = {"url": d.url, "bytes": size, "sha256": digest.hexdigest(),
+            entry = {"url": d.url, "bytes": part.size, "sha256": part.digest.hexdigest(),
                      "fetched_at_utc": utcnow().strftime(TIME_FORMAT),
                      "last_modified": last_modified, "etag": etag}
-            return entry, attempt
+            return entry, requests
         except urllib.error.HTTPError as e:
-            _remove(part)
-            if not (e.code == 429 or 500 <= e.code < 600):
+            if e.code == 416 and part.size:  # the range no longer fits the file: start over
+                part.restart()
+                validator = None
+            elif not (e.code == 429 or 500 <= e.code < 600):
+                part.restart()
                 raise DownloadError("%s: HTTP %d from %s" % (where, e.code, d.url)) from None
             last_error = "HTTP %d" % e.code
             retry_after = e.headers.get("Retry-After") if e.headers else None
         except (urllib.error.URLError, http.client.HTTPException, OSError) as e:  # resets, timeouts, DNS
-            _remove(part)
             last_error = _redact("%s: %s" % (type(e).__name__, e), secret)
-        if attempt < ATTEMPTS:
-            sleep(_retry_wait(attempt, retry_after))
-    raise DownloadError("%s: gave up after %d attempts (last error: %s) from %s"
-                        % (where, ATTEMPTS, last_error, d.url)) from None
+        if part.size > most:  # new bytes arrived: not a failed attempt; resume after the first wait
+            most, failures, wait = part.size, 0, BACKOFF_S[0]
+        else:
+            failures += 1
+            wait = _retry_wait(failures, retry_after)
+        if failures >= ATTEMPTS or requests >= MAX_REQUESTS:
+            part.restart()
+            raise DownloadError("%s: gave up after %d attempts (last error: %s) from %s"
+                                % (where, requests, last_error, d.url)) from None
+        sleep(wait)
 
 
 def fetch_all(crawler: Crawler, cache_dir: str, refresh: bool = False,

@@ -161,6 +161,40 @@ def test_mid_body_reset_restarts_from_byte_0(cache, opener, sleeps):
     assert _manifest(cache)["a.csv"]["bytes"] == len(BODY)
 
 
+def test_a_dropped_connection_resumes_where_it_stopped(cache, opener, sleeps):
+    body = b"zipcode," + bytes(range(256)) * 4
+    opener.served[URL], opener.ranged = body, {URL}
+    opener.script[URL] = ["reset"] * 6  # more drops than ATTEMPTS: each one brings new bytes
+    files, requests = fetch.fetch_all(_crawler(), cache)
+    assert requests == 7 and sleeps == [fetch.BACKOFF_S[0]] * 6
+    with open(files["a.csv"], "rb") as fh:
+        assert fh.read() == body
+    assert _manifest(cache)["a.csv"]["sha256"] == hashlib.sha256(body).hexdigest()
+    asked = [headers.get("Range") for _, headers, _ in opener.calls]
+    offsets = [int(a[len("bytes="):-1]) for a in asked[1:]]
+    assert asked[0] is None and offsets == sorted(offsets) and 0 < offsets[0] < len(body)
+    assert all(headers["If-range"] == '"fake"' for _, headers, _ in opener.calls[1:])
+
+
+def test_a_range_that_no_longer_fits_starts_over(cache, opener, sleeps):
+    opener.ranged = {URL}
+    opener.script[URL] = ["reset", ("http", 416)]
+    files, requests = fetch.fetch_all(_crawler(), cache)
+    assert requests == 3 and "Range" not in opener.calls[2][1]
+    with open(files["a.csv"], "rb") as fh:
+        assert fh.read() == BODY
+
+
+def test_resuming_is_capped(cache, opener, sleeps, monkeypatch):
+    monkeypatch.setattr(fetch, "MAX_REQUESTS", 3)
+    opener.served[URL], opener.ranged = b"zipcode," * 100, {URL}
+    opener.script[URL] = ["reset"] * 10
+    with pytest.raises(DownloadError) as e:
+        fetch.fetch_all(_crawler(), cache)
+    assert str(e.value).startswith("src: a.csv: gave up after 3 attempts (last error: ConnectionResetError")
+    assert os.listdir(os.path.join(cache, "src")) == []  # the .part file is removed
+
+
 def test_downloads_are_paced(cache, opener, sleeps):
     downloads = [Download("p%d.csv" % i, "https://data.test/p%d.csv" % i, magic=b"zipcode,") for i in range(3)]
     for d in downloads:

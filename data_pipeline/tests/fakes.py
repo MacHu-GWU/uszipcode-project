@@ -20,10 +20,17 @@ from data_pipeline.database.checks import task_command
 from data_pipeline.database.core import Crawler, Download, Field, Paths, column
 
 
+ETAG = '"fake"'
+
+
 class _Response:
-    def __init__(self, body: bytes, reset: bool = False):
-        self._body, self._pos, self._reset = body, 0, reset
-        self.headers = {"Last-Modified": "Thu, 01 Oct 2026 00:00:00 GMT", "ETag": '"fake"'}
+    def __init__(self, body: bytes, reset: bool = False, offset: int = 0):
+        """``offset`` > 0: a 206 response with the body from that byte on."""
+        self._body, self._pos, self._reset = body[offset:], 0, reset
+        self.status = 206 if offset else 200
+        self.headers = {"Last-Modified": "Thu, 01 Oct 2026 00:00:00 GMT", "ETag": ETAG}
+        if offset:
+            self.headers["Content-Range"] = "bytes %d-%d/%d" % (offset, len(body) - 1, len(body))
 
     def read(self, n: int = -1) -> bytes:
         if self._reset and self._pos > 0:
@@ -55,12 +62,21 @@ class FakeOpener:
     list of actions used by the next requests, one per request:
     ``("http", code)``, ``("http", code, retry_after)``, ``"reset"`` (half the body,
     then ``ConnectionResetError``), ``("urlerror", text)`` or ``"ok"``.
+    A public URL in ``ranged`` answers a ``Range`` request whose ``If-Range`` matches
+    with the rest of the body (206); every other request gets the whole body (200).
     """
 
     def __init__(self, served: typing.Dict[str, bytes], script: typing.Optional[typing.Dict[str, list]] = None):
         self.served = served
         self.script = {url: list(actions) for url, actions in (script or {}).items()}
+        self.ranged = set()
         self.calls = []  # (full url, {header: value}, timeout)
+
+    def _offset(self, public: str, headers: dict) -> int:
+        asked = headers.get("Range", "")
+        if public not in self.ranged or not asked.startswith("bytes=") or headers.get("If-range") != ETAG:
+            return 0
+        return int(asked[len("bytes="):].rstrip("-"))
 
     def _match(self, url: str) -> typing.Optional[str]:
         matches = [u for u in self.served if url.startswith(u)]
@@ -68,19 +84,21 @@ class FakeOpener:
 
     def __call__(self, request, timeout=None):
         url = request.full_url
-        self.calls.append((url, dict(request.header_items()), timeout))
+        headers = dict(request.header_items())
+        self.calls.append((url, headers, timeout))
         public = self._match(url)
         if public is None:
             raise http_error(url, 404)
         actions = self.script.get(public)
         action = actions.pop(0) if actions else "ok"
+        offset = self._offset(public, headers)
         if action == "reset":
-            return _Response(self.served[public], reset=True)
+            return _Response(self.served[public], reset=True, offset=offset)
         if isinstance(action, tuple) and action[0] == "http":
             raise http_error(url, *action[1:])
         if isinstance(action, tuple) and action[0] == "urlerror":
             raise urllib.error.URLError(action[1] % {"url": url})
-        return _Response(self.served[public])
+        return _Response(self.served[public], offset=offset)
 
     @property
     def urls(self) -> typing.List[str]:

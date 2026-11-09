@@ -17,7 +17,7 @@ tabulated by ZCTA, so the descriptions say "ZCTA".
 
 from . import (
     zipcode_type, major_city, state, county, county_fips,
-    lat, lng, land_area_in_sqmi, water_area_in_sqmi,
+    lat, lng, timezone, land_area_in_sqmi, water_area_in_sqmi, bounds,
     population, population_density,
     population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
@@ -28,12 +28,13 @@ from . import (
     sources_of_household_income, household_investment_income, household_retirement_income, poverty_rate,
     means_of_transportation_to_work, travel_time_to_work_in_minutes,
     educational_attainment, school_enrollment_age_3_to_17,
+    polygon,
 )
 
 #: every module of this folder, in column order; ``check`` fails if one is left out (rule L1)
 MODULES = (
     zipcode_type, major_city, state, county, county_fips,
-    lat, lng, land_area_in_sqmi, water_area_in_sqmi,
+    lat, lng, timezone, land_area_in_sqmi, water_area_in_sqmi, bounds,
     population, population_density,
     population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
@@ -44,6 +45,7 @@ MODULES = (
     sources_of_household_income, household_investment_income, household_retirement_income, poverty_rate,
     means_of_transportation_to_work, travel_time_to_work_in_minutes,
     educational_attainment, school_enrollment_age_3_to_17,
+    polygon,  # last: by far the longest value
 )
 
 FIELDS = [field for module in MODULES for field in module.FIELDS]

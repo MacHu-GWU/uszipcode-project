@@ -24,7 +24,9 @@ def test_real_registry_is_valid():
 def test_check_prints_the_catalog(capsys):
     assert main(["check"], FIELDS, CRAWLERS, packages=(fields, crawlers)) == 0
     out = capsys.readouterr().out
-    assert out.startswith("%d Fields, %d crawlers, every Field claimed once, mise tasks match." % (len(FIELDS), len(CRAWLERS)))
+    n_derived = sum(1 for f in FIELDS if f.inputs)
+    assert out.startswith("%d Fields, %d crawlers, every Field claimed once or derived (%d), mise tasks match."
+                          % (len(FIELDS), len(CRAWLERS), n_derived))
     for f in FIELDS:
         assert any(line.split()[:2] == [f.name, f.dtype.__name__] for line in out.splitlines())
     assert "population" in out and "census-dhc" in out and "census-gazetteer" in out
@@ -104,6 +106,14 @@ CASES = [
      [_crawler(), _crawler("src-b", fields=("a",))], None),
     ("K3", "Field 'c' is not claimed by any crawler: add it to one crawler's fields.",
      BASE_FIELDS + (_field("c", str),), [_crawler()], None),
+    ("K4", "Field 'c' is derived from a, b: no crawler may claim it (src-a does).",
+     BASE_FIELDS + (Field("c", float, "a per b", extract=column("a"), inputs=("a", "b")),),
+     [_crawler(fields=("a", "b", "c"))], None),
+    ("K5", "Field 'c' is derived from 'bb', which is not a Field before it in FIELDS (did you mean 'b'?)",
+     BASE_FIELDS + (Field("c", float, "a per b", extract=column("a"), inputs=("a", "bb")),), [_crawler()], None),
+    ("K5", "Field 'c' is derived from 'd', which is not a Field before it in FIELDS",
+     BASE_FIELDS + (Field("c", float, "c from d", extract=column("d"), inputs=("d",)), _field("d")),
+     [_crawler(fields=("a", "b", "d"))], None),
     ("M0", "mise.toml not found at", BASE_FIELDS, [_crawler()], "<missing>"),
     ("M0", "mise.toml is not valid TOML", BASE_FIELDS, [_crawler()], "[tasks.crawler-src-a\n"),
     ("M1", "Crawler 'src-a' has no mise task: add to mise.toml\n[tasks.crawler-src-a]\nrun = \"%s\"" % task_command("src-a"),
@@ -129,6 +139,8 @@ def test_the_valid_base_has_no_problem(tmp_path):
     path.write_text(_mise(["src-a"]), encoding="utf-8")
     assert validate(list(BASE_FIELDS), [_crawler()], str(path)) == []
     assert validate(list(BASE_FIELDS), [_crawler()], None) == []  # mise.toml not checked
+    derived = Field("c", float, "a per b", extract=column("a"), inputs=("a", "b"))
+    assert validate(list(BASE_FIELDS) + [derived], [_crawler()], str(path)) == []  # claimed by no crawler
 
 
 def test_all_problems_are_reported_together(tmp_path):

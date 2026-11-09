@@ -70,7 +70,9 @@ def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths]
                 problems += unlisted_modules(package)
             if problems:
                 raise RegistryError(problems)
-            print("%d Fields, %d crawlers, every Field claimed once, mise tasks match." % (len(fields), len(crawlers)))
+            n_derived = sum(1 for f in fields if f.inputs)
+            print("%d Fields, %d crawlers, every Field claimed once%s, mise tasks match."
+                  % (len(fields), len(crawlers), " or derived (%d)" % n_derived if n_derived else ""))
             print(describe(fields, crawlers))
             return 0
         if args.command == "crawl":

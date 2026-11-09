@@ -29,6 +29,10 @@ class Field:
     One column of the database. ``extract`` reads the value from a source row
     (None means no value). ``examples`` are ``(source row, expected value)`` pairs,
     run by the tests, so a module also shows what its source looks like.
+
+    A derived Field names its ``inputs``: other Fields, earlier in the catalog. No
+    crawler claims it; ``build`` computes it after the join, and its source row is
+    ``{input: value}`` of the same PK.
     """
 
     name: str
@@ -37,6 +41,7 @@ class Field:
     unit: str = ""
     extract: typing.Optional[typing.Callable[[SourceRow], typing.Any]] = None
     examples: typing.Tuple[typing.Tuple[dict, typing.Any], ...] = ()
+    inputs: typing.Tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)

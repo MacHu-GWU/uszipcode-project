@@ -7,9 +7,10 @@ The checks that tie the Field catalog, the crawlers and ``mise.toml`` together.
 problem is one sentence ``[ID] what is wrong: how to fix it``. Importing a module
 validates nothing; ``check``, ``crawl`` and ``build`` call ``require_valid()`` first.
 
-Rules: F1-F7 Fields, C1-C8 crawlers, K1-K3 claims (every Field claimed exactly
-once), M0-M2 mise tasks (every crawler has ``crawler-<name>`` and vice versa),
-L1 (every module of ``fields/`` and ``crawlers/`` is listed in its ``MODULES``).
+Rules: F1-F7 Fields, C1-C8 crawlers, K1-K5 claims (every Field claimed exactly
+once, or derived from earlier Fields), M0-M2 mise tasks (every crawler has
+``crawler-<name>`` and vice versa), L1 (every module of ``fields/`` and
+``crawlers/`` is listed in its ``MODULES``).
 """
 
 import collections
@@ -120,6 +121,7 @@ def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Craw
     problems = []
     catalog = [f.name for f in fields]
     known = set(catalog)
+    derived = {f.name: f for f in fields if f.inputs}
     claims = collections.defaultdict(list)
     for c in crawlers:
         for name in c.fields:
@@ -130,11 +132,21 @@ def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Craw
                                 % (c.name, name, _did_you_mean(name, catalog)))
     for name in dict.fromkeys(catalog):  # catalog order, without duplicates
         claimants = claims.get(name, [])
-        if len(claimants) > 1:
+        if name in derived:
+            if claimants:
+                problems.append("[K4] Field %r is derived from %s: no crawler may claim it (%s does)."
+                                % (name, ", ".join(derived[name].inputs), ", ".join(claimants)))
+        elif len(claimants) > 1:
             problems.append("[K2] Field %r is claimed %d times (%s): exactly one crawler may claim it."
                             % (name, len(claimants), ", ".join(claimants)))
         elif not claimants:
             problems.append("[K3] Field %r is not claimed by any crawler: add it to one crawler's fields." % name)
+    for i, f in enumerate(fields):
+        earlier = catalog[:i]
+        for name in f.inputs:
+            if name not in earlier:
+                problems.append("[K5] Field %r is derived from %r, which is not a Field before it in FIELDS%s: "
+                                "derive only from earlier Fields." % (f.name, name, _did_you_mean(name, earlier)))
     return problems
 
 
@@ -194,13 +206,13 @@ def unlisted_modules(package) -> typing.List[str]:
     folder = package.__name__.rsplit(".", 1)[-1]
     listed = {m.__name__.rsplit(".", 1)[-1] for m in package.MODULES}
     return ["[L1] %s/%s.py is not listed in MODULES in %s/__init__.py: add it." % (folder, name, folder)
-            for _, name, _ in pkgutil.iter_modules(package.__path__) if name not in listed]
+            for _, name, is_package in pkgutil.iter_modules(package.__path__) if name not in listed and not is_package]
 
 
 def describe(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler]) -> str:
     """The Field catalog as a table: name, type, unit, claiming crawler."""
     owner = owners(crawlers)
     rows = [("field", "type", "unit", "crawler")]
-    rows += [(f.name, f.dtype.__name__, f.unit or "-", owner.get(f.name, "-")) for f in fields]
+    rows += [(f.name, f.dtype.__name__, f.unit or "-", "derived" if f.inputs else owner.get(f.name, "-")) for f in fields]
     widths = [max(len(r[i]) for r in rows) for i in range(4)]
     return "\n".join("  " + "  ".join(cell.ljust(w) for cell, w in zip(r, widths)).rstrip() for r in rows)

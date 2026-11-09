@@ -18,7 +18,8 @@ tabulated by ZCTA, so the descriptions say "ZCTA".
 from . import (
     zipcode_type, major_city, state, county, county_fips,
     lat, lng, land_area_in_sqmi, water_area_in_sqmi,
-    population, population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
+    population, population_density,
+    population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
     housing_units, occupied_housing_units, housing_occupancy, vacancy_reason,
     median_home_value, owner_occupied_home_values, year_housing_was_built,
@@ -33,7 +34,8 @@ from . import (
 MODULES = (
     zipcode_type, major_city, state, county, county_fips,
     lat, lng, land_area_in_sqmi, water_area_in_sqmi,
-    population, population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
+    population, population_density,
+    population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
     housing_units, occupied_housing_units, housing_occupancy, vacancy_reason,
     median_home_value, owner_occupied_home_values, year_housing_was_built,

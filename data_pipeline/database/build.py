@@ -19,8 +19,8 @@ import typing
 
 from ..zipcodes import normalize_zip
 from .checks import owners, require_valid
-from .core import Crawler, Field, Paths, PkSetError, SQL_TYPES
-from .crawl import read_meta, read_output, replace, write_csv, write_json
+from .core import ContractError, Crawler, Field, Paths, PkSetError, SQL_TYPES, format_problems
+from .crawl import coerce, read_meta, read_output, replace, write_csv, write_json
 
 #: the minimal example: two standard ZIPs and a PO box ZIP without a ZCTA (so no Census values)
 DEMO_PKS = ("10001", "20013", "20037")
@@ -69,8 +69,28 @@ def load_pk_set(spec: str, paths: Paths) -> typing.Tuple[str, typing.List[str]]:
 
 def assemble(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
              outputs: typing.Dict[str, typing.Dict[str, dict]]) -> typing.List[list]:
-    """Pure left join: one row per PK, ``[zipcode] + [value per Field]``."""
-    return [[pk] + [outputs[owner[f.name]].get(pk, {}).get(f.name) for f in fields] for pk in pks]
+    """Pure left join: one row per PK, ``[zipcode] + [value per Field]``. Derived Fields are None here."""
+    return [[pk] + [outputs[owner[f.name]].get(pk, {}).get(f.name) if f.name in owner else None for f in fields]
+            for pk in pks]
+
+
+def derive(rows: typing.List[list], fields: typing.Sequence[Field]) -> None:
+    """Fill in the derived Fields of every row, in catalog order (B4: a derived value fails)."""
+    column = {f.name: j for j, f in enumerate(fields, start=1)}
+    problems = []
+    for j, f in enumerate(fields, start=1):
+        if not f.inputs:
+            continue
+        for row in rows:
+            try:
+                value, error = coerce(f, f.extract({name: row[column[name]] for name in f.inputs}))
+            except Exception as e:
+                value, error = None, ("B4", "%s: %s" % (type(e).__name__, e))
+            if error:
+                problems.append("[B4] derived Field %s, zipcode %s: %s" % (f.name, row[0], error[1]))
+            row[j] = value
+    if problems:
+        raise ContractError(format_problems("derived Fields failed", problems, limit=20))
 
 
 def _write_sqlite(path: str, fields: typing.Sequence[Field], rows: typing.List[list]) -> None:
@@ -99,21 +119,29 @@ def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], pa
     outputs = {c.name: read_output(c, catalog, paths.crawler_out_dir) for c in crawlers}
     metas = {c.name: read_meta(c, paths.crawler_out_dir) for c in crawlers}
     rows = assemble(pks, fields, owner, outputs)
+    derive(rows, fields)
 
     stem = os.path.join(paths.db_out_dir, "db_%s" % name)
     _write_sqlite(stem + ".sqlite", fields, rows)
     write_csv(stem + ".csv", ["zipcode"] + [f.name for f in fields], rows)
 
     pk_index = set(pks)
+    column = {f.name: j for j, f in enumerate(fields, start=1)}
     field_cov = {}
     for j, f in enumerate(fields, start=1):
-        out = outputs[owner[f.name]]
-        not_in_source = sum(1 for pk in pks if pk not in out)
         non_null = sum(1 for r in rows if r[j] is not None)
+        if f.inputs:  # "not in source": an input is NULL
+            inputs = [column[n] for n in f.inputs]
+            not_in_source = sum(1 for r in rows if any(r[i] is None for i in inputs))
+        else:
+            not_in_source = sum(1 for pk in pks if pk not in outputs[owner[f.name]])
         field_cov[f.name] = {
-            "crawler": owner[f.name], "non_null": non_null, "share": round(non_null / len(pks), 4),
+            "crawler": "derived" if f.inputs else owner[f.name], "non_null": non_null,
+            "share": round(non_null / len(pks), 4),
             "not_in_source": not_in_source, "empty_in_source": len(pks) - non_null - not_in_source,
         }
+        if f.inputs:
+            field_cov[f.name]["derived_from"] = list(f.inputs)
     crawler_cov = {}
     for c in crawlers:
         out = outputs[c.name]

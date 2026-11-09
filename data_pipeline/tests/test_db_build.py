@@ -172,6 +172,39 @@ def test_bad_cell_b3(world):
     assert str(e.value) == "[B3] %s line 2: 'abc' is not a valid float for field f02" % path
 
 
+def _ratio_field(name, top, bottom):
+    def extract(row):
+        return None if row[top] is None or not row[bottom] else row[top] / row[bottom]
+    return Field(name, float, "%s per %s" % (top, bottom), extract=extract, inputs=(top, bottom))
+
+
+def test_derived_fields_are_computed_after_the_join(world, tmp_path):
+    # f01 is an int of fake-1, f02 a float of fake-2: a derived Field joins two crawlers
+    fields = list(world.fields) + [_ratio_field("f01_per_f02", "f01", "f02"), _ratio_field("twice", "f01_per_f02", "f02")]
+    coverage = build_mod.build(fields, world.crawlers, world.paths, pk_set=world.pk_csv)
+    con = sqlite3.connect(coverage["files"]["sqlite"])
+    try:
+        rows = con.execute("SELECT zipcode, f01, f02, f01_per_f02, twice FROM zipcode_data ORDER BY zipcode").fetchall()
+        assert con.execute("SELECT typeof(f01_per_f02) FROM zipcode_data WHERE f01_per_f02 IS NOT NULL").fetchone() == ("real",)
+    finally:
+        con.close()
+    for zipcode, f01, f02, derived, twice in rows:
+        expected = None if f01 is None or not f02 else f01 / f02
+        assert derived == expected and twice == (None if expected is None or not f02 else expected / f02), zipcode
+    c = coverage["fields"]["f01_per_f02"]
+    assert c["crawler"] == "derived" and c["derived_from"] == ["f01", "f02"]
+    assert c["non_null"] == sum(1 for r in rows if r[3] is not None)
+    assert c["not_in_source"] == sum(1 for r in rows if r[1] is None or r[2] is None)
+
+
+def test_a_failing_derived_field_stops_the_build(world):
+    broken = Field("broken", int, "always fails", extract=lambda row: 1 / 0, inputs=("f01",))
+    with pytest.raises(ContractError) as e:
+        build_mod.build(list(world.fields) + [broken], world.crawlers, world.paths, pk_set=world.pk_csv)
+    assert "derived Fields failed: 3 problem(s)" in str(e.value)
+    assert "[B4] derived Field broken, zipcode 00501: ZeroDivisionError: division by zero" in str(e.value)
+
+
 def test_locked_database_gives_a_friendly_message(world, monkeypatch, capsys):
     def locked(src, dst):
         raise PermissionError(13, "The process cannot access the file")

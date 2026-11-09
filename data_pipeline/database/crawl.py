@@ -30,8 +30,8 @@ def _null(value) -> bool:
     return value is None or (isinstance(value, str) and not value.strip())
 
 
-def _coerce(field: Field, value):
-    """Return ``(value, error)``; error is ``(rule, short text)`` or None."""
+def coerce(field: Field, value):
+    """Check ``value`` against the Field's dtype. Returns ``(value, error)``; error is ``(rule, short text)`` or None."""
     if _null(value):
         return None, None
     if field.dtype is int:
@@ -84,7 +84,7 @@ def check_rows(crawler: Crawler, catalog: typing.Dict[str, Field],
                               % (i, z, name, type(e).__name__, e))
                 out.append(None)
                 continue
-            value, error = _coerce(catalog[name], raw_value)
+            value, error = coerce(catalog[name], raw_value)
             if error:
                 errors.append("[%s] row %d, zipcode %s, field %s: %s" % (error[0], i, z, name, error[1]))
             out.append(value)

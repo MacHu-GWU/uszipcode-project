@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 300,
+  "columns": 301,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -72,6 +72,17 @@
       "share": 0.6667,
       "not_in_source": 1,
       "empty_in_source": 0
+    },
+    "population_density": {
+      "crawler": "derived",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0,
+      "derived_from": [
+        "population",
+        "land_area_in_sqmi"
+      ]
     },
     "population_by_gender_male": {
       "crawler": "census-dhc",
@@ -2232,7 +2243,7 @@
   },
   "pks_by_non_null_fields": {
     "5": 1,
-    "299": 2
+    "300": 2
   },
   "pks_without_any_value": [],
   "files": {

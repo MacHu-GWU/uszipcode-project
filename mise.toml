@@ -45,6 +45,10 @@ run = "python -m data_pipeline.database crawl census-gazetteer"
 description = "2020 Census DHC -> population, housing units and 10 distributions"
 run = "python -m data_pipeline.database crawl census-dhc"
 
+[tasks.crawler-census-acs5]
+description = "ACS 5-year, latest vintage -> medians, poverty rate and 11 distributions"
+run = "python -m data_pipeline.database crawl census-acs5"
+
 [tasks.crawler-zip-basics]
 description = "HUD-USPS crosswalk, Census counties and ZBP, uszipcode 2.x -> ZIP type, city, state, county"
 run = "python -m data_pipeline.database crawl zip-basics"

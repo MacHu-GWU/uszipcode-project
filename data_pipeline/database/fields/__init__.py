@@ -18,18 +18,28 @@ tabulated by ZCTA, so the descriptions say "ZCTA".
 from . import (
     zipcode_type, major_city, state, county, county_fips,
     lat, lng, land_area_in_sqmi, water_area_in_sqmi,
-    population, population_by_gender, population_by_age, children_by_age, population_by_race,
+    population, population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
     housing_units, occupied_housing_units, housing_occupancy, vacancy_reason,
+    median_home_value, owner_occupied_home_values, year_housing_was_built,
+    median_rent, rental_properties_by_number_of_rooms, monthly_rent_including_utilities,
+    median_household_income, household_income, annual_individual_earnings, employment_status, poverty_rate,
+    means_of_transportation_to_work, travel_time_to_work_in_minutes,
+    educational_attainment, school_enrollment_age_3_to_17,
 )
 
 #: every module of this folder, in column order; ``check`` fails if one is left out (rule L1)
 MODULES = (
     zipcode_type, major_city, state, county, county_fips,
     lat, lng, land_area_in_sqmi, water_area_in_sqmi,
-    population, population_by_gender, population_by_age, children_by_age, population_by_race,
+    population, population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
     housing_units, occupied_housing_units, housing_occupancy, vacancy_reason,
+    median_home_value, owner_occupied_home_values, year_housing_was_built,
+    median_rent, rental_properties_by_number_of_rooms, monthly_rent_including_utilities,
+    median_household_income, household_income, annual_individual_earnings, employment_status, poverty_rate,
+    means_of_transportation_to_work, travel_time_to_work_in_minutes,
+    educational_attainment, school_enrollment_age_3_to_17,
 )
 
 FIELDS = [field for module in MODULES for field in module.FIELDS]

@@ -169,6 +169,18 @@ def parse_float(value) -> typing.Optional[float]:
     return float(value)
 
 
+def census_int(value) -> typing.Optional[int]:
+    """Like ``parse_int``, but the Census "not available" codes (negative, e.g. -666666666) are None."""
+    number = parse_int(value)
+    return None if number is None or number < 0 else number
+
+
+def census_float(value) -> typing.Optional[float]:
+    """Like ``parse_float``, but the Census "not available" codes (negative, e.g. -666666666) are None."""
+    number = parse_float(value)
+    return None if number is None or number < 0 else number
+
+
 def upper_text(value: str) -> str:
     return value.strip().upper()
 
@@ -194,7 +206,8 @@ def total(*names: str, convert: typing.Callable = parse_int):
 
 
 def field_group(prefix: str, source: str, unit: str,
-                buckets: typing.Sequence[typing.Tuple[str, str, typing.Sequence[str]]]) -> typing.Tuple[Field, ...]:
+                buckets: typing.Sequence[typing.Tuple[str, str, typing.Sequence[str]]],
+                convert: typing.Callable = parse_int) -> typing.Tuple[Field, ...]:
     """
     The Fields of one distribution, one column per bucket ``(name, label, source columns)``.
     Each Field is named ``<prefix>_<name>`` and is the sum of its source columns;
@@ -206,7 +219,7 @@ def field_group(prefix: str, source: str, unit: str,
             dtype=int,
             description="%s; %s (%s)" % (label, source, " + ".join(columns)),
             unit=unit,
-            extract=total(*columns),
+            extract=total(*columns, convert=convert),
             examples=(({c: "2" for c in columns}, 2 * len(columns)), ({c: None for c in columns}, None)),
         )
         for name, label, columns in buckets

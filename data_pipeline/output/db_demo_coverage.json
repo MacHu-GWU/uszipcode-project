@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 141,
+  "columns": 278,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -682,6 +682,20 @@
       "not_in_source": 1,
       "empty_in_source": 0
     },
+    "median_age": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "median_age_moe": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
     "families_vs_singles_married_couple_family": {
       "crawler": "census-dhc",
       "non_null": 2,
@@ -982,6 +996,951 @@
       "share": 0.6667,
       "not_in_source": 1,
       "empty_in_source": 0
+    },
+    "median_home_value": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "median_home_value_moe": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_lt100k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_100k_149k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_150k_199k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_200k_299k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_300k_399k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_400k_499k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_500k_749k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_750k_999k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_1m_1_5m": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_1_5m_2m": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "owner_occupied_home_values_2m_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_2020_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_2010s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_2000s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1990s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1980s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1970s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1960s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1950s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1940s": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "year_housing_was_built_1939_or_earlier": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "median_rent": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "median_rent_moe": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "rental_properties_by_number_of_rooms_studio": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "rental_properties_by_number_of_rooms_1br": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "rental_properties_by_number_of_rooms_2br": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "rental_properties_by_number_of_rooms_3br_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_lt300": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_300_499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_500_749": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_750_999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_1000_1499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_1500_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_studio_no_cash_rent": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_lt300": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_300_499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_500_749": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_750_999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_1000_1499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_1500_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_1br_no_cash_rent": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_lt300": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_300_499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_500_749": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_750_999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_1000_1499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_1500_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_2br_no_cash_rent": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_lt300": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_300_499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_500_749": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_750_999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_1000_1499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_1500_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "monthly_rent_including_utilities_3br_plus_no_cash_rent": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "median_household_income": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "median_household_income_moe": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_lt25k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_25k_44k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_45k_59k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_60k_99k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_100k_149k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_150k_199k": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_income_200k_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_1_2499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_2500_4999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_5000_7499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_7500_9999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_10000_12499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_12500_14999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_15000_17499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_17500_19999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_20000_22499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_22500_24999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_25000_29999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_30000_34999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_35000_39999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_40000_44999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_45000_49999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_50000_54999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_55000_64999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_65000_74999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_75000_99999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_male_100000_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_1_2499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_2500_4999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_5000_7499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_7500_9999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_10000_12499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_12500_14999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_15000_17499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_17500_19999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_20000_22499": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_22500_24999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_25000_29999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_30000_34999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_35000_39999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_40000_44999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_45000_49999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_50000_54999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_55000_64999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_65000_74999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_75000_99999": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "annual_individual_earnings_female_100000_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "employment_status_full_time_year_round_with_earnings": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "employment_status_less_than_full_time_with_earnings": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "employment_status_no_earnings": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "poverty_rate": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "means_of_transportation_to_work_car": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "means_of_transportation_to_work_public_transit": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "means_of_transportation_to_work_taxi": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "means_of_transportation_to_work_motorcycle": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "means_of_transportation_to_work_bike_walk_other": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "means_of_transportation_to_work_work_from_home": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_lt10": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_10_19": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_20_29": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_30_39": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_40_44": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_45_59": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_60_89": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "travel_time_to_work_in_minutes_90_plus": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_less_than_high_school": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_high_school_or_ged": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_some_college_no_degree": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_associate": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_bachelor": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_master": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_professional": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "educational_attainment_doctorate": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "school_enrollment_age_3_to_17_public": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "school_enrollment_age_3_to_17_private": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "school_enrollment_age_3_to_17_not_enrolled": {
+      "crawler": "census-acs5",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
     }
   },
   "crawlers": {
@@ -1029,6 +1988,49 @@
         }
       }
     },
+    "census-acs5": {
+      "source_rows": 33772,
+      "rows_in_pk_set": 2,
+      "rows_outside_pk_set": 33770,
+      "downloads": {
+        "acs5_2024_zcta_B14003_B15003.json": {
+          "url": "https://api.census.gov/data/2024/acs/acs5?get=B14003_004E,B14003_005E,B14003_006E,B14003_007E,B14003_013E,B14003_014E,B14003_015E,B14003_016E,B14003_022E,B14003_023E,B14003_024E,B14003_025E,B14003_032E,B14003_033E,B14003_034E,B14003_035E,B14003_041E,B14003_042E,B14003_043E,B14003_044E,B14003_050E,B14003_051E,B14003_052E,B14003_053E,B15003_002E,B15003_003E,B15003_004E,B15003_005E,B15003_006E,B15003_007E,B15003_008E,B15003_009E,B15003_010E,B15003_011E,B15003_012E,B15003_013E,B15003_014E,B15003_015E,B15003_016E,B15003_017E,B15003_018E,B15003_019E,B15003_020E,B15003_021E,B15003_022E,B15003_023E,B15003_024E,B15003_025E&for=zip%20code%20tabulation%20area:*",
+          "bytes": 8037734,
+          "sha256": "bcd83c3ab19a916d03a99a6e398934765ce07373720b6ad36ad693a21f559100",
+          "fetched_at_utc": "2026-11-09T17:05:36Z"
+        },
+        "acs5_2024_zcta_B20001.json": {
+          "url": "https://api.census.gov/data/2024/acs/acs5?get=B20001_003E,B20001_004E,B20001_005E,B20001_006E,B20001_007E,B20001_008E,B20001_009E,B20001_010E,B20001_011E,B20001_012E,B20001_013E,B20001_014E,B20001_015E,B20001_016E,B20001_017E,B20001_018E,B20001_019E,B20001_020E,B20001_021E,B20001_022E,B20001_024E,B20001_025E,B20001_026E,B20001_027E,B20001_028E,B20001_029E,B20001_030E,B20001_031E,B20001_032E,B20001_033E,B20001_034E,B20001_035E,B20001_036E,B20001_037E,B20001_038E,B20001_039E,B20001_040E,B20001_041E,B20001_042E,B20001_043E&for=zip%20code%20tabulation%20area:*",
+          "bytes": 7034822,
+          "sha256": "2cf8acbcd3bd846496906d0f383e8184137a0ef93d6fe99e8affa32e474d0561",
+          "fetched_at_utc": "2026-11-09T17:05:03Z"
+        },
+        "acs5_2024_zcta_B25068.json": {
+          "url": "https://api.census.gov/data/2024/acs/acs5?get=B25068_004E,B25068_005E,B25068_006E,B25068_007E,B25068_008E,B25068_009E,B25068_010E,B25068_013E,B25068_014E,B25068_015E,B25068_016E,B25068_017E,B25068_018E,B25068_019E,B25068_022E,B25068_023E,B25068_024E,B25068_025E,B25068_026E,B25068_027E,B25068_028E,B25068_031E,B25068_032E,B25068_033E,B25068_034E,B25068_035E,B25068_036E,B25068_037E&for=zip%20code%20tabulation%20area:*",
+          "bytes": 4513473,
+          "sha256": "3a3cf2b7c3cf8821226aad269a350cd45ec9e1d006520f5a72f5d0a55c2fd7a5",
+          "fetched_at_utc": "2026-11-09T17:05:12Z"
+        },
+        "acs5_2024_zcta_B25075.json": {
+          "url": "https://api.census.gov/data/2024/acs/acs5?get=B25075_002E,B25075_003E,B25075_004E,B25075_005E,B25075_006E,B25075_007E,B25075_008E,B25075_009E,B25075_010E,B25075_011E,B25075_012E,B25075_013E,B25075_014E,B25075_015E,B25075_016E,B25075_017E,B25075_018E,B25075_019E,B25075_020E,B25075_021E,B25075_022E,B25075_023E,B25075_024E,B25075_025E,B25075_026E,B25075_027E&for=zip%20code%20tabulation%20area:*",
+          "bytes": 4457630,
+          "sha256": "9ff28c2f3ec60473bbe21ea9b668ce2b6b3a23f14811d0e79bc7bd9a11a38eda",
+          "fetched_at_utc": "2026-11-09T17:05:22Z"
+        },
+        "acs5_2024_zcta_commute_work.json": {
+          "url": "https://api.census.gov/data/2024/acs/acs5?get=B08301_002E,B08301_010E,B08301_016E,B08301_017E,B08301_018E,B08301_019E,B08301_020E,B08301_021E,B08303_002E,B08303_003E,B08303_004E,B08303_005E,B08303_006E,B08303_007E,B08303_008E,B08303_009E,B08303_010E,B08303_011E,B08303_012E,B08303_013E,B20005_004E,B20005_005E,B20005_027E,B20005_028E,B20005_051E,B20005_052E,B20005_074E,B20005_075E&for=zip%20code%20tabulation%20area:*",
+          "bytes": 5289404,
+          "sha256": "608554769848f49f233ef813fe0efcdf68ba16f501a2fd18e8f8a7952f43c77d",
+          "fetched_at_utc": "2026-11-09T17:04:50Z"
+        },
+        "acs5_2024_zcta_medians_income.json": {
+          "url": "https://api.census.gov/data/2024/acs/acs5?get=B01002_001E,B01002_001M,B25077_001E,B25077_001M,B19013_001E,B19013_001M,B25064_001E,B25064_001M,B17001_001E,B17001_002E,B19001_002E,B19001_003E,B19001_004E,B19001_005E,B19001_006E,B19001_007E,B19001_008E,B19001_009E,B19001_010E,B19001_011E,B19001_012E,B19001_013E,B19001_014E,B19001_015E,B19001_016E,B19001_017E,B25034_002E,B25034_003E,B25034_004E,B25034_005E,B25034_006E,B25034_007E,B25034_008E,B25034_009E,B25034_010E,B25034_011E,B25042_010E,B25042_011E,B25042_012E,B25042_013E,B25042_014E,B25042_015E&for=zip%20code%20tabulation%20area:*",
+          "bytes": 8567080,
+          "sha256": "8156578b9dc664829502cf2dd93db37a3a9dafcdeae82148cba0e647018c4066",
+          "fetched_at_utc": "2026-11-09T17:04:38Z"
+        }
+      }
+    },
     "zip-basics": {
       "source_rows": 42730,
       "rows_in_pk_set": 3,
@@ -1063,7 +2065,7 @@
   },
   "pks_by_non_null_fields": {
     "5": 1,
-    "140": 2
+    "277": 2
   },
   "pks_without_any_value": [],
   "files": {

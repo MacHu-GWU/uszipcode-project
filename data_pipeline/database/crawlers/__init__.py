@@ -9,10 +9,10 @@ those files into source rows. It imports only ``..core``, ``..fields`` and
 ``...zipcodes``: it cannot open a URL and never reads a value itself.
 """
 
-from . import census_gazetteer, census_dhc, zip_basics
+from . import census_gazetteer, census_dhc, census_acs5, zip_basics
 
 #: every module of this folder; ``check`` fails if one is left out (rule L1)
-MODULES = (census_gazetteer, census_dhc, zip_basics)
+MODULES = (census_gazetteer, census_dhc, census_acs5, zip_basics)
 
 #: every crawler, in the order ``crawl --all`` runs them
 CRAWLERS = [m.CRAWLER for m in MODULES]

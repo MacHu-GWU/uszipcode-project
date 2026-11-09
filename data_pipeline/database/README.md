@@ -87,8 +87,8 @@ Without mise, run the same commands with `python -m data_pipeline.database check
 from the repository root. Exit codes: 0 success, 2 registry / contract / PK-set problems, 1 download
 and file problems. Expected errors print one message without a traceback.
 
-Two crawlers need a free key: `census-dhc` (<https://api.census.gov/data/key_signup.html>, read from
-`$CENSUS_API_KEY` or `~/.census_key`) and `zip-basics` (<https://www.huduser.gov/hudapi/public/register>,
+Three crawlers need a free key: `census-dhc` and `census-acs5` (<https://api.census.gov/data/key_signup.html>,
+read from `$CENSUS_API_KEY` or `~/.census_key`) and `zip-basics` (<https://www.huduser.gov/hudapi/public/register>,
 read from `$HUD_API_TOKEN` or `~/.hud_token`). A key is added to the request in memory only: it is never
 written to the cache, the manifest, the outputs or an error message.
 
@@ -106,10 +106,14 @@ Files:
 | `zip-basics` | [HUD-USPS crosswalk](https://www.huduser.gov/portal/datasets/usps_crosswalk.html), Census Gazetteer counties, Census ZBP, uszipcode 2.x | 4 files, 20 MB, token for HUD | `zipcode_type` (2.x only), `major_city`, `state` (HUD, else ZBP, else 2.x), `county` (HUD's main county with the Gazetteer name, else 2.x), `county_fips` (HUD) |
 | `census-gazetteer` | Census [2025 Gazetteer, ZCTA file](https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip) | 1 file, 0.9 MB, no key | `lat`, `lng` (ZCTA internal point), `land_area_in_sqmi`, `water_area_in_sqmi` |
 | `census-dhc` | 2020 Census DHC through the [Census Data API](https://api.census.gov/data/2020/dec/dhc.html) | 4 requests (at most 50 variables each), 31 MB, key | `population`, `housing_units`, `occupied_housing_units` and 10 distributions, 128 columns: `population_by_gender_*` (2), `population_by_age_*` (36), `children_by_age_*` (42), `population_by_race_*` (7), `families_vs_singles_*` (5), `households_with_kids_*` (2), `head_of_household_by_age_*` (16), `housing_type_*` (7, group quarters), `housing_occupancy_*` (4), `vacancy_reason_*` (7) |
+| `census-acs5` | [ACS 5-year](https://api.census.gov/data/2024/acs/acs5.html), latest vintage (`YEAR = 2024`: 2020-2024, dollars of 2024) | 6 requests (at most 50 variables each), 36 MB, key | `median_age`, `median_home_value`, `median_household_income`, `median_rent`, each with its `_moe` (90% margin of error), `poverty_rate`, and 11 distributions, 128 columns: `owner_occupied_home_values_*` (11), `year_housing_was_built_*` (10), `rental_properties_by_number_of_rooms_*` (4), `monthly_rent_including_utilities_*` (28), `household_income_*` (7), `annual_individual_earnings_*` (40), `employment_status_*` (3), `means_of_transportation_to_work_*` (6), `travel_time_to_work_in_minutes_*` (8), `educational_attainment_*` (8), `school_enrollment_age_3_to_17_*` (3) |
 
-The Census values are ZCTA values: a ZIP without a ZCTA (PO box, unique, military) gets NULL. The
+The Census values are ZCTA values: a ZIP without a ZCTA (PO box, unique, military) gets NULL. The ACS
+writes "not available" as negative codes (for example -666666666); they are read as NULL. The
 distribution buckets are those of the research (issue #88), which were checked against reference values;
-the modules were generated from its bucket definitions and the values below match it exactly.
+the modules were generated from its bucket definitions and the values below match it exactly. Where a
+2.x name plus a bucket would pass 60 characters, the module has a shorter name and says which 2.x field
+it stands for (`means_of_transportation_to_work`, `educational_attainment`).
 
 ## Politeness
 
@@ -155,8 +159,8 @@ crawler's current claims, and says which `mise run crawler-<name>` to run if not
 
 ## Result (run of 2026-11-09)
 
-`mise run crawl-all` makes 9 requests the first time and 0 after that. `mise run pipeline-build`
-then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 141 columns. Its first columns:
+`mise run crawl-all` makes 15 requests the first time and 0 after that. `mise run pipeline-build`
+then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 278 columns. Its first columns:
 
 ```
 zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,land_area_in_sqmi,water_area_in_sqmi,population,...
@@ -165,11 +169,12 @@ zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,land_area_in_sq
 20037,STANDARD,WASHINGTON,DC,District of Columbia,11001,38.892459,-77.053811,0.732,0.231,14945,...
 ```
 
-20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA, so all 135
+20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA, so all 272
 Census columns are NULL. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
-counts it under `not_in_source` for those Fields.
+counts it under `not_in_source` for those Fields. For 20037 the 2020-2024 ACS gives a median age of 30.4,
+a median home value of $685,300, a median household income of $111,153 and a median rent of $2,538.
 
-With `--pk-set full` (42,730 ZIPs, about 9 seconds, no downloads):
+With `--pk-set full` (42,730 ZIPs, about 10 seconds, no downloads):
 
 | Fields | ZIPs with a value |
 |---|---|
@@ -178,13 +183,18 @@ With `--pk-set full` (42,730 ZIPs, about 9 seconds, no downloads):
 | `county` | 41,866 |
 | `county_fips` | 39,475 (HUD only) |
 | `lat`, `lng`, `land_area_in_sqmi`, `water_area_in_sqmi` | 33,791 |
-| `population`, the housing counts and the 128 distribution columns | 33,774 |
+| `population`, the housing counts and the 128 DHC distribution columns | 33,774 |
+| the 128 ACS distribution columns | 33,772 |
+| `poverty_rate`, `median_age`, `median_household_income`, `median_home_value`, `median_rent` | 32,878, 32,820, 30,547, 30,260, 25,751 |
 
 Checked against earlier work:
 
 - `major_city`, `state` and `zipcode_type` match `zipcode_universe.csv` row by row.
-- The 4,323,072 distribution values (33,774 ZCTAs x 128 columns), `water_area_in_sqmi` and
+- The 4,323,072 DHC distribution values (33,774 ZCTAs x 128 columns), `water_area_in_sqmi` and
   `occupied_housing_units` match the research database exactly.
+- `census-acs5` was also run once for the 2019-2023 vintage, the one the research used: its 4,322,816
+  distribution values (33,772 ZCTAs x 128 columns) and the 9 median, margin and poverty columns match the
+  research database exactly. The committed outputs use 2020-2024.
 - `county_fips` differs from the research database for 10 ZIPs. For 9 of them HUD gives only a 2-digit
   state code (island areas such as 96799, and 77352), which is now NULL. For 51603 two counties tie
   exactly, and the lower code is taken.
@@ -202,7 +212,8 @@ The registry is not tied to these numbers: the tests build fake registries of 1 
 1. Add `fields/<name>.py` (copy [`population.py`](fields/population.py)), with examples of the source row.
 2. List the module in `MODULES` in [`fields/__init__.py`](fields/__init__.py); its place there is its column position.
 3. Add the module to the crawler's `field_names(...)`, and request the source column if the download
-   does not include it yet (for `census-dhc`, add the variable to `REQUESTS`).
+   does not include it yet (for `census-dhc` and `census-acs5`, add the variable to `REQUESTS`; a test
+   fails if a Field reads a variable that is not requested).
 
 **A group of columns** (one distribution): the same, with one module whose `FIELDS` is built by
 `field_group`, one Field per bucket (copy [`population_by_age.py`](fields/population_by_age.py)).
@@ -223,7 +234,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | # | Question | Decision | Status |
 |---|---|---|---|
 | 1 | Does `crawler-<name>` download again? | No: it reuses the cache and parses again; `-- --refresh` downloads again, at most once per 24 h | done |
-| 2 | How are distributions stored? | One Field per number, generated by `field_group` in one module | done for the 10 DHC distributions (128 columns); the ACS ones come with the ACS crawler |
+| 2 | How are distributions stored? | One Field per number, generated by `field_group` in one module | done: the 21 distributions of the research, 256 columns |
 | 3 | How is history stored? | The main table holds the latest year; history goes to a separate long table `(zipcode, field, year, value)`. 256 numbers over 14 years would be 3,584 columns, and SQLite allows 2,000 | not built; comes with the first history crawler. F7 guards the limit |
 | 4 | Where does the full database go? | A GitHub release asset, as in 2.x; git has only the demo | not published; waits for the Fields |
 | 5 | Are city, state and ZIP type Fields? | Yes, claimed by `zip-basics`, which falls back HUD, ZBP, 2.x | done |

@@ -9,7 +9,7 @@ Steps (in order; each one is a sub-package run with `python -m data_pipeline.<st
 | Step | Status | What it does |
 |---|---|---|
 | [`zipcode_universe`](zipcode_universe/README.md) | done (draft) | the primary-key list: every 5-digit ZIP from free sources, with source flags |
-| [`database`](database/README.md) | in progress | the crawler registry: one module per Field, one module per crawler, and the join onto a PK set (3 crawlers, 140 Fields so far) |
+| [`database`](database/README.md) | in progress | the crawler registry: one module per Field, one module per crawler, and the join onto a PK set (4 crawlers, 277 Fields so far) |
 | more crawlers | to do | ACS, IRS, HUD, boundaries and time zones, each as a crawler of the `database` step |
 
 The tasks of both steps are in [`mise.toml`](../mise.toml) (`mise run pipeline-check`, `mise run crawler-<name>`,

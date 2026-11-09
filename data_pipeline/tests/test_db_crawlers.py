@@ -19,7 +19,7 @@ from data_pipeline.database import fetch
 from data_pipeline.database.cli import main
 from data_pipeline.database.core import Paths
 from data_pipeline.database.crawl import check_rows
-from data_pipeline.database.crawlers import CRAWLERS, census_dhc, census_gazetteer, zip_basics
+from data_pipeline.database.crawlers import CRAWLERS, census_acs5, census_dhc, census_gazetteer, zip_basics
 from data_pipeline.database.fields import FIELDS
 
 from fakes import FakeOpener
@@ -80,6 +80,25 @@ def _dhc_responses() -> dict:
     return out
 
 
+# real ACS 2019-2023 values for 20037; 10001 has a "not available" median; every other variable is 1
+ACS_VALUES = {
+    "00601": {},
+    "10001": {"B25077_001E": "-666666666", "B25077_001M": "-222222222"},
+    "20037": {"B01002_001E": "31.3", "B25077_001E": "743700", "B19013_001E": "98917", "B25064_001E": "2420",
+              "B17001_001E": "12357", "B17001_002E": "2215"},
+}
+
+
+def _acs_responses(year=census_acs5.YEAR) -> dict:
+    out = {}
+    for part, variables in census_acs5.REQUESTS:
+        rows = [list(variables) + [census_acs5.KEY_COLUMN]]
+        for zcta, values in ACS_VALUES.items():
+            rows.append([values.get(v, "1") for v in variables] + [zcta])
+        out[census_acs5.filename(year, part)] = json.dumps(rows).encode()
+    return out
+
+
 def _dhc_files(folder) -> dict:
     files = {}
     for filename, body in _dhc_responses().items():
@@ -125,16 +144,40 @@ def test_gazetteer(tmp_path):
                        ("20037", [38.892459, -77.053811, 0.732, 0.231])]
 
 
-def test_dhc_requests_fit_the_api():
-    for filename, variables in census_dhc.REQUESTS:
-        assert len(variables) <= 50 and len(set(variables)) == len(variables), filename
-    assert len(set(census_dhc.VARIABLES)) == len(census_dhc.VARIABLES)
+@pytest.mark.parametrize("module", [census_dhc, census_acs5], ids=["census-dhc", "census-acs5"])
+def test_census_requests_fit_the_api(module):
+    for name, variables in module.REQUESTS:
+        assert len(variables) <= 50 and len(set(variables)) == len(variables), name
+    assert len(set(module.VARIABLES)) == len(module.VARIABLES)
 
 
-def test_dhc_requests_have_every_variable_its_fields_read():
-    row = dict.fromkeys(census_dhc.VARIABLES, "1")
-    for name in census_dhc.CRAWLER.fields:
+@pytest.mark.parametrize("module", [census_dhc, census_acs5], ids=["census-dhc", "census-acs5"])
+def test_census_requests_have_every_variable_their_fields_read(module):
+    row = dict.fromkeys(module.VARIABLES, "1")
+    for name in module.CRAWLER.fields:
         assert CATALOG[name].extract(row) is not None, name  # a KeyError means a variable is not requested
+
+
+def test_acs(tmp_path):
+    files = {}
+    for filename, body in _acs_responses().items():
+        files[filename] = str(tmp_path / filename)
+        with open(files[filename], "wb") as fh:
+            fh.write(body)
+    records, _ = check_rows(census_acs5.CRAWLER, CATALOG, census_acs5.CRAWLER.parse(files))
+    values = {z: dict(zip(census_acs5.CRAWLER.fields, v)) for z, v in records}
+    assert [values["20037"][k] for k in ("median_age", "median_home_value", "median_household_income", "median_rent")] \
+        == [31.3, 743700, 98917, 2420]
+    assert values["20037"]["poverty_rate"] == 2215 / 12357
+    assert values["10001"]["median_home_value"] is None and values["10001"]["median_home_value_moe"] is None
+    assert values["20037"]["owner_occupied_home_values_lt100k"] == 13  # B25075_002E ... B25075_014E
+    assert values["20037"]["educational_attainment_less_than_high_school"] == 15
+
+
+def test_acs_vintage_is_in_the_urls_and_file_names():
+    old = census_acs5.crawler_for(2023)
+    assert all("/data/2023/acs/acs5?" in d.url and d.filename.startswith("acs5_2023_") for d in old.downloads)
+    assert old.fields == census_acs5.CRAWLER.fields and old.name == census_acs5.CRAWLER.name
 
 
 def test_dhc(tmp_path):
@@ -178,6 +221,8 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     dhc = _dhc_responses()
     served = {census_gazetteer.URL: _read(_zip_file(str(tmp_path / "gaz.zip"), "gaz.txt", GAZETTEER))}
     served.update({d.url: dhc[d.filename] for d in census_dhc.CRAWLER.downloads})
+    acs = _acs_responses()
+    served.update({d.url: acs[d.filename] for d in census_acs5.CRAWLER.downloads})
     served.update({d.url: _read(files[d.filename]) for d in zip_basics.CRAWLER.downloads})
     opener = FakeOpener(served)
     monkeypatch.setattr(fetch, "urlopen", opener)
@@ -208,7 +253,8 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     assert all(rows["20013"][name] == "" for name in census)  # a PO box: no ZCTA, so no Census values
     with open(os.path.join(paths.db_out_dir, "db_demo_coverage.json"), encoding="utf-8") as fh:
         coverage = json.load(fh)
-    assert coverage["pks_by_non_null_fields"] == {"5": 1, str(len(FIELDS)): 2}
+    assert rows["20037"]["median_home_value"] == "743700" and rows["10001"]["median_home_value"] == ""
+    assert coverage["pks_by_non_null_fields"] == {"5": 1, str(len(FIELDS) - 2): 1, str(len(FIELDS)): 1}
     assert coverage["crawlers"]["census-dhc"]["rows_outside_pk_set"] == 1  # 00601
 
     out, err = capsys.readouterr()

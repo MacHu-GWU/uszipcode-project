@@ -226,6 +226,50 @@ def field_group(prefix: str, source: str, unit: str,
     )
 
 
+def ratio(numerator: str, denominator: str, scale: float = 1, convert: typing.Callable = parse_float,
+          whole: bool = False):
+    """
+    An ``extract`` function: ``scale * numerator / denominator`` of two source columns; None if one
+    is blank or the denominator is 0. ``whole`` rounds the result to an int.
+    """
+    def extract(row: SourceRow):
+        top, bottom = convert(row[numerator]), convert(row[denominator])
+        if top is None or not bottom:
+            return None
+        value = scale * top / bottom
+        return int(round(value)) if whole else value
+    return extract
+
+
+def share_and_average_group(prefix: str, source: str, total: str, amount_scale: float,
+                            buckets: typing.Sequence[typing.Tuple[str, str, str, str]]) -> typing.Tuple[Field, ...]:
+    """
+    Two Fields per bucket ``(name, label, count column, amount column)``, for sources that give a count
+    and an amount per category: ``<prefix>_<name>_share`` = count / ``total`` and
+    ``<prefix>_<name>_average`` = amount x ``amount_scale`` / count, in whole units.
+    """
+    fields = []
+    for name, label, count, amount in buckets:
+        fields.append(Field(
+            name="%s_%s_share" % (prefix, name),
+            dtype=float,
+            description="Share with %s, 0 to 1; %s (%s / %s)" % (label, source, count, total),
+            unit="share",
+            extract=ratio(count, total),
+            examples=(({count: "30", total: "120"}, 0.25), ({count: "0", total: "0"}, None)),
+        ))
+        fields.append(Field(
+            name="%s_%s_average" % (prefix, name),
+            dtype=int,
+            description="Average %s among those with it; %s (%s x %g / %s)" % (label, source, amount, amount_scale, count),
+            unit="dollars",
+            extract=ratio(amount, count, scale=amount_scale, whole=True),
+            examples=(({amount: "37601", count: "870"}, int(round(37601 * amount_scale / 870))),
+                      ({amount: "0", count: "0"}, None)),
+        ))
+    return tuple(fields)
+
+
 def first_value(*names: str, convert: typing.Optional[typing.Callable] = None):
     """An ``extract`` function for a fallback: the first non-blank value among these columns."""
     def extract(row: SourceRow):

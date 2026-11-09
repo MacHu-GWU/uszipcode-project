@@ -108,7 +108,11 @@ Files:
 | `census-dhc` | 2020 Census DHC through the [Census Data API](https://api.census.gov/data/2020/dec/dhc.html) | 4 requests (at most 50 variables each), 31 MB, key | `population`, `housing_units`, `occupied_housing_units` and 10 distributions, 128 columns: `population_by_gender_*` (2), `population_by_age_*` (36), `children_by_age_*` (42), `population_by_race_*` (7), `families_vs_singles_*` (5), `households_with_kids_*` (2), `head_of_household_by_age_*` (16), `housing_type_*` (7, group quarters), `housing_occupancy_*` (4), `vacancy_reason_*` (7) |
 | `census-acs5` | [ACS 5-year](https://api.census.gov/data/2024/acs/acs5.html), latest vintage (`YEAR = 2024`: 2020-2024, dollars of 2024) | 6 requests (at most 50 variables each), 36 MB, key | `median_age`, `median_home_value`, `median_household_income`, `median_rent`, each with its `_moe` (90% margin of error), `poverty_rate`, and 11 distributions, 128 columns: `owner_occupied_home_values_*` (11), `year_housing_was_built_*` (10), `rental_properties_by_number_of_rooms_*` (4), `monthly_rent_including_utilities_*` (28), `household_income_*` (7), `annual_individual_earnings_*` (40), `employment_status_*` (3), `means_of_transportation_to_work_*` (6), `travel_time_to_work_in_minutes_*` (8), `educational_attainment_*` (8), `school_enrollment_age_3_to_17_*` (3) |
 
-The Census values are ZCTA values: a ZIP without a ZCTA (PO box, unique, military) gets NULL. The ACS
+| `irs-soi` | IRS [SOI ZIP Code Data](https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-zip-code-data-soi), latest tax year (`YEAR = 2023`) | 1 file, 40 MB, no key | for 11 income sources, the share of tax returns with it and the average amount among them (22 columns): `sources_of_household_income_*` (wages, business, partnership and S corporation, unemployment), `household_investment_income_*` (interest, ordinary and qualified dividends, capital gains), `household_retirement_income_*` (IRA distributions, pensions and annuities, Social Security) |
+
+The Census values are ZCTA values: a ZIP without a ZCTA (PO box, unique, military) gets NULL. The IRS
+values are by the ZIP taxpayers write on their returns; they cover returns, not households, and only taxable
+amounts; ZIPs with fewer than 100 returns are pooled by the IRS and get NULL. The ACS
 writes "not available" as negative codes (for example -666666666); they are read as NULL. The
 distribution buckets are those of the research (issue #88), which were checked against reference values;
 the modules were generated from its bucket definitions and the values below match it exactly. Where a
@@ -159,8 +163,8 @@ crawler's current claims, and says which `mise run crawler-<name>` to run if not
 
 ## Result (run of 2026-11-09)
 
-`mise run crawl-all` makes 15 requests the first time and 0 after that. `mise run pipeline-build`
-then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 278 columns. Its first columns:
+`mise run crawl-all` makes 16 requests the first time and 0 after that. `mise run pipeline-build`
+then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 300 columns. Its first columns:
 
 ```
 zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,land_area_in_sqmi,water_area_in_sqmi,population,...
@@ -169,12 +173,13 @@ zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,land_area_in_sq
 20037,STANDARD,WASHINGTON,DC,District of Columbia,11001,38.892459,-77.053811,0.732,0.231,14945,...
 ```
 
-20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA, so all 272
-Census columns are NULL. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
+20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA and no IRS row,
+so its other 294 columns are NULL. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
 counts it under `not_in_source` for those Fields. For 20037 the 2020-2024 ACS gives a median age of 30.4,
-a median home value of $685,300, a median household income of $111,153 and a median rent of $2,538.
+a median home value of $685,300, a median household income of $111,153 and a median rent of $2,538; in tax
+year 2023, 81.2% of its returns had wages, averaging $128,954.
 
-With `--pk-set full` (42,730 ZIPs, about 10 seconds, no downloads):
+With `--pk-set full` (42,730 ZIPs, about 12 seconds, no downloads):
 
 | Fields | ZIPs with a value |
 |---|---|
@@ -186,6 +191,7 @@ With `--pk-set full` (42,730 ZIPs, about 10 seconds, no downloads):
 | `population`, the housing counts and the 128 DHC distribution columns | 33,774 |
 | the 128 ACS distribution columns | 33,772 |
 | `poverty_rate`, `median_age`, `median_household_income`, `median_home_value`, `median_rent` | 32,878, 32,820, 30,547, 30,260, 25,751 |
+| the 22 IRS income-source columns | 27,689 |
 
 Checked against earlier work:
 
@@ -195,6 +201,8 @@ Checked against earlier work:
 - `census-acs5` was also run once for the 2019-2023 vintage, the one the research used: its 4,322,816
   distribution values (33,772 ZCTAs x 128 columns) and the 9 median, margin and poverty columns match the
   research database exactly. The committed outputs use 2020-2024.
+- `irs-soi` was also run on the tax year 2022 file the research used: its 303,468 shares and 303,468
+  averages (27,588 ZIPs x 11 sources) match the research database exactly. The committed outputs use 2023.
 - `county_fips` differs from the research database for 10 ZIPs. For 9 of them HUD gives only a 2-digit
   state code (island areas such as 96799, and 77352), which is now NULL. For 51603 two counties tie
   exactly, and the lower code is taken.

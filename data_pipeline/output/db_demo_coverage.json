@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 278,
+  "columns": 300,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -1760,6 +1760,160 @@
       "not_in_source": 1,
       "empty_in_source": 0
     },
+    "sources_of_household_income_wages_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_wages_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_business_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_business_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_partnership_scorp_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_partnership_scorp_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_unemployment_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "sources_of_household_income_unemployment_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_interest_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_interest_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_ordinary_dividends_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_ordinary_dividends_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_qualified_dividends_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_qualified_dividends_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_capital_gains_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_investment_income_capital_gains_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_retirement_income_ira_distributions_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_retirement_income_ira_distributions_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_retirement_income_pensions_annuities_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_retirement_income_pensions_annuities_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_retirement_income_social_security_share": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "household_retirement_income_social_security_average": {
+      "crawler": "irs-soi",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
     "poverty_rate": {
       "crawler": "census-acs5",
       "non_null": 2,
@@ -2031,6 +2185,19 @@
         }
       }
     },
+    "irs-soi": {
+      "source_rows": 27689,
+      "rows_in_pk_set": 2,
+      "rows_outside_pk_set": 27687,
+      "downloads": {
+        "23zpallnoagi.csv": {
+          "url": "https://www.irs.gov/pub/irs-soi/23zpallnoagi.csv",
+          "bytes": 40231496,
+          "sha256": "a5d29db62d1f5cd55ed9f502adddf7b78450ed9bd75c948afbd1f5e45ef9000d",
+          "fetched_at_utc": "2026-11-09T17:13:23Z"
+        }
+      }
+    },
     "zip-basics": {
       "source_rows": 42730,
       "rows_in_pk_set": 3,
@@ -2065,7 +2232,7 @@
   },
   "pks_by_non_null_fields": {
     "5": 1,
-    "277": 2
+    "299": 2
   },
   "pks_without_any_value": [],
   "files": {

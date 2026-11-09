@@ -23,7 +23,8 @@ from . import (
     housing_units, occupied_housing_units, housing_occupancy, vacancy_reason,
     median_home_value, owner_occupied_home_values, year_housing_was_built,
     median_rent, rental_properties_by_number_of_rooms, monthly_rent_including_utilities,
-    median_household_income, household_income, annual_individual_earnings, employment_status, poverty_rate,
+    median_household_income, household_income, annual_individual_earnings, employment_status,
+    sources_of_household_income, household_investment_income, household_retirement_income, poverty_rate,
     means_of_transportation_to_work, travel_time_to_work_in_minutes,
     educational_attainment, school_enrollment_age_3_to_17,
 )
@@ -37,7 +38,8 @@ MODULES = (
     housing_units, occupied_housing_units, housing_occupancy, vacancy_reason,
     median_home_value, owner_occupied_home_values, year_housing_was_built,
     median_rent, rental_properties_by_number_of_rooms, monthly_rent_including_utilities,
-    median_household_income, household_income, annual_individual_earnings, employment_status, poverty_rate,
+    median_household_income, household_income, annual_individual_earnings, employment_status,
+    sources_of_household_income, household_investment_income, household_retirement_income, poverty_rate,
     means_of_transportation_to_work, travel_time_to_work_in_minutes,
     educational_attainment, school_enrollment_age_3_to_17,
 )

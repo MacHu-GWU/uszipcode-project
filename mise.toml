@@ -49,6 +49,10 @@ run = "python -m data_pipeline.database crawl census-dhc"
 description = "ACS 5-year, latest vintage -> medians, poverty rate and 11 distributions"
 run = "python -m data_pipeline.database crawl census-acs5"
 
+[tasks.crawler-irs-soi]
+description = "IRS SOI ZIP Code Data, latest tax year -> shares and averages of 11 income sources"
+run = "python -m data_pipeline.database crawl irs-soi"
+
 [tasks.crawler-zip-basics]
 description = "HUD-USPS crosswalk, Census counties and ZBP, uszipcode 2.x -> ZIP type, city, state, county"
 run = "python -m data_pipeline.database crawl zip-basics"

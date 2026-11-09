@@ -19,7 +19,7 @@ from data_pipeline.database import fetch
 from data_pipeline.database.cli import main
 from data_pipeline.database.core import Paths
 from data_pipeline.database.crawl import check_rows
-from data_pipeline.database.crawlers import CRAWLERS, census_acs5, census_dhc, census_gazetteer, zip_basics
+from data_pipeline.database.crawlers import CRAWLERS, census_acs5, census_dhc, census_gazetteer, irs_soi, zip_basics
 from data_pipeline.database.fields import FIELDS
 
 from fakes import FakeOpener
@@ -87,6 +87,25 @@ ACS_VALUES = {
     "20037": {"B01002_001E": "31.3", "B25077_001E": "743700", "B19013_001E": "98917", "B25064_001E": "2420",
               "B17001_001E": "12357", "B17001_002E": "2215"},
 }
+
+
+# the shape of the IRS file: lower-case agi_stub, numbers with decimals, state totals (00000) and pooled ZIPs (99999);
+# the 20037 row has the real tax year 2022 values
+IRS_COLUMNS = ("N1", "N00200", "A00200", "N00900", "A00900", "N26270", "A26270", "N02300", "A02300", "N00300", "A00300",
+               "N00600", "A00600", "N00650", "A00650", "N01000", "A01000", "N01400", "A01400", "N01700", "A01700",
+               "N02500", "A02500")
+IRS_20037 = ("5460", "4390", "539853", "870", "37601", "400", "79281", "70", "547", "2760", "14943", "2660", "52371",
+             "2550", "39400", "2310", "73715", "730", "39781", "840", "52110", "750", "22101")
+
+
+def _irs_csv() -> str:
+    lines = ["STATEFIPS,STATE,ZIPCODE,agi_stub," + ",".join(IRS_COLUMNS)]
+    for fips, state, zipcode, values in (("11", "DC", "00000", ["100"] * len(IRS_COLUMNS)),
+                                         ("11", "DC", "20037", IRS_20037),
+                                         ("36", "NY", "10001", ["10"] * len(IRS_COLUMNS)),
+                                         ("36", "NY", "99999", ["10"] * len(IRS_COLUMNS))):
+        lines.append("%s,%s,%s,0,%s" % (fips, state, zipcode, ",".join(v + ".0000" for v in values)))
+    return "\n".join(lines) + "\n"
 
 
 def _acs_responses(year=census_acs5.YEAR) -> dict:
@@ -174,6 +193,27 @@ def test_acs(tmp_path):
     assert values["20037"]["educational_attainment_less_than_high_school"] == 15
 
 
+def test_irs(tmp_path):
+    path = tmp_path / irs_soi.filename(irs_soi.YEAR)
+    path.write_text(_irs_csv(), encoding="utf-8")
+    files = {irs_soi.filename(irs_soi.YEAR): str(path)}
+    records, stats = check_rows(irs_soi.CRAWLER, CATALOG, irs_soi.CRAWLER.parse(files))
+    assert [z for z, _ in records] == ["10001", "20037"] and stats["skipped_keys"] == 2  # 00000 and 99999
+    values = dict(zip(irs_soi.CRAWLER.fields, dict(records)["20037"]))
+    # the research checked these shares of 20037 against the reference values (rounded to whole percent)
+    assert round(100 * values["sources_of_household_income_wages_share"], 1) == 80.4
+    assert round(100 * values["household_investment_income_capital_gains_share"], 1) == 42.3
+    assert round(100 * values["household_retirement_income_social_security_share"], 1) == 13.7
+    assert values["sources_of_household_income_wages_average"] == 122973  # 539,853 thousand / 4,390 returns
+    assert values["household_retirement_income_pensions_annuities_average"] == 62036
+
+
+def test_irs_tax_year_is_in_the_url_and_file_name():
+    old = irs_soi.crawler_for(2022)
+    assert old.downloads[0].url == "https://www.irs.gov/pub/irs-soi/22zpallnoagi.csv"
+    assert old.downloads[0].filename == "22zpallnoagi.csv" and old.fields == irs_soi.CRAWLER.fields
+
+
 def test_acs_vintage_is_in_the_urls_and_file_names():
     old = census_acs5.crawler_for(2023)
     assert all("/data/2023/acs/acs5?" in d.url and d.filename.startswith("acs5_2023_") for d in old.downloads)
@@ -223,6 +263,7 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     served.update({d.url: dhc[d.filename] for d in census_dhc.CRAWLER.downloads})
     acs = _acs_responses()
     served.update({d.url: acs[d.filename] for d in census_acs5.CRAWLER.downloads})
+    served[irs_soi.CRAWLER.downloads[0].url] = _irs_csv().encode()
     served.update({d.url: _read(files[d.filename]) for d in zip_basics.CRAWLER.downloads})
     opener = FakeOpener(served)
     monkeypatch.setattr(fetch, "urlopen", opener)

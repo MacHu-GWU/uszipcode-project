@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 9,
+  "columns": 141,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -18,6 +18,20 @@
       "empty_in_source": 0
     },
     "state": {
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
+      "empty_in_source": 0
+    },
+    "county": {
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
+      "empty_in_source": 0
+    },
+    "county_fips": {
       "crawler": "zip-basics",
       "non_null": 3,
       "share": 1.0,
@@ -45,6 +59,13 @@
       "not_in_source": 1,
       "empty_in_source": 0
     },
+    "water_area_in_sqmi": {
+      "crawler": "census-gazetteer",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
     "population": {
       "crawler": "census-dhc",
       "non_null": 2,
@@ -52,7 +73,910 @@
       "not_in_source": 1,
       "empty_in_source": 0
     },
+    "population_by_gender_male": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_gender_female": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_0_4": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_5_9": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_10_14": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_15_19": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_20_24": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_25_29": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_30_34": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_35_39": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_40_44": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_45_49": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_50_54": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_55_59": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_60_64": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_65_69": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_70_74": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_75_79": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_80_84": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_male_85_plus": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_0_4": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_5_9": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_10_14": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_15_19": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_20_24": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_25_29": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_30_34": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_35_39": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_40_44": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_45_49": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_50_54": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_55_59": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_60_64": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_65_69": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_70_74": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_75_79": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_80_84": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_age_female_85_plus": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_0": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_1": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_2": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_3": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_4": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_5": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_6": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_7": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_8": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_9": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_10": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_11": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_12": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_13": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_14": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_15": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_16": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_17": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_18": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_19": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_male_20": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_0": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_1": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_2": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_3": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_4": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_5": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_6": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_7": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_8": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_9": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_10": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_11": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_12": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_13": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_14": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_15": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_16": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_17": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_18": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_19": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "children_by_age_female_20": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_white": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_black": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_aian": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_asian": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_nhpi": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_other": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "population_by_race_two_or_more": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "families_vs_singles_married_couple_family": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "families_vs_singles_other_family_male": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "families_vs_singles_other_family_female": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "families_vs_singles_living_alone": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "families_vs_singles_not_living_alone": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "households_with_kids_with_kids": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "households_with_kids_no_kids": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_15_24": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_25_34": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_35_44": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_45_54": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_55_64": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_65_74": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_75_84": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_owner_85_plus": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_15_24": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_25_34": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_35_44": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_45_54": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_55_64": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_65_74": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_75_84": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "head_of_household_by_age_renter_85_plus": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_correctional_adult": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_juvenile": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_nursing": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_other_institutional": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_college": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_military": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_type_other_noninstitutional": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
     "housing_units": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "occupied_housing_units": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_occupancy_owned_mortgage": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_occupancy_owned_free_clear": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_occupancy_renter": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "housing_occupancy_vacant": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_for_rent": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_rented_unoccupied": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_for_sale": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_sold_unoccupied": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_seasonal": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_migrant_workers": {
+      "crawler": "census-dhc",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0
+    },
+    "vacancy_reason_other": {
       "crawler": "census-dhc",
       "non_null": 2,
       "share": 0.6667,
@@ -79,11 +1003,29 @@
       "rows_in_pk_set": 2,
       "rows_outside_pk_set": 33772,
       "downloads": {
-        "dhc2020_zcta_P1_H1.json": {
-          "url": "https://api.census.gov/data/2020/dec/dhc?get=P1_001N,H1_001N&for=zip%20code%20tabulation%20area:*",
-          "bytes": 827289,
-          "sha256": "82c6b53c4bb3bd02e56d03c6d8625f46b4a2b4860fd2246816e9cc74f717d6bb",
-          "fetched_at_utc": "2026-10-30T08:34:19Z"
+        "dhc2020_zcta_P12.json": {
+          "url": "https://api.census.gov/data/2020/dec/dhc?get=P12_002N,P12_003N,P12_004N,P12_005N,P12_006N,P12_007N,P12_008N,P12_009N,P12_010N,P12_011N,P12_012N,P12_013N,P12_014N,P12_015N,P12_016N,P12_017N,P12_018N,P12_019N,P12_020N,P12_021N,P12_022N,P12_023N,P12_024N,P12_025N,P12_026N,P12_027N,P12_028N,P12_029N,P12_030N,P12_031N,P12_032N,P12_033N,P12_034N,P12_035N,P12_036N,P12_037N,P12_038N,P12_039N,P12_040N,P12_041N,P12_042N,P12_043N,P12_044N,P12_045N,P12_046N,P12_047N,P12_048N,P12_049N&for=zip%20code%20tabulation%20area:*",
+          "bytes": 8905056,
+          "sha256": "9eb6eba3f337d62aaa2894849f4552a0fe7a7739a13a95b306aa1f22c0924af5",
+          "fetched_at_utc": "2026-11-09T16:46:44Z"
+        },
+        "dhc2020_zcta_PCT12.json": {
+          "url": "https://api.census.gov/data/2020/dec/dhc?get=PCT12_003N,PCT12_004N,PCT12_005N,PCT12_006N,PCT12_007N,PCT12_008N,PCT12_009N,PCT12_010N,PCT12_011N,PCT12_012N,PCT12_013N,PCT12_014N,PCT12_015N,PCT12_016N,PCT12_017N,PCT12_018N,PCT12_019N,PCT12_020N,PCT12_021N,PCT12_022N,PCT12_023N,PCT12_107N,PCT12_108N,PCT12_109N,PCT12_110N,PCT12_111N,PCT12_112N,PCT12_113N,PCT12_114N,PCT12_115N,PCT12_116N,PCT12_117N,PCT12_118N,PCT12_119N,PCT12_120N,PCT12_121N,PCT12_122N,PCT12_123N,PCT12_124N,PCT12_125N,PCT12_126N,PCT12_127N&for=zip%20code%20tabulation%20area:*",
+          "bytes": 7168526,
+          "sha256": "56f9a1d881aa2c52dbe55ad7e8d75bb9830585de08da46d709ba0bb5d8cc5382",
+          "fetched_at_utc": "2026-11-09T16:46:57Z"
+        },
+        "dhc2020_zcta_PCT19.json": {
+          "url": "https://api.census.gov/data/2020/dec/dhc?get=PCT19_005N,PCT19_012N,PCT19_016N,PCT19_017N,PCT19_024N,PCT19_025N,PCT19_028N,PCT19_037N,PCT19_044N,PCT19_048N,PCT19_049N,PCT19_056N,PCT19_057N,PCT19_060N,PCT19_069N,PCT19_076N,PCT19_080N,PCT19_081N,PCT19_088N,PCT19_089N,PCT19_092N,PCT19_102N,PCT19_109N,PCT19_113N,PCT19_114N,PCT19_121N,PCT19_122N,PCT19_125N,PCT19_134N,PCT19_141N,PCT19_145N,PCT19_146N,PCT19_153N,PCT19_154N,PCT19_157N,PCT19_166N,PCT19_173N,PCT19_177N,PCT19_178N,PCT19_185N,PCT19_186N,PCT19_189N&for=zip%20code%20tabulation%20area:*",
+          "bytes": 6128002,
+          "sha256": "803a4ed94e5762e019476efc190129001c6c1b92a0a0569478be5190fca63f1c",
+          "fetched_at_utc": "2026-11-09T16:47:09Z"
+        },
+        "dhc2020_zcta_tables.json": {
+          "url": "https://api.census.gov/data/2020/dec/dhc?get=P1_001N,H1_001N,H3_002N,H3_003N,H4_002N,H4_003N,H4_004N,H5_002N,H5_003N,H5_004N,H5_005N,H5_006N,H5_007N,H5_008N,P3_002N,P3_003N,P3_004N,P3_005N,P3_006N,P3_007N,P3_008N,P16_003N,P16_005N,P16_006N,P16_008N,P16_009N,P21_002N,P21_005N,H13_003N,H13_004N,H13_005N,H13_006N,H13_007N,H13_008N,H13_009N,H13_010N,H13_011N,H13_013N,H13_014N,H13_015N,H13_016N,H13_017N,H13_018N,H13_019N,H13_020N,H13_021N&for=zip%20code%20tabulation%20area:*",
+          "bytes": 8653185,
+          "sha256": "229ede30e9afa72c3037108e813bb1d06e0a6703027bfe6668d336cbde971c57",
+          "fetched_at_utc": "2026-11-09T16:46:29Z"
         }
       }
     },
@@ -92,6 +1034,12 @@
       "rows_in_pk_set": 3,
       "rows_outside_pk_set": 42727,
       "downloads": {
+        "2025_Gaz_counties_national.zip": {
+          "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_counties_national.zip",
+          "bytes": 138993,
+          "sha256": "4c90d0f805779923b5958ab13d0c1e9b99fe4932b786bfcf75dd739bb2dcb4ea",
+          "fetched_at_utc": "2026-11-09T16:47:30Z"
+        },
         "hud_zip_county_all.json": {
           "url": "https://www.huduser.gov/hudapi/public/usps?type=2&query=All",
           "bytes": 7804619,
@@ -114,8 +1062,8 @@
     }
   },
   "pks_by_non_null_fields": {
-    "3": 1,
-    "8": 2
+    "5": 1,
+    "140": 2
   },
   "pks_without_any_value": [],
   "files": {

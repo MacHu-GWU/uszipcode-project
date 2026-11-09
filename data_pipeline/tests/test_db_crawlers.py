@@ -5,11 +5,15 @@ The real crawlers: their parsers on real sample rows, and the whole demo through
 FakeOpener (no network).
 """
 
+import csv
 import dataclasses
+import io
 import json
 import os
 import sqlite3
 import zipfile
+
+import pytest
 
 from data_pipeline.database import fetch
 from data_pipeline.database.cli import main
@@ -30,49 +34,79 @@ GAZETTEER = (
     "10001|860Z200US10001|1616221|0|0.624|0.|40.750649|-73.997298\n"
     "20037|860Z200US20037|1896195|597667|0.732|0.231|38.892459|-77.053811 \n"
 )
-DHC = [["P1_001N", "H1_001N", "zip code tabulation area"],
-       ["17242", "7605", "00601"], ["32612", "18926", "10001"], ["14945", "9689", "20037"]]
+# real DHC values for 20037 and 10001; every other variable is 1
+DHC_VALUES = {
+    "00601": {"P1_001N": "17242", "H1_001N": "7605"},
+    "10001": {"P1_001N": "32612", "H1_001N": "18926"},
+    "20037": {"P1_001N": "14945", "H1_001N": "9689", "H3_002N": "8178", "H3_003N": "1511", "P12_003N": "158"},
+}
 # the shapes of the real files: 42223 spans two counties, 00501 is not in HUD here, 09001 only in 2.x
 HUD = {"data": {"year": "2026", "quarter": "2", "results": [
-    {"zip": "10001", "geoid": "36061", "res_ratio": 1, "bus_ratio": 1, "oth_ratio": 1, "city": "NEW YORK", "state": "NY"},
-    {"zip": "20013", "geoid": "11001", "res_ratio": 1, "bus_ratio": 1, "oth_ratio": 1, "city": "WASHINGTON", "state": "DC"},
-    {"zip": "20037", "geoid": "11001", "res_ratio": 1, "bus_ratio": 1, "oth_ratio": 1, "city": "WASHINGTON", "state": "DC"},
-    {"zip": "42223", "geoid": "21047", "res_ratio": 0.9, "bus_ratio": 0, "oth_ratio": 0, "city": "FORT CAMPBELL", "state": "KY"},
-    {"zip": "42223", "geoid": "47125", "res_ratio": 0.1, "bus_ratio": 0, "oth_ratio": 0, "city": "FORT CAMPBELL", "state": "KY"},
+    {"zip": "10001", "geoid": "36061", "res_ratio": 1, "bus_ratio": 1, "oth_ratio": 1, "tot_ratio": 1, "city": "NEW YORK", "state": "NY"},
+    {"zip": "20013", "geoid": "11001", "res_ratio": 1, "bus_ratio": 1, "oth_ratio": 1, "tot_ratio": 1, "city": "WASHINGTON", "state": "DC"},
+    {"zip": "20037", "geoid": "11001", "res_ratio": 1, "bus_ratio": 1, "oth_ratio": 1, "tot_ratio": 1, "city": "WASHINGTON", "state": "DC"},
+    {"zip": "42223", "geoid": "21047", "res_ratio": 0.089, "bus_ratio": 0.418, "oth_ratio": 0.306, "tot_ratio": 0.106,
+     "city": "FORT CAMPBELL", "state": "KY"},
+    {"zip": "42223", "geoid": "47125", "res_ratio": 0.911, "bus_ratio": 0.582, "oth_ratio": 0.694, "tot_ratio": 0.894,
+     "city": "FORT CAMPBELL", "state": "KY"},
+    {"zip": "77352", "geoid": "48", "res_ratio": 0, "bus_ratio": 0, "oth_ratio": 1, "tot_ratio": 1, "city": "HOUSTON", "state": "TX"},
 ]}}
+COUNTIES = ("USPS|GEOID|ANSICODE|NAME|ALAND|AWATER|ALAND_SQMI|AWATER_SQMI|INTPTLAT|INTPTLONG\n"
+            "DC|11001|01702382|District of Columbia|158316181|18709762|61.126|7.224|38.904|-77.016\n"
+            "KY|21047|00516870|Christian County|1855209014|11396406|716.302|4.400|36.892|-87.490\n"
+            "NY|36061|00974129|New York County|58690498|28541727|22.661|11.020|40.776|-73.970\n"
+            "TN|47125|01648580|Montgomery County|1394406843|12813398|538.384|4.947|36.497|-87.383\n")
 ZBP = 'zip,name,est,city,stabbr\n00501,"HOLTSVILLE, NY",3,HOLTSVILLE,NY\n99999,UNCLASSIFIED,10,,\n10001,"NEW YORK, NY",9,NEW YORK,NY\n'
-V2 = [("09001", "MILITARY", "Apo", "AE"), ("10001", "STANDARD", "New York", "NY"), ("20013", "PO BOX", "Washington", "DC"),
-      ("20037", "STANDARD", "Washington", "DC"), ("00501", "UNIQUE", "Holtsville", "NY")]
+V2 = [("09001", "MILITARY", "Apo", None, "AE"), ("10001", "STANDARD", "New York", "New York County", "NY"),
+      ("20013", "PO BOX", "Washington", "District of Columbia", "DC"),
+      ("20037", "STANDARD", "Washington", "District of Columbia", "DC"),
+      ("00501", "UNIQUE", "Holtsville", "Suffolk County", "NY"), ("77352", "STANDARD", "Houston", "Montgomery County", "TX")]
 
 
-def _gazetteer_zip(folder) -> str:
-    path = os.path.join(str(folder), census_gazetteer.FILENAME)
+def _zip_file(path, member, text, encoding="utf-8") -> str:
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("2025_Gaz_zcta_national.txt", GAZETTEER)
+        z.writestr(member, text.encode(encoding))
     return path
 
 
-def _dhc_json(folder) -> str:
-    path = os.path.join(str(folder), census_dhc.FILENAME)
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(DHC, fh)
-    return path
+def _dhc_responses() -> dict:
+    """filename -> the JSON body the Census API returns for that request."""
+    out = {}
+    for filename, variables in census_dhc.REQUESTS:
+        rows = [list(variables) + [census_dhc.KEY_COLUMN]]
+        for zcta, values in DHC_VALUES.items():
+            rows.append([values.get(v, "1") for v in variables] + [zcta])
+        out[filename] = json.dumps(rows).encode()
+    return out
+
+
+def _dhc_files(folder) -> dict:
+    files = {}
+    for filename, body in _dhc_responses().items():
+        files[filename] = os.path.join(str(folder), filename)
+        with open(files[filename], "wb") as fh:
+            fh.write(body)
+    return files
 
 
 def _zip_basics_files(folder) -> dict:
     hud = os.path.join(str(folder), zip_basics.HUD_FILENAME)
     with open(hud, "w", encoding="utf-8") as fh:
         json.dump(HUD, fh)
-    zbp = os.path.join(str(folder), zip_basics.ZBP_FILENAME)
-    with zipfile.ZipFile(zbp, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("zbp23totals.txt", ZBP.encode("latin-1"))
     v2 = os.path.join(str(folder), zip_basics.V2_FILENAME)
     con = sqlite3.connect(v2)
-    con.execute("CREATE TABLE simple_zipcode (zipcode TEXT, zipcode_type TEXT, major_city TEXT, state TEXT)")
-    con.executemany("INSERT INTO simple_zipcode VALUES (?, ?, ?, ?)", V2)
+    con.execute("CREATE TABLE simple_zipcode (zipcode TEXT, zipcode_type TEXT, major_city TEXT, county TEXT, state TEXT)")
+    con.executemany("INSERT INTO simple_zipcode VALUES (?, ?, ?, ?, ?)", V2)
     con.commit()
     con.close()
-    return {zip_basics.HUD_FILENAME: hud, zip_basics.ZBP_FILENAME: zbp, zip_basics.V2_FILENAME: v2}
+    return {
+        zip_basics.HUD_FILENAME: hud,
+        zip_basics.COUNTIES_FILENAME: _zip_file(os.path.join(str(folder), zip_basics.COUNTIES_FILENAME),
+                                                "2025_Gaz_counties_national.txt", COUNTIES),
+        zip_basics.ZBP_FILENAME: _zip_file(os.path.join(str(folder), zip_basics.ZBP_FILENAME),
+                                           "zbp23totals.txt", ZBP, "latin-1"),
+        zip_basics.V2_FILENAME: v2,
+    }
 
 
 def _read(path) -> bytes:
@@ -81,52 +115,71 @@ def _read(path) -> bytes:
 
 
 def test_gazetteer(tmp_path):
-    files = {census_gazetteer.FILENAME: _gazetteer_zip(tmp_path)}
+    files = {census_gazetteer.FILENAME: _zip_file(str(tmp_path / census_gazetteer.FILENAME),
+                                                  "2025_Gaz_zcta_national.txt", GAZETTEER)}
     rows = dict(census_gazetteer.parse(files))
     assert rows["10001"]["INTPTLAT"] == "40.750649" and rows["20037"]["INTPTLONG"] == "-77.053811"
     records, _ = check_rows(census_gazetteer.CRAWLER, CATALOG, census_gazetteer.parse(files))
-    assert records == [("00601", [18.180555, -66.749961, 64.416]),
-                       ("10001", [40.750649, -73.997298, 0.624]),
-                       ("20037", [38.892459, -77.053811, 0.732])]
+    assert records == [("00601", [18.180555, -66.749961, 64.416, 0.308]),
+                       ("10001", [40.750649, -73.997298, 0.624, 0.0]),
+                       ("20037", [38.892459, -77.053811, 0.732, 0.231])]
+
+
+def test_dhc_requests_fit_the_api():
+    for filename, variables in census_dhc.REQUESTS:
+        assert len(variables) <= 50 and len(set(variables)) == len(variables), filename
+    assert len(set(census_dhc.VARIABLES)) == len(census_dhc.VARIABLES)
+
+
+def test_dhc_requests_have_every_variable_its_fields_read():
+    row = dict.fromkeys(census_dhc.VARIABLES, "1")
+    for name in census_dhc.CRAWLER.fields:
+        assert CATALOG[name].extract(row) is not None, name  # a KeyError means a variable is not requested
 
 
 def test_dhc(tmp_path):
-    files = {census_dhc.FILENAME: _dhc_json(tmp_path)}
-    assert dict(census_dhc.parse(files))["10001"]["P1_001N"] == "32612"
+    files = _dhc_files(tmp_path)
+    rows = dict(census_dhc.parse(files))
+    assert rows["10001"]["P1_001N"] == "32612" and rows["20037"]["PCT19_189N"] == "1"
     records, _ = check_rows(census_dhc.CRAWLER, CATALOG, census_dhc.parse(files))
-    assert records == [("00601", [17242, 7605]), ("10001", [32612, 18926]), ("20037", [14945, 9689])]
+    values = {z: dict(zip(census_dhc.CRAWLER.fields, v)) for z, v in records}
+    assert (values["20037"]["population"], values["20037"]["housing_units"], values["20037"]["occupied_housing_units"]) \
+        == (14945, 9689, 8178)
+    assert values["20037"]["housing_occupancy_vacant"] == 1511
+    assert values["20037"]["population_by_age_male_0_4"] == 158
+    assert values["20037"]["population_by_age_male_20_24"] == 3  # P12_008N + P12_009N + P12_010N
+    assert values["20037"]["housing_type_nursing"] == 6  # six sex and age groups
 
 
 def test_zip_basics_merges_the_sources(tmp_path):
     files = _zip_basics_files(tmp_path)
     rows = dict(zip_basics.parse(files))
-    assert rows["10001"] == {"hud_city": "NEW YORK", "hud_state": "NY", "zbp_city": "NEW YORK", "zbp_state": "NY",
-                             "v2_zipcode_type": "STANDARD", "v2_city": "New York", "v2_state": "NY"}
-    assert rows["00501"] == {"zbp_city": "HOLTSVILLE", "zbp_state": "NY", "v2_zipcode_type": "UNIQUE",
-                             "v2_city": "Holtsville", "v2_state": "NY"}
+    assert rows["10001"] == {"hud_city": "NEW YORK", "hud_state": "NY", "hud_county_fips": "36061",
+                             "hud_county_name": "New York County", "zbp_city": "NEW YORK", "zbp_state": "NY",
+                             "v2_zipcode_type": "STANDARD", "v2_city": "New York", "v2_county": "New York County",
+                             "v2_state": "NY"}
     assert "99999" not in rows
     records, stats = check_rows(zip_basics.CRAWLER, CATALOG, zip_basics.parse(files))
     assert dict(records) == {
-        "00501": ["UNIQUE", "HOLTSVILLE", "NY"],  # not in HUD: ZBP
-        "09001": ["MILITARY", "APO", "AE"],  # only in 2.x
-        "10001": ["STANDARD", "NEW YORK", "NY"],
-        "20013": ["PO BOX", "WASHINGTON", "DC"],
-        "20037": ["STANDARD", "WASHINGTON", "DC"],
-        "42223": [None, "FORT CAMPBELL", "KY"],  # two HUD records, one row; no ZIP type
+        "00501": ["UNIQUE", "HOLTSVILLE", "NY", "Suffolk County", None],  # not in HUD: ZBP, then 2.x
+        "09001": ["MILITARY", "APO", "AE", None, None],  # only in 2.x
+        "10001": ["STANDARD", "NEW YORK", "NY", "New York County", "36061"],
+        "20013": ["PO BOX", "WASHINGTON", "DC", "District of Columbia", "11001"],
+        "20037": ["STANDARD", "WASHINGTON", "DC", "District of Columbia", "11001"],
+        "42223": [None, "FORT CAMPBELL", "KY", "Montgomery County", "47125"],  # two counties: most residents in 47125
+        "77352": ["STANDARD", "HOUSTON", "TX", "Montgomery County", None],  # HUD code "48" is incomplete
     }
-    assert stats["non_null"] == {"zipcode_type": 5, "major_city": 6, "state": 6}
+    assert stats["non_null"]["county_fips"] == 4
 
 
 def test_demo_database(tmp_path, monkeypatch, capsys):
     """The real registry and the repo mise.toml, with the sample files served by a FakeOpener."""
     files = _zip_basics_files(tmp_path)
-    opener = FakeOpener({
-        census_gazetteer.URL: _read(_gazetteer_zip(tmp_path)),
-        census_dhc.URL: json.dumps(DHC).encode(),
-        zip_basics.HUD_URL: _read(files[zip_basics.HUD_FILENAME]),
-        zip_basics.ZBP_URL: _read(files[zip_basics.ZBP_FILENAME]),
-        zip_basics.V2_URL: _read(files[zip_basics.V2_FILENAME]),
-    })
+    dhc = _dhc_responses()
+    served = {census_gazetteer.URL: _read(_zip_file(str(tmp_path / "gaz.zip"), "gaz.txt", GAZETTEER))}
+    served.update({d.url: dhc[d.filename] for d in census_dhc.CRAWLER.downloads})
+    served.update({d.url: _read(files[d.filename]) for d in zip_basics.CRAWLER.downloads})
+    opener = FakeOpener(served)
     monkeypatch.setattr(fetch, "urlopen", opener)
     monkeypatch.setenv("CENSUS_API_KEY", KEY)
     monkeypatch.setenv("HUD_API_TOKEN", TOKEN)
@@ -134,24 +187,28 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     paths = dataclasses.replace(Paths.under(str(root)), mise_toml=Paths.default().mise_toml)
 
     assert main(["crawl", "--all"], FIELDS, CRAWLERS, paths=paths) == 0
-    assert opener.urls == [census_gazetteer.URL, census_dhc.URL + "&key=" + KEY,
-                           zip_basics.HUD_URL, zip_basics.ZBP_URL, zip_basics.V2_URL]
-    assert opener.calls[2][1]["Authorization"] == "Bearer " + TOKEN
+    downloads = [d for c in CRAWLERS for d in c.downloads]
+    assert opener.urls == [d.url + ("&key=" + KEY if d.secret and d.secret.query_param else "") for d in downloads]
+    assert opener.calls[downloads.index(zip_basics.CRAWLER.downloads[0])][1]["Authorization"] == "Bearer " + TOKEN
     assert main(["crawl", "--all"], FIELDS, CRAWLERS, paths=paths) == 0
-    assert len(opener.calls) == 5  # cached: no new request
+    assert len(opener.calls) == len(downloads)  # cached: no new request
     assert main(["build"], FIELDS, CRAWLERS, paths=paths) == 0
-    assert _read(os.path.join(paths.db_out_dir, "db_demo.csv")) == (
-        b"zipcode,zipcode_type,major_city,state,lat,lng,land_area_in_sqmi,population,housing_units\n"
-        b"10001,STANDARD,NEW YORK,NY,40.750649,-73.997298,0.624,32612,18926\n"
-        b"20013,PO BOX,WASHINGTON,DC,,,,,\n"
-        b"20037,STANDARD,WASHINGTON,DC,38.892459,-77.053811,0.732,14945,9689\n")
+
+    with open(os.path.join(paths.db_out_dir, "db_demo.csv"), encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        assert reader.fieldnames == ["zipcode"] + [f.name for f in FIELDS]
+        rows = {r["zipcode"]: r for r in reader}
+    assert sorted(rows) == ["10001", "20013", "20037"]
+    assert [rows["20037"][k] for k in ("zipcode_type", "major_city", "state", "county", "county_fips", "lat",
+                                       "water_area_in_sqmi", "population", "occupied_housing_units")] \
+        == ["STANDARD", "WASHINGTON", "DC", "District of Columbia", "11001", "38.892459", "0.231", "14945", "8178"]
+    assert [rows["20013"][k] for k in ("zipcode_type", "major_city", "state", "county")] \
+        == ["PO BOX", "WASHINGTON", "DC", "District of Columbia"]
+    census = [f.name for f in FIELDS if f.name not in zip_basics.CRAWLER.fields]
+    assert all(rows["20013"][name] == "" for name in census)  # a PO box: no ZCTA, so no Census values
     with open(os.path.join(paths.db_out_dir, "db_demo_coverage.json"), encoding="utf-8") as fh:
         coverage = json.load(fh)
-    assert coverage["pks_without_any_value"] == []
-    assert coverage["pks_by_non_null_fields"] == {"3": 1, "8": 2}
-    assert {f: c["share"] for f, c in coverage["fields"].items()} == {
-        "zipcode_type": 1.0, "major_city": 1.0, "state": 1.0, "lat": 0.6667, "lng": 0.6667,
-        "land_area_in_sqmi": 0.6667, "population": 0.6667, "housing_units": 0.6667}
+    assert coverage["pks_by_non_null_fields"] == {"5": 1, str(len(FIELDS)): 2}
     assert coverage["crawlers"]["census-dhc"]["rows_outside_pk_set"] == 1  # 00601
 
     out, err = capsys.readouterr()

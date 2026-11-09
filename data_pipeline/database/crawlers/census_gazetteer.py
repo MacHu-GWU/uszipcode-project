@@ -12,7 +12,8 @@ import csv
 import io
 import zipfile
 
-from ..core import Crawler, Download
+from ..core import Crawler, Download, field_names
+from ..fields import lat, lng, land_area_in_sqmi, water_area_in_sqmi
 
 URL = (
     "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"
@@ -37,8 +38,8 @@ def parse(files):
 
 CRAWLER = Crawler(
     name="census-gazetteer",
-    fields=("lat", "lng", "land_area_in_sqmi"),
+    fields=field_names(lat, lng, land_area_in_sqmi, water_area_in_sqmi),
     downloads=(Download(FILENAME, URL, magic=b"PK\x03\x04"),),
     parse=parse,
-    description="Census Gazetteer 2025 ZCTA -> lat, lng, land_area_in_sqmi",
+    description="Census Gazetteer 2025 ZCTA -> lat, lng, land and water area",
 )

@@ -180,6 +180,39 @@ def column(name: str, convert: typing.Optional[typing.Callable] = None):
     return extract
 
 
+def field_names(*modules) -> typing.Tuple[str, ...]:
+    """The names of the Fields of these ``fields/`` modules: what a crawler claims."""
+    return tuple(field.name for module in modules for field in module.FIELDS)
+
+
+def total(*names: str, convert: typing.Callable = parse_int):
+    """An ``extract`` function: the sum of several source columns; None if one of them is blank."""
+    def extract(row: SourceRow):
+        values = [convert(row[name]) for name in names]
+        return None if any(v is None for v in values) else sum(values)
+    return extract
+
+
+def field_group(prefix: str, source: str, unit: str,
+                buckets: typing.Sequence[typing.Tuple[str, str, typing.Sequence[str]]]) -> typing.Tuple[Field, ...]:
+    """
+    The Fields of one distribution, one column per bucket ``(name, label, source columns)``.
+    Each Field is named ``<prefix>_<name>`` and is the sum of its source columns;
+    ``source`` names the table in the descriptions.
+    """
+    return tuple(
+        Field(
+            name="%s_%s" % (prefix, name),
+            dtype=int,
+            description="%s; %s (%s)" % (label, source, " + ".join(columns)),
+            unit=unit,
+            extract=total(*columns),
+            examples=(({c: "2" for c in columns}, 2 * len(columns)), ({c: None for c in columns}, None)),
+        )
+        for name, label, columns in buckets
+    )
+
+
 def first_value(*names: str, convert: typing.Optional[typing.Callable] = None):
     """An ``extract`` function for a fallback: the first non-blank value among these columns."""
     def extract(row: SourceRow):

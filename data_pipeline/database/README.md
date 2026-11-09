@@ -12,8 +12,8 @@ if a module crosses these lines.
 | Where | What | Rule |
 |---|---|---|
 | `database/*.py` | **the functionality**: [`core`](core.py), [`checks`](checks.py), [`fetch`](fetch.py), [`crawl`](crawl.py), [`build`](build.py), [`cli`](cli.py) | knows no data source and no column; only `fetch.py` opens a URL |
-| [`database/crawlers/`](crawlers) | **one module per data source**; [`__init__.py`](crawlers/__init__.py) holds `CRAWLERS`, the registry | downloads and parses; cannot open a URL, does not know how a Field is read |
-| [`database/fields/`](fields) | **one module per Field**; [`__init__.py`](fields/__init__.py) holds `FIELDS`, the catalog | says what the column is and how to read it from a source row; imports only `core` |
+| [`database/crawlers/`](crawlers) | **one module per data source**; [`__init__.py`](crawlers/__init__.py) holds `CRAWLERS`, the registry | downloads and parses; claims Fields by their modules; cannot open a URL and never reads a value |
+| [`database/fields/`](fields) | **one module per Field or per group of Fields**; [`__init__.py`](fields/__init__.py) holds `FIELDS`, the catalog | says what the column is and how to read it from a source row; imports only `core` |
 | [`database/__main__.py`](__main__.py) | joins the three | the only place that does |
 
 | Concept | Rule |
@@ -41,6 +41,24 @@ FIELDS = (
         examples=(({"P1_001N": "32612"}, 32612), ({"P1_001N": "0"}, 0), ({"P1_001N": None}, None)),
     ),
 )
+```
+
+A distribution is one module with one column per bucket; each bucket is the sum of its source columns
+([`fields/population_by_age.py`](fields/population_by_age.py)):
+
+```python
+FIELDS = field_group("population_by_age", "2020 Census DHC table P12, ZCTA", "people", (
+    ("male_0_4", "Male 0-4", ("P12_003N",)),
+    ("male_15_19", "Male 15-19", ("P12_006N", "P12_007N")),
+    ...
+))
+```
+
+A crawler claims Fields by their modules, so a typo is an import error
+([`crawlers/census_gazetteer.py`](crawlers/census_gazetteer.py)):
+
+```python
+fields=field_names(lat, lng, land_area_in_sqmi, water_area_in_sqmi),
 ```
 
 ## Run
@@ -81,15 +99,17 @@ Files:
 - `data_pipeline/output/db_<set>.sqlite` (table `zipcode_data`), `db_<set>.csv` and `db_<set>_coverage.json`;
   only `db_demo.csv` and `db_demo_coverage.json` are committed
 
-## Crawlers
+## Crawlers and Fields
 
 | Crawler | Source | Download | Fields |
 |---|---|---|---|
-| `census-gazetteer` | Census [2025 Gazetteer, ZCTA file](https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip) | 1 file, 0.9 MB, no key | `lat`, `lng` (ZCTA internal point), `land_area_in_sqmi` |
-| `census-dhc` | 2020 Census DHC through the [Census Data API](https://api.census.gov/data/2020/dec/dhc.html) | 1 request for all ZCTAs, 0.8 MB, key | `population` (P1_001N), `housing_units` (H1_001N) |
-| `zip-basics` | [HUD-USPS crosswalk](https://www.huduser.gov/portal/datasets/usps_crosswalk.html), Census ZBP, uszipcode 2.x | 3 files, 19 MB, token for HUD | `zipcode_type` (2.x only), `major_city`, `state` (HUD, else ZBP, else 2.x) |
+| `zip-basics` | [HUD-USPS crosswalk](https://www.huduser.gov/portal/datasets/usps_crosswalk.html), Census Gazetteer counties, Census ZBP, uszipcode 2.x | 4 files, 20 MB, token for HUD | `zipcode_type` (2.x only), `major_city`, `state` (HUD, else ZBP, else 2.x), `county` (HUD's main county with the Gazetteer name, else 2.x), `county_fips` (HUD) |
+| `census-gazetteer` | Census [2025 Gazetteer, ZCTA file](https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip) | 1 file, 0.9 MB, no key | `lat`, `lng` (ZCTA internal point), `land_area_in_sqmi`, `water_area_in_sqmi` |
+| `census-dhc` | 2020 Census DHC through the [Census Data API](https://api.census.gov/data/2020/dec/dhc.html) | 4 requests (at most 50 variables each), 31 MB, key | `population`, `housing_units`, `occupied_housing_units` and 10 distributions, 128 columns: `population_by_gender_*` (2), `population_by_age_*` (36), `children_by_age_*` (42), `population_by_race_*` (7), `families_vs_singles_*` (5), `households_with_kids_*` (2), `head_of_household_by_age_*` (16), `housing_type_*` (7, group quarters), `housing_occupancy_*` (4), `vacancy_reason_*` (7) |
 
-The Census values are ZCTA values: a ZIP without a ZCTA (PO box, unique, military) gets NULL.
+The Census values are ZCTA values: a ZIP without a ZCTA (PO box, unique, military) gets NULL. The
+distribution buckets are those of the research (issue #88), which were checked against reference values;
+the modules were generated from its bucket definitions and the values below match it exactly.
 
 ## Politeness
 
@@ -133,35 +153,44 @@ Keys that are not ZIPs (`00000`, text) are skipped and counted. On any error not
 the previous output stays. `build` also checks that each crawler output exists and matches the
 crawler's current claims, and says which `mise run crawler-<name>` to run if not.
 
-## Result (run of 2026-11-04)
+## Result (run of 2026-11-09)
 
-`mise run crawl-all` makes 5 requests the first time and 0 after that. `mise run pipeline-build`
-then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 9 columns.
+`mise run crawl-all` makes 9 requests the first time and 0 after that. `mise run pipeline-build`
+then writes [`db_demo.csv`](../output/db_demo.csv): 3 rows x 141 columns. Its first columns:
 
 ```
-zipcode,zipcode_type,major_city,state,lat,lng,land_area_in_sqmi,population,housing_units
-10001,STANDARD,NEW YORK,NY,40.750649,-73.997298,0.624,32612,18926
-20013,PO BOX,WASHINGTON,DC,,,,,
-20037,STANDARD,WASHINGTON,DC,38.892459,-77.053811,0.732,14945,9689
+zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,land_area_in_sqmi,water_area_in_sqmi,population,...
+10001,STANDARD,NEW YORK,NY,New York County,36061,40.750649,-73.997298,0.624,0.0,32612,...
+20013,PO BOX,WASHINGTON,DC,District of Columbia,11001,,,,,,...
+20037,STANDARD,WASHINGTON,DC,District of Columbia,11001,38.892459,-77.053811,0.732,0.231,14945,...
 ```
 
-20013 is a Washington, DC PO box ZIP: it has a city and a state, but no ZCTA, so the Census Fields are
-NULL. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json) counts
-it under `not_in_source` for those Fields.
+20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA, so all 135
+Census columns are NULL. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
+counts it under `not_in_source` for those Fields.
 
-With `--pk-set full` (42,730 ZIPs, about 1 second, no downloads):
+With `--pk-set full` (42,730 ZIPs, about 9 seconds, no downloads):
 
 | Fields | ZIPs with a value |
 |---|---|
 | `major_city`, `state` | 42,730 |
 | `zipcode_type` | 42,724 (the 6 ZIPs newer than 2.x have none) |
-| `lat`, `lng`, `land_area_in_sqmi` | 33,791 |
-| `population`, `housing_units` | 33,774 |
+| `county` | 41,866 |
+| `county_fips` | 39,475 (HUD only) |
+| `lat`, `lng`, `land_area_in_sqmi`, `water_area_in_sqmi` | 33,791 |
+| `population`, the housing counts and the 128 distribution columns | 33,774 |
 
-The `major_city`, `state` and `zipcode_type` values were compared with `zipcode_universe.csv`, row by
-row: no differences. The 17 ZCTAs in the 2025 Gazetteer but not in the 2020 DHC are in the island areas
-(U.S. Virgin Islands 008xx, Guam, the Northern Mariana Islands and American Samoa), which the DHC file
-does not cover.
+Checked against earlier work:
+
+- `major_city`, `state` and `zipcode_type` match `zipcode_universe.csv` row by row.
+- The 4,323,072 distribution values (33,774 ZCTAs x 128 columns), `water_area_in_sqmi` and
+  `occupied_housing_units` match the research database exactly.
+- `county_fips` differs from the research database for 10 ZIPs. For 9 of them HUD gives only a 2-digit
+  state code (island areas such as 96799, and 77352), which is now NULL. For 51603 two counties tie
+  exactly, and the lower code is taken.
+
+The 17 ZCTAs in the 2025 Gazetteer but not in the 2020 DHC are in the island areas (U.S. Virgin Islands
+008xx, Guam, the Northern Mariana Islands and American Samoa), which the DHC file does not cover.
 
 The registry is not tied to these numbers: the tests build fake registries of 1 PK / 1 Field /
 1 crawler, 3 / 5 / 2, 30 / 10 / 4, 300 / 64 / 8 and 5 / 300 / 3 and run check, crawl, build and refresh on each.
@@ -172,7 +201,11 @@ The registry is not tied to these numbers: the tests build fake registries of 1 
 
 1. Add `fields/<name>.py` (copy [`population.py`](fields/population.py)), with examples of the source row.
 2. List the module in `MODULES` in [`fields/__init__.py`](fields/__init__.py); its place there is its column position.
-3. Add the name to the crawler's `fields`, and fetch the source column if the download does not include it yet.
+3. Add the module to the crawler's `field_names(...)`, and request the source column if the download
+   does not include it yet (for `census-dhc`, add the variable to `REQUESTS`).
+
+**A group of columns** (one distribution): the same, with one module whose `FIELDS` is built by
+`field_group`, one Field per bucket (copy [`population_by_age.py`](fields/population_by_age.py)).
 
 **From a new source:**
 
@@ -181,13 +214,7 @@ The registry is not tied to these numbers: the tests build fake registries of 1 
 3. Run `mise run pipeline-check` and add the task block it prints to `mise.toml`.
 4. Add a parser test with a few real rows (see [`test_db_crawlers.py`](../tests/test_db_crawlers.py)).
 
-**A group of columns** (one distribution): one module, named after the prefix the columns share, whose
-`FIELDS` is built by a loop, one Field per number. See `test_a_module_can_generate_a_group_of_fields`.
-
-Forgetting a step fails `mise run pipeline-check` or the tests (L1, K1, K3 or M1). As a measure of the
-pattern: `zip-basics` was added with one crawler module, three Field modules, two lines in each
-`__init__.py` and one mise task. The only change to the functionality was a small text helper,
-`upper_text`, in `core.py`.
+Forgetting a step fails `mise run pipeline-check` or the tests (L1, K1, K3, M1 or D2).
 
 ## Decisions
 
@@ -196,7 +223,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | # | Question | Decision | Status |
 |---|---|---|---|
 | 1 | Does `crawler-<name>` download again? | No: it reuses the cache and parses again; `-- --refresh` downloads again, at most once per 24 h | done |
-| 2 | How are distributions stored? | One Field per number, generated by a loop in one module | pattern ready and tested; no distribution Field yet |
+| 2 | How are distributions stored? | One Field per number, generated by `field_group` in one module | done for the 10 DHC distributions (128 columns); the ACS ones come with the ACS crawler |
 | 3 | How is history stored? | The main table holds the latest year; history goes to a separate long table `(zipcode, field, year, value)`. 256 numbers over 14 years would be 3,584 columns, and SQLite allows 2,000 | not built; comes with the first history crawler. F7 guards the limit |
 | 4 | Where does the full database go? | A GitHub release asset, as in 2.x; git has only the demo | not published; waits for the Fields |
 | 5 | Are city, state and ZIP type Fields? | Yes, claimed by `zip-basics`, which falls back HUD, ZBP, 2.x | done |
@@ -213,3 +240,5 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 3. **`zipcode_type` source.** It comes only from 2.x, because no free government source has it, so new ZIPs have
    no type. Infer it from the HUD address flags instead?
 4. **Census key.** `census-dhc` requires a key (free). Allow keyless calls instead (limited per IP per day)?
+5. **One county per ZIP.** About 29% of ZIPs span more than one county; `county` keeps the one with most
+   residential addresses. Should all of them be kept, in a separate ZIP-county table?

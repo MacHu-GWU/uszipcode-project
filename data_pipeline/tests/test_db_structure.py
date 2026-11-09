@@ -4,7 +4,7 @@
 The shape of the code, so that it stays the same as more Fields and crawlers are added:
 
 - the functionality (the modules of ``database/``) knows no crawler and no Field;
-- a crawler only downloads and parses: no network code, and no knowledge of how a Field is read;
+- a crawler only downloads and parses: no network code; it claims Fields by module but never reads a value;
 - a Field module imports only ``core``, is named after its Field and carries examples that pass;
 - every module is listed in its package's ``MODULES``.
 """
@@ -63,12 +63,18 @@ def test_the_functionality_knows_no_crawler_and_no_field(name, path):
 
 @pytest.mark.parametrize("name, path", _modules(os.path.dirname(crawlers.__file__)))
 def test_a_crawler_only_downloads_and_parses(name, path):
-    allowed = {DATABASE, DATABASE + ".core", "data_pipeline", "data_pipeline.zipcodes"}
+    allowed = {DATABASE, "data_pipeline"}
+    allowed_packages = (DATABASE + ".core", DATABASE + ".fields", "data_pipeline.zipcodes")
     for imported in _imports(path, DATABASE + ".crawlers"):
         assert imported.split(".")[0] not in NETWORK, (name, imported)
         if _inside(imported, "data_pipeline"):
-            assert imported in allowed or imported.startswith(DATABASE + ".core.") \
-                   or imported.startswith("data_pipeline.zipcodes."), (name, imported)
+            assert imported in allowed or any(_inside(imported, p) for p in allowed_packages), (name, imported)
+
+
+def test_a_crawler_never_reads_a_value_itself():
+    for name, path in _modules(os.path.dirname(crawlers.__file__)):
+        with open(path, encoding="utf-8") as fh:
+            assert ".extract" not in fh.read(), name
 
 
 @pytest.mark.parametrize("name, path", _modules(os.path.dirname(fields.__file__)))

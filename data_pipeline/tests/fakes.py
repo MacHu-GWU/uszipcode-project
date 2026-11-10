@@ -24,18 +24,21 @@ ETAG = '"fake"'
 
 
 class _Response:
-    def __init__(self, body: bytes, reset: bool = False, offset: int = 0):
+    def __init__(self, body: bytes, reset: bool = False, offset: int = 0, short: bool = False, etag: str = ETAG):
         """``offset`` > 0: a 206 response with the body from that byte on."""
-        self._body, self._pos, self._reset = body[offset:], 0, reset
+        self._body, self._pos, self._reset, self._short = body[offset:], 0, reset, short
         self.status = 206 if offset else 200
-        self.headers = {"Last-Modified": "Thu, 01 Oct 2026 00:00:00 GMT", "ETag": ETAG}
+        self.headers = {"Last-Modified": "Thu, 01 Oct 2026 00:00:00 GMT", "ETag": etag,
+                        "Content-Length": str(len(self._body))}
         if offset:
             self.headers["Content-Range"] = "bytes %d-%d/%d" % (offset, len(body) - 1, len(body))
 
     def read(self, n: int = -1) -> bytes:
         if self._reset and self._pos > 0:
             raise ConnectionResetError("connection reset by peer")
-        if self._reset:  # half the body, then the connection drops
+        if self._short and self._pos > 0:  # closed early, as http.client reports it: no error, no more bytes
+            return b""
+        if self._reset or self._short:  # half the body, then the connection drops
             n = max(1, len(self._body) // 2)
         chunk = self._body[self._pos:] if n < 0 else self._body[self._pos:self._pos + n]
         self._pos += len(chunk)
@@ -61,20 +64,23 @@ class FakeOpener:
     with, so a secret appended as ``&key=...`` still matches. ``script``: public URL ->
     list of actions used by the next requests, one per request:
     ``("http", code)``, ``("http", code, retry_after)``, ``"reset"`` (half the body,
-    then ``ConnectionResetError``), ``("urlerror", text)`` or ``"ok"``.
+    then ``ConnectionResetError``), ``"short"`` (half the body, then the connection
+    closes without an error), ``("urlerror", text)`` or ``"ok"``.
     A public URL in ``ranged`` answers a ``Range`` request whose ``If-Range`` matches
-    with the rest of the body (206); every other request gets the whole body (200).
+    ``etag`` (the ETag of every response) with the rest of the body (206); every other
+    request gets the whole body (200).
     """
 
     def __init__(self, served: typing.Dict[str, bytes], script: typing.Optional[typing.Dict[str, list]] = None):
         self.served = served
         self.script = {url: list(actions) for url, actions in (script or {}).items()}
         self.ranged = set()
+        self.etag = ETAG
         self.calls = []  # (full url, {header: value}, timeout)
 
     def _offset(self, public: str, headers: dict) -> int:
         asked = headers.get("Range", "")
-        if public not in self.ranged or not asked.startswith("bytes=") or headers.get("If-range") != ETAG:
+        if public not in self.ranged or not asked.startswith("bytes=") or headers.get("If-range") != self.etag:
             return 0
         return int(asked[len("bytes="):].rstrip("-"))
 
@@ -92,13 +98,14 @@ class FakeOpener:
         actions = self.script.get(public)
         action = actions.pop(0) if actions else "ok"
         offset = self._offset(public, headers)
-        if action == "reset":
-            return _Response(self.served[public], reset=True, offset=offset)
+        if action in ("reset", "short"):
+            return _Response(self.served[public], reset=action == "reset", short=action == "short", offset=offset,
+                             etag=self.etag)
         if isinstance(action, tuple) and action[0] == "http":
             raise http_error(url, *action[1:])
         if isinstance(action, tuple) and action[0] == "urlerror":
             raise urllib.error.URLError(action[1] % {"url": url})
-        return _Response(self.served[public], offset=offset)
+        return _Response(self.served[public], offset=offset, etag=self.etag)
 
     @property
     def urls(self) -> typing.List[str]:

@@ -7,19 +7,21 @@ files once and keeps them in ``.cache/crawlers/<crawler>/``.
 Politeness rules, enforced here for every crawler:
 
 - a cached file is reused: no request, and the secret is not even read;
-- downloads run one at a time, ``REQUEST_INTERVAL_S`` apart, with a User-Agent
-  that names the project;
+- downloads run one at a time, ``REQUEST_INTERVAL_S`` apart (also from one crawler
+  to the next), with a User-Agent that names the project;
 - retries only on connection errors, timeouts, 429 and 5xx, with growing waits
   (``Retry-After`` is honoured); any other 4xx fails at once;
 - when a connection drops in the middle of a file, the next request asks only for
   the rest (HTTP ``Range``, with ``If-Range`` so that a file changed meanwhile is
   sent whole again); an attempt that brought new bytes is not counted as a failure;
+- a body shorter than its ``Content-Length`` is a dropped connection, never a file;
 - the body must start with ``Download.magic``, so an HTML error page is never cached;
 - ``--refresh`` downloads again at most once per ``REFRESH_COOLDOWN_H`` hours
   (``--force`` overrides); there is no loop, schedule or watch mode.
 
-Secrets are added to the in-memory request only. Messages and the manifest show
-the public ``Download.url``; errors are raised ``from None``.
+Secrets are added to the in-memory request only, and a bearer token is not sent on
+to another host when the server redirects. Messages and the manifest show the
+public ``Download.url``; errors are raised ``from None``.
 """
 
 import datetime
@@ -47,9 +49,28 @@ CHUNK = 1 << 20
 MANIFEST = "manifest.json"
 TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
+
+def _origin(url: str) -> typing.Tuple[str, str]:
+    parts = urllib.parse.urlsplit(url)
+    return parts.scheme.lower(), parts.netloc.lower()
+
+
+class _Redirects(urllib.request.HTTPRedirectHandler):
+    """Follow redirects as urllib does, but keep the ``Authorization`` header for the host it was meant for."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None and _origin(newurl) != _origin(req.full_url):
+            for name in [n for n in new.headers if n.lower() == "authorization"]:
+                del new.headers[name]
+        return new
+
+
 # module attributes so that tests can replace them
-urlopen = urllib.request.urlopen
+urlopen = urllib.request.build_opener(_Redirects).open
 sleep = time.sleep
+
+_requested = False  # a download was tried in this process: the next one waits REQUEST_INTERVAL_S first
 
 
 def utcnow() -> datetime.datetime:
@@ -121,6 +142,17 @@ def _continues(response, offset: int) -> bool:
     return getattr(response, "status", None) == 206 and content_range.startswith("bytes%d-" % offset)
 
 
+def _validator(etag: typing.Optional[str], last_modified: typing.Optional[str]) -> typing.Optional[str]:
+    """What ``If-Range`` sends when resuming: a strong ETag, else the date (a weak ETag never matches there)."""
+    return etag if etag and not etag.startswith("W/") else last_modified
+
+
+def _expected_size(response, offset: int) -> typing.Optional[int]:
+    """The size of the file once ``response`` (which starts at byte ``offset``) is read to its end, if known."""
+    length = (response.headers.get("Content-Length") or "").strip()
+    return offset + int(length) if length.isdigit() else None
+
+
 class _Part:
     """The ``.part`` file of one download: what has arrived so far, with its hash."""
 
@@ -169,12 +201,15 @@ def _download(crawler_name: str, d: Download, path: str) -> typing.Tuple[dict, i
             part.restart()
         try:
             with urlopen(urllib.request.Request(url, headers=ask), timeout=TIMEOUT_S) as response:
-                if part.size and not _continues(response, part.size):
-                    part.restart()  # the whole file again: ranges not supported, or it changed
-                last_modified = response.headers.get("Last-Modified") or last_modified
-                etag = response.headers.get("ETag") or etag
-                validator = validator or etag or last_modified
+                if not (part.size and _continues(response, part.size)):
+                    part.restart()  # the whole file (again: ranges not supported, or it changed)
+                    last_modified, etag = response.headers.get("Last-Modified"), response.headers.get("ETag")
+                    validator = _validator(etag, last_modified)
+                expected = _expected_size(response, part.size)
                 part.receive(response)
+                if expected is not None and part.size < expected:  # closed early without an error: resume
+                    raise ConnectionError("the connection closed %d bytes before the end of the file"
+                                          % (expected - part.size))
             if part.size == 0 or not part.head.startswith(d.magic):
                 head = part.head[:max(len(d.magic), 4)]
                 part.restart()
@@ -231,6 +266,7 @@ def fetch_all(crawler: Crawler, cache_dir: str, refresh: bool = False,
             if age_h < REFRESH_COOLDOWN_H:
                 raise DownloadError("%s: last downloaded %s (%.1f h ago); --refresh is allowed once per %d h; add --force to download anyway"
                                     % (crawler.name, newest.strftime(TIME_FORMAT), age_h, REFRESH_COOLDOWN_H))
+    global _requested
     files, requests = {}, 0
     for d in crawler.downloads:
         path = os.path.join(folder, d.filename)
@@ -239,8 +275,9 @@ def fetch_all(crawler: Crawler, cache_dir: str, refresh: bool = False,
                   and os.path.isfile(path) and os.path.getsize(path) > 0
                   and entry.get("bytes") == os.path.getsize(path))
         if not cached:
-            if requests:
+            if _requested:
                 sleep(REQUEST_INTERVAL_S)
+            _requested = True
             entry, n = _download(crawler.name, d, path)
             requests += n
             manifest[d.filename] = entry

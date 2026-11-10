@@ -206,9 +206,10 @@ def read_output(crawler: Crawler, catalog: typing.Dict[str, Field],
             raise ContractError('[B2] crawler output %s is stale: its header is "%s" but %s claims "%s"; run: mise run crawler-%s'
                                 % (csv_path, ",".join(header), crawler.name, ",".join(crawler.fields), crawler.name))
         for line, row in enumerate(reader, start=2):
-            key = row[0] if not crawler.history else (row[0], _year(row[1]) if len(row) > 1 else None)
-            if len(row) != len(expected) or not _is_written_zip(row[0]) or key in out \
-                    or (crawler.history and key[1] is None):
+            key = None
+            if len(row) == len(expected):  # an empty line is a row without cells
+                key = row[0] if not crawler.history else (row[0], _year(row[1]))
+            if key is None or not _is_written_zip(row[0]) or key in out or (crawler.history and key[1] is None):
                 raise ContractError("[B3] %s line %d: not a valid row: %r" % (csv_path, line, row))
             cells = row[len(keys):]
             try:
@@ -236,6 +237,16 @@ def _converts(dtype: type, cell: str) -> bool:
 def read_meta(crawler: Crawler, out_dir: str) -> dict:
     with open(output_paths(crawler, out_dir)[1], encoding="utf-8") as fh:
         return json.load(fh)
+
+
+def check_downloads(crawler: Crawler, meta: dict, out_dir: str) -> None:
+    """B2: the output was made from the files the crawler declares now (a new year changes the URLs)."""
+    made_from = {filename: entry.get("url") for filename, entry in meta.get("downloads", {}).items()}
+    declared = {d.filename: d.url for d in crawler.downloads}
+    changed = sorted(f for f in set(made_from) | set(declared) if made_from.get(f) != declared.get(f))
+    if changed:
+        raise ContractError("[B2] crawler output %s is stale: %s declares other downloads now (%s); run: mise run crawler-%s"
+                            % (output_paths(crawler, out_dir)[0], crawler.name, ", ".join(changed), crawler.name))
 
 
 def run_crawler(crawler: Crawler, fields: typing.Sequence[Field], paths: Paths,

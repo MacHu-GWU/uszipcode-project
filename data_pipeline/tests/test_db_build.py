@@ -5,6 +5,7 @@ build.py: PK sets, reading the crawler outputs (B1-B3), the left join and the da
 """
 
 import csv
+import dataclasses
 import json
 import os
 import sqlite3
@@ -65,6 +66,14 @@ def test_pk_set_errors(tmp_path, name, text, message):
     with pytest.raises(PkSetError) as e:
         build_mod.load_pk_set(path, _paths(tmp_path))
     assert str(e.value) == message
+
+
+@pytest.mark.parametrize("name", ["demo", "full"])
+def test_a_pk_set_file_cannot_take_a_built_in_name(tmp_path, name):
+    path = _write(tmp_path / (name + ".csv"), "zipcode\n20037\n")
+    with pytest.raises(PkSetError) as e:
+        build_mod.load_pk_set(path, _paths(tmp_path))
+    assert str(e.value) == "PK set file %r has the name of the built-in set %r: rename the file" % (path, name)
 
 
 def test_unknown_pk_set(tmp_path):
@@ -159,6 +168,38 @@ def test_stale_output_b2(world):
         _build(world)
     assert str(e.value) == ('[B2] crawler output %s is stale: its header is "zipcode,f01,f03" but fake-1 claims '
                             '"f01,f03,f05"; run: mise run crawler-fake-1' % path)
+
+
+def test_other_downloads_b2(world):
+    moved = Download("fake-1.csv", "https://fake.test/2027/fake-1.csv", magic=b"zipcode,")
+    crawlers = [dataclasses.replace(world.crawlers[0], downloads=(moved,))] + world.crawlers[1:]
+    with pytest.raises(ContractError) as e:  # as after a new year in the crawler, before it ran again
+        build_mod.build(world.fields, crawlers, world.paths, pk_set=world.pk_csv)
+    assert str(e.value) == ("[B2] crawler output %s is stale: fake-1 declares other downloads now (fake-1.csv); "
+                            "run: mise run crawler-fake-1" % os.path.join(world.paths.crawler_out_dir, "fake-1.csv"))
+
+
+def test_missing_history_output_b1(world):
+    yearly = Field("h", int, "a yearly count", extract=lambda row: row["h"])
+    hist = Crawler("fake-history", ("h",), (Download("hist.csv", "https://fake.test/hist.csv"),), lambda files: [],
+                   history=True)
+    with open(world.paths.mise_toml, "a", encoding="utf-8") as fh:
+        fh.write('[tasks.crawler-fake-history]\nrun = "%s"\n' % task_command("fake-history"))
+    with pytest.raises(PipelineError) as e:  # the main crawlers ran, the history crawler did not
+        build_mod.build(world.fields, world.crawlers + [hist], world.paths, pk_set=world.pk_csv, history_fields=[yearly])
+    assert str(e.value) == "[B1] crawler output missing: %s; run: mise run crawler-fake-history" % os.path.join(
+        world.paths.crawler_out_dir, "fake-history.csv")
+
+
+def test_empty_line_b3(world):
+    path = os.path.join(world.paths.crawler_out_dir, "fake-2.csv")
+    with open(path, encoding="utf-8") as fh:
+        lines = fh.read().split("\n")
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write("\n".join(lines[:1] + [""] + lines[1:]))
+    with pytest.raises(ContractError) as e:
+        _build(world)
+    assert str(e.value) == "[B3] %s line 2: not a valid row: []" % path
 
 
 def test_bad_cell_b3(world):

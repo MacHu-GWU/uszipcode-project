@@ -8,6 +8,7 @@ import datetime
 import hashlib
 import json
 import os
+import urllib.request
 
 import pytest
 
@@ -193,6 +194,74 @@ def test_resuming_is_capped(cache, opener, sleeps, monkeypatch):
         fetch.fetch_all(_crawler(), cache)
     assert str(e.value).startswith("src: a.csv: gave up after 3 attempts (last error: ConnectionResetError")
     assert os.listdir(os.path.join(cache, "src")) == []  # the .part file is removed
+
+
+def test_a_body_shorter_than_its_content_length_is_not_cached(cache, opener, sleeps):
+    body = b"zipcode," + bytes(range(256)) * 4
+    opener.served[URL], opener.ranged = body, {URL}
+    opener.script[URL] = ["short"]  # the connection closes early without an error
+    files, requests = fetch.fetch_all(_crawler(), cache)
+    assert requests == 2 and sleeps == [fetch.BACKOFF_S[0]]
+    assert opener.calls[1][1]["Range"] == "bytes=%d-" % (len(body) // 2)
+    with open(files["a.csv"], "rb") as fh:
+        assert fh.read() == body
+    assert _manifest(cache)["a.csv"]["bytes"] == len(body)
+
+
+def test_a_body_that_stays_short_fails(cache, opener, sleeps):
+    opener.script[URL] = ["short"] * 10  # no ranges: every attempt starts over and stops at the same byte
+    with pytest.raises(DownloadError) as e:
+        fetch.fetch_all(_crawler(), cache)
+    assert "the connection closed %d bytes before the end of the file" % (len(BODY) - len(BODY) // 2) in str(e.value)
+    assert os.listdir(os.path.join(cache, "src")) == []
+
+
+def test_a_file_that_changed_is_resumed_with_its_new_validator(cache, opener, sleeps, monkeypatch):
+    body = b"zipcode," + bytes(range(256)) * 4
+    opener.served[URL], opener.ranged = body, {URL}
+    opener.script[URL] = ["reset"] * 3
+
+    def changing(request, timeout=None):
+        if len(opener.calls) == 1:  # the server has another file from the second request on
+            opener.etag = '"new"'
+        return opener(request, timeout=timeout)
+
+    monkeypatch.setattr(fetch, "urlopen", changing)
+    files, requests = fetch.fetch_all(_crawler(), cache)
+    # request 2 asks for the rest of the old file and gets the new one whole; 3 and 4 resume the new one
+    assert [headers.get("If-range") for _, headers, _ in opener.calls] == [None, '"fake"', '"new"', '"new"']
+    with open(files["a.csv"], "rb") as fh:
+        assert fh.read() == body
+    assert requests == 4 and _manifest(cache)["a.csv"]["etag"] == '"new"'
+
+
+def test_if_range_never_sends_a_weak_etag():
+    date = "Thu, 01 Oct 2026 00:00:00 GMT"
+    assert fetch._validator('"strong"', date) == '"strong"'
+    assert fetch._validator('W/"weak"', date) == date
+    assert fetch._validator(None, date) == date and fetch._validator(None, None) is None
+
+
+def test_a_bearer_token_is_not_sent_to_another_host():
+    request = urllib.request.Request("https://api.test/file", headers={
+        "Authorization": "Bearer " + KEY, "User-Agent": fetch.USER_AGENT})
+    redirect = fetch._Redirects().redirect_request
+    same = redirect(request, None, 302, "Found", {}, "https://api.test/moved")
+    other = redirect(request, None, 302, "Found", {}, "https://cdn.test/file")
+    plain = redirect(request, None, 302, "Found", {}, "http://api.test/file")
+    assert same.get_header("Authorization") == "Bearer " + KEY
+    for moved in (other, plain):
+        assert moved.get_header("Authorization") is None and moved.get_header("User-agent") == fetch.USER_AGENT
+
+
+def test_the_next_crawler_waits_too(cache, opener, sleeps):
+    other = Download("b.csv", "https://data.test/b.csv", magic=b"zipcode,")
+    opener.served[other.url] = BODY
+    fetch.fetch_all(_crawler(), cache)
+    fetch.fetch_all(_crawler(other, name="src2"), cache)
+    assert sleeps == [fetch.REQUEST_INTERVAL_S]
+    fetch.fetch_all(_crawler(), cache)  # cached: no request, so no wait
+    assert sleeps == [fetch.REQUEST_INTERVAL_S] and len(opener.calls) == 2
 
 
 def test_downloads_are_paced(cache, opener, sleeps):

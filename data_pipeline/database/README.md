@@ -84,7 +84,7 @@ mise run pipeline-setup
 | `mise run crawler-<name> -- --refresh` | downloads that crawler's files again (at most once per 24 h; add `--force` to override) |
 | `mise run crawl-all` | runs every crawler, one after another, and stops at the first failure |
 | `mise run pipeline-build` | builds the database for the demo PK set |
-| `mise run pipeline-build -- --pk-set full` | builds it for all 42,730 ZIPs (or `--pk-set path/to/pks.csv`) |
+| `mise run pipeline-build -- --pk-set full` | builds it for all 42,730 ZIPs (or `--pk-set path/to/pks.csv`; the file may not be named `demo.csv` or `full.csv`) |
 | `mise run pipeline-test` | runs the offline tests (no network) |
 
 Without mise, run the same commands with `python -m data_pipeline.database check | crawl NAME | crawl --all | build`
@@ -152,12 +152,17 @@ Enforced in [`fetch.py`](fetch.py), the only module that opens a URL; crawlers c
 
 - A crawler declares whole files (1 to 100 per crawler), never one request per ZIP.
 - A cached file is reused: no request, and the key is not even read. A crawler downloads once.
-- Downloads run one at a time, 2 s apart, with a User-Agent that names this project.
+- Downloads run one at a time, 2 s apart (also from one crawler to the next in `crawl-all`), with a
+  User-Agent that names this project.
 - Retries only on connection errors, timeouts, 429 and 5xx: 5 attempts, waits of 5, 15, 45 and 90 s
   (`Retry-After` is honoured up to 300 s). Any other 4xx fails at once.
 - A connection that drops in the middle of a file is resumed: the next request asks only for the missing
   bytes (HTTP `Range`, with `If-Range`, so a file that changed meanwhile comes whole again). An attempt that
   brought new bytes does not count as a failure; at most 30 requests per file.
+- A body shorter than its `Content-Length` is treated as a dropped connection and resumed, so a file
+  cut short by a connection that closed without an error is never cached.
+- A bearer token (HUD) is sent only to the host of the declared URL: when the server redirects to
+  another host, the request goes on without it.
 - The body must start with the declared magic bytes (`PK\x03\x04` for a zip, `[[` for the Census API),
   so an HTML error page is never cached. A failed download keeps the previous file.
 - `--refresh` is refused if the crawler downloaded less than 24 h ago (`--force` overrides). There is
@@ -190,8 +195,9 @@ Before anything is written, the values read from the source rows are checked aga
 
 Keys that are not ZIPs (`00000`, text, the `HH`/`XX` codes of the 2000 census) are skipped and counted.
 On any error nothing is written and the previous output stays. `build` also checks that each crawler
-output exists and matches the crawler's current claims, and says which `mise run crawler-<name>` to run
-if not (B1-B3), and that every derived value passes the same type rules (B4).
+output exists (B1), matches the crawler's current claims and was made from the downloads the crawler
+declares now (B2; a new `YEAR` in a crawler changes its URLs) and holds valid rows (B3), and says
+which `mise run crawler-<name>` to run if not. Every derived value passes the same type rules (B4).
 
 ## Result (run of 2026-11-09)
 

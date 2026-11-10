@@ -23,7 +23,7 @@ import typing
 from ..zipcodes import normalize_zip
 from .checks import owners, require_valid
 from .core import ContractError, Crawler, Field, Paths, PkSetError, SQL_TYPES, format_problems
-from .crawl import coerce, read_meta, read_output, replace, write_csv, write_json
+from .crawl import check_downloads, coerce, read_meta, read_output, replace, write_csv, write_json
 
 #: the minimal example: two standard ZIPs and a PO box ZIP without a ZCTA (so no Census values)
 DEMO_PKS = ("10001", "20013", "20037")
@@ -68,6 +68,8 @@ def load_pk_set(spec: str, paths: Paths) -> typing.Tuple[str, typing.List[str]]:
     name = os.path.splitext(os.path.basename(spec))[0]
     if not SET_NAME.match(name):
         raise PkSetError("PK set file name %r may only use A-Z a-z 0-9 _ -" % name)
+    if name in ("demo", "full"):  # its outputs would replace db_demo.* / db_full.*
+        raise PkSetError("PK set file %r has the name of the built-in set %r: rename the file" % (spec, name))
     return name, sorted(_read_pk_csv(spec, name))
 
 
@@ -190,15 +192,15 @@ def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], pa
     catalog = {f.name: f for f in fields}
     owner = owners(main)
     outputs = {c.name: read_output(c, catalog, paths.crawler_out_dir) for c in main}
-    metas = {c.name: read_meta(c, paths.crawler_out_dir) for c in crawlers}
+    history_catalog = {f.name: f for f in history_fields}
+    history_owner = owners(history)
+    history_outputs = {c.name: read_output(c, history_catalog, paths.crawler_out_dir) for c in history}
+    metas = {c.name: read_meta(c, paths.crawler_out_dir) for c in crawlers}  # after read_output: it checks B1
+    for c in crawlers:
+        check_downloads(c, metas[c.name], paths.crawler_out_dir)
     rows = assemble(pks, fields, owner, outputs)
     derive(rows, fields)
-    history_rows = None
-    if history:
-        history_catalog = {f.name: f for f in history_fields}
-        history_owner = owners(history)
-        history_outputs = {c.name: read_output(c, history_catalog, paths.crawler_out_dir) for c in history}
-        history_rows = assemble_history(pk_index, history_fields, history_owner, history_outputs)
+    history_rows = assemble_history(pk_index, history_fields, history_owner, history_outputs) if history else None
 
     stem = os.path.join(paths.db_out_dir, "db_%s" % name)
     files = {"sqlite": stem + ".sqlite", "csv": stem + ".csv"}

@@ -37,6 +37,7 @@ def offline(monkeypatch, tmp_path):
 def sleeps(monkeypatch):
     waits = []
     monkeypatch.setattr(fetch, "sleep", waits.append)
+    monkeypatch.setattr(fetch, "_requested", False)  # like a new process: no wait before the first download
     return waits
 
 

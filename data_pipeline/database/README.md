@@ -91,10 +91,15 @@ Without mise, run the same commands with `python -m data_pipeline.database check
 from the repository root. Exit codes: 0 success, 2 registry / contract / PK-set problems, 1 download
 and file problems. Expected errors print one message without a traceback.
 
-Three crawlers need a free key: `census-dhc` and `census-acs5` (<https://api.census.gov/data/key_signup.html>,
-read from `$CENSUS_API_KEY` or `~/.census_key`) and `zip-basics` (<https://www.huduser.gov/hudapi/public/register>,
-read from `$HUD_API_TOKEN` or `~/.hud_token`). A key is added to the request in memory only: it is never
-written to the cache, the manifest, the outputs or an error message.
+Five crawlers need a free key, so `crawl-all` needs both keys:
+
+- the four Census API crawlers (`census-dhc`, `census-acs5`, `census-acs5-history`, `census-decennial`) share
+  one key (<https://api.census.gov/data/key_signup.html>), read from `$CENSUS_API_KEY` or `~/.census_key`;
+- `zip-basics` needs a HUD token (<https://www.huduser.gov/hudapi/public/register>), read from
+  `$HUD_API_TOKEN` or `~/.hud_token`.
+
+A key is added to the request in memory only: it is never written to the cache, the manifest, the outputs
+or an error message.
 
 Files:
 
@@ -202,7 +207,13 @@ which `mise run crawler-<name>` to run if not. Every derived value passes the sa
 ## Result (run of 2026-11-09)
 
 `mise run crawl-all` makes 36 requests the first time (about 770 MB; the TIGER/Line file alone is 529 MB
-and took 10 minutes here) and 0 after that. `mise run pipeline-build` then writes
+and took 10 minutes here) and 0 after that. A run from a fresh clone on 2026-11-10 took 44 minutes in
+all and made 39 requests, because `zcta-geometry` needed 6 requests for its 3 files (connections that
+failed and were retried); every crawler output and the
+demo and full databases came out byte-identical to the earlier run. The Census API does not always
+return its rows in the same order, so the `sha256` of a few cached files (and with it
+`db_demo_coverage.json`) changes from one download to the next, while the outputs do not.
+`mise run pipeline-build` then writes
 [`db_demo.csv`](../output/db_demo.csv): 3 rows x 307 columns. Its first columns:
 
 ```
@@ -324,7 +335,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 2. **`major_city` case.** It is upper case as HUD and ZBP write it; 2.x stored title case.
 3. **`zipcode_type` source.** It comes only from 2.x, because no free government source has it, so new ZIPs have
    no type. Infer it from the HUD address flags instead?
-4. **Census key.** `census-dhc` requires a key (free). Allow keyless calls instead (limited per IP per day)?
+4. **Census key.** The four Census API crawlers require a key (free). Allow keyless calls instead (limited per IP per day)?
 5. **One county per ZIP.** About 29% of ZIPs span more than one county; `county` keeps the one with most
    residential addresses. Should all of them be kept, in a separate ZIP-county table?
 6. **IRS history.** The IRS publishes one ZIP file per tax year (2011-2023, about 40 MB each, about 500 MB

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Offline tests for data_pipeline.zipcode_universe (no network).
+Offline tests for uszipcode.data.zipcode_universe (no network).
 
 Run from the repository root::
 
-    python -m pytest data_pipeline/tests -q
+    python -m pytest tests/data -q
 """
 
 import csv
@@ -13,10 +13,10 @@ import os
 import sqlite3
 import tempfile
 
-from data_pipeline.zipcode_universe.sources import (
+from uszipcode.data.zipcode_universe.sources import (
     normalize_zip, is_military_zip, parse_gazetteer, parse_hud, parse_zbp, parse_irs, parse_v2,
 )
-from data_pipeline.zipcode_universe.build import merge, write_csv, summarize, COLUMNS, _parse_years
+from uszipcode.data.zipcode_universe.build import merge, write_csv, summarize, COLUMNS, _parse_years
 
 
 def test_normalize_zip():

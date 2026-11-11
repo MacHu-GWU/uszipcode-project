@@ -16,16 +16,16 @@ import zipfile
 
 import pytest
 
-from data_pipeline.database import fetch
-from data_pipeline.database.cli import main
-from data_pipeline.database.core import Paths
-from data_pipeline.database.crawl import check_rows
-from data_pipeline.database.crawlers import (
+from uszipcode.data import fetch
+from uszipcode.data.cli import main
+from uszipcode.data.core import Paths
+from uszipcode.data.crawl import check_rows
+from uszipcode.data.crawlers import (
     CRAWLERS, census_acs5, census_acs5_history, census_decennial, census_dhc, census_gazetteer, irs_soi, zip_basics,
     zcta_geometry,
 )
-from data_pipeline.database.fields import FIELDS
-from data_pipeline.database.fields.history import HISTORY_FIELDS
+from uszipcode.data.fields import FIELDS
+from uszipcode.data.fields.history import HISTORY_FIELDS
 
 from fakes import FakeOpener
 

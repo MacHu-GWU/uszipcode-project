@@ -26,7 +26,7 @@ import json
 import sqlite3
 import zipfile
 
-from ...zipcodes import normalize_zip
+from ..zipcodes import normalize_zip
 from ..core import Crawler, Download, Secret, field_names
 from ..fields import zipcode_type, major_city, state, county, county_fips
 

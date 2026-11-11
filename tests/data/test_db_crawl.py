@@ -8,9 +8,9 @@ import os
 
 import pytest
 
-from data_pipeline.database import fetch
-from data_pipeline.database.core import ContractError, Crawler, Download, Field, Paths, column, parse_int
-from data_pipeline.database.crawl import check_rows, read_meta, read_output, run_crawler, write_output
+from uszipcode.data import fetch
+from uszipcode.data.core import ContractError, Crawler, Download, Field, Paths, column, parse_int
+from uszipcode.data.crawl import check_rows, read_meta, read_output, run_crawler, write_output
 
 from fakes import FakeOpener
 

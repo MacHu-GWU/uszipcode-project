@@ -3,7 +3,8 @@
 """
 The shape of the code, so that it stays the same as more Fields and crawlers are added:
 
-- the functionality (the modules of ``database/``) knows no crawler and no Field;
+- ``uszipcode/data/`` and the rest of ``uszipcode`` do not import each other;
+- the functionality (the modules of ``uszipcode/data/``) knows no crawler and no Field;
 - a crawler only downloads and parses: no network code; it claims Fields by module but never reads a value;
 - a Field module imports only ``core``, is named after its Field and carries examples that pass;
 - every module is listed in its package's ``MODULES``.
@@ -15,14 +16,16 @@ import types
 
 import pytest
 
-from data_pipeline.database import crawlers, fields
-from data_pipeline.database.checks import unlisted_modules, validate
-from data_pipeline.database.core import Crawler, Download, Field, column, parse_int
-from data_pipeline.database.crawl import check_rows
-from data_pipeline.database.fields import history
+from uszipcode.data import crawlers, fields
+from uszipcode.data.checks import unlisted_modules, validate
+from uszipcode.data.core import Crawler, Download, Field, column, parse_int
+from uszipcode.data.crawl import check_rows
+from uszipcode.data.fields import history
 
-DATABASE = "data_pipeline.database"
+DATABASE = "uszipcode.data"
 DATABASE_DIR = os.path.dirname(os.path.dirname(crawlers.__file__))
+LIBRARY = "uszipcode"
+LIBRARY_DIR = os.path.dirname(DATABASE_DIR)
 NETWORK = {"urllib", "http", "socket", "ssl", "requests", "ftplib"}
 
 
@@ -54,22 +57,47 @@ def _inside(name, package):
     return name == package or name.startswith(package + ".")
 
 
+def _pipeline_modules():
+    """(path from uszipcode/, path, package) of every module of uszipcode/data/."""
+    found = []
+    for folder, _, names in sorted(os.walk(DATABASE_DIR)):
+        relative = os.path.relpath(folder, LIBRARY_DIR).replace(os.sep, "/")
+        found += [(relative + "/" + n, os.path.join(folder, n), LIBRARY + "." + relative.replace("/", "."))
+                  for n in sorted(names) if n.endswith(".py")]
+    assert found
+    return found
+
+
+PIPELINE_MODULES = _pipeline_modules()
+
+
+@pytest.mark.parametrize("name, path, package", PIPELINE_MODULES, ids=[m[0] for m in PIPELINE_MODULES])
+def test_the_pipeline_imports_nothing_from_the_library(name, path, package):
+    for imported in _imports(path, package):
+        assert not _inside(imported, LIBRARY) or _inside(imported, DATABASE), (name, imported)
+
+
+@pytest.mark.parametrize("name, path", _modules(LIBRARY_DIR, skip=()))
+def test_the_library_imports_nothing_from_the_pipeline(name, path):
+    for imported in _imports(path, LIBRARY):
+        assert not _inside(imported, DATABASE), (name, imported)
+
+
 @pytest.mark.parametrize("name, path", _modules(DATABASE_DIR, skip=("__init__.py", "__main__.py")))
 def test_the_functionality_knows_no_crawler_and_no_field(name, path):
     for imported in _imports(path, DATABASE):
         assert not _inside(imported, DATABASE + ".crawlers"), (name, imported)
         assert not _inside(imported, DATABASE + ".fields"), (name, imported)
-        assert not _inside(imported, "data_pipeline.zipcode_universe"), (name, imported)
+        assert not _inside(imported, DATABASE + ".zipcode_universe"), (name, imported)
 
 
 @pytest.mark.parametrize("name, path", _modules(os.path.dirname(crawlers.__file__)))
 def test_a_crawler_only_downloads_and_parses(name, path):
-    allowed = {DATABASE, "data_pipeline"}
-    allowed_packages = (DATABASE + ".core", DATABASE + ".fields", "data_pipeline.zipcodes")
+    allowed_packages = (DATABASE + ".core", DATABASE + ".fields", DATABASE + ".zipcodes")
     for imported in _imports(path, DATABASE + ".crawlers"):
         assert imported.split(".")[0] not in NETWORK, (name, imported)
-        if _inside(imported, "data_pipeline"):
-            assert imported in allowed or any(_inside(imported, p) for p in allowed_packages), (name, imported)
+        if _inside(imported, LIBRARY):
+            assert imported == DATABASE or any(_inside(imported, p) for p in allowed_packages), (name, imported)
 
 
 def test_a_crawler_never_reads_a_value_itself():
@@ -87,7 +115,7 @@ FIELD_MODULE_FILES = ([(n, p, DATABASE + ".fields") for n, p in _modules(os.path
 def test_a_field_module_imports_only_core(name, path, package):
     for imported in _imports(path, package):
         assert imported.split(".")[0] not in NETWORK, (name, imported)
-        if _inside(imported, "data_pipeline"):
+        if _inside(imported, LIBRARY):
             assert imported == DATABASE + ".core" or imported.startswith(DATABASE + ".core."), (name, imported)
 
 
@@ -115,9 +143,9 @@ def test_every_real_module_is_listed():
 def test_an_unlisted_module_is_reported(tmp_path):
     (tmp_path / "listed.py").write_text("", encoding="utf-8")
     (tmp_path / "forgotten.py").write_text("", encoding="utf-8")
-    package = types.ModuleType("data_pipeline.database.fields")
+    package = types.ModuleType("uszipcode.data.fields")
     package.__path__ = [str(tmp_path)]
-    package.MODULES = (types.ModuleType("data_pipeline.database.fields.listed"),)
+    package.MODULES = (types.ModuleType("uszipcode.data.fields.listed"),)
     assert unlisted_modules(package) == ["[L1] fields/forgotten.py is not listed in MODULES in fields/__init__.py: add it."]
 
 

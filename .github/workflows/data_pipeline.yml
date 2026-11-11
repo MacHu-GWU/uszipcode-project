@@ -2,7 +2,7 @@
 name: data_pipeline
 
 on:
-  push: # the tests of data_pipeline/ on the dev-jcw591 branches only
+  push: # the tests of uszipcode/data/ on the dev-jcw591 branches only
     branches: ["dev-jcw591*"]
 
 jobs:
@@ -16,4 +16,4 @@ jobs:
       - name: "Install pytest"
         run: python -m pip install pytest
       - name: "Run the offline tests"
-        run: python -m pytest data_pipeline/tests -q
+        run: python -m pytest tests/data -q

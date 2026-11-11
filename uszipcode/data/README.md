@@ -1,26 +1,33 @@
-# Database step: the crawler registry
+# uszipcode 3.0 data pipeline: the crawler registry
 
 Builds the 3.0 database from the outputs of named crawlers. Rows are PKs (ZIP codes), columns are
 `zipcode` plus one column per Field, and NULL simply means "no value" (a PO box ZIP has no population).
 
+This package, `uszipcode/data/`, holds all the crawler and data-cleaning code. It is on its own: it imports
+nothing from the rest of `uszipcode`, and the rest of `uszipcode` imports nothing from it. Its tests are in
+[`tests/data/`](../../tests/data). What it downloads and writes goes to
+[`data_pipeline/`](../../data_pipeline/README.md) at the repository root, so none of that is installed
+with the package.
+
 ## Layout
 
 The functionality, the crawlers and the Fields are kept apart, so that new columns only add small
-files and never touch the functionality. [`test_db_structure.py`](../tests/test_db_structure.py) fails
+files and never touch the functionality. [`test_db_structure.py`](../../tests/data/test_db_structure.py) fails
 if a module crosses these lines.
 
 | Where | What | Rule |
 |---|---|---|
-| `database/*.py` | **the functionality**: [`core`](core.py), [`checks`](checks.py), [`fetch`](fetch.py), [`crawl`](crawl.py), [`build`](build.py), [`cli`](cli.py) | knows no data source and no column; only `fetch.py` opens a URL |
-| [`database/crawlers/`](crawlers) | **one module per data source**; [`__init__.py`](crawlers/__init__.py) holds `CRAWLERS`, the registry | downloads and parses; claims Fields by their modules; cannot open a URL and never reads a value |
-| [`database/fields/`](fields) | **one module per Field or per group of Fields**; [`__init__.py`](fields/__init__.py) holds `FIELDS`, the catalog | says what the column is and how to read it from a source row; imports only `core` |
-| [`database/fields/history/`](fields/history) | the same for the history table; [`__init__.py`](fields/history/__init__.py) holds `HISTORY_FIELDS` | the same rules |
-| [`database/__main__.py`](__main__.py) | joins the three | the only place that does |
+| `uszipcode/data/*.py` | **the functionality**: [`core`](core.py), [`checks`](checks.py), [`fetch`](fetch.py), [`crawl`](crawl.py), [`build`](build.py), [`cli`](cli.py) | knows no data source and no column; only `fetch.py` opens a URL |
+| [`crawlers/`](crawlers) | **one module per data source**; [`__init__.py`](crawlers/__init__.py) holds `CRAWLERS`, the registry | downloads and parses; claims Fields by their modules; cannot open a URL and never reads a value |
+| [`fields/`](fields) | **one module per Field or per group of Fields**; [`__init__.py`](fields/__init__.py) holds `FIELDS`, the catalog | says what the column is and how to read it from a source row; imports only `core` |
+| [`fields/history/`](fields/history) | the same for the history table; [`__init__.py`](fields/history/__init__.py) holds `HISTORY_FIELDS` | the same rules |
+| [`__main__.py`](__main__.py) | joins the three | the only place that does |
+| [`zipcode_universe/`](zipcode_universe/README.md) | builds the list of PKs | the functionality does not import it |
 
 | Concept | Rule |
 |---|---|
 | **PK** | a 5-digit ZIP as text with leading zeros |
-| **PK set** | the rows of one build: `demo` (3 ZIPs), `full` (every ZIP of [`zipcode_universe`](../zipcode_universe/README.md)) or a CSV file with a `zipcode` column |
+| **PK set** | the rows of one build: `demo` (3 ZIPs), `full` (every ZIP of [`zipcode_universe`](zipcode_universe/README.md)) or a CSV file with a `zipcode` column |
 | **Field** | one column: name, dtype (`int`/`float`/`str`), description, unit, `extract` and `examples`. The catalog's order is the column order |
 | **Source row** | one row of a data source under its own column names, e.g. `{"P1_001N": "32612"}` |
 | **Crawler** | a name, the Fields it claims, the files it downloads and a pure `parse()` that yields `(zipcode, source row)`. Every Field is claimed by exactly one crawler |
@@ -87,7 +94,7 @@ mise run pipeline-setup
 | `mise run pipeline-build -- --pk-set full` | builds it for all 42,730 ZIPs (or `--pk-set path/to/pks.csv`; the file may not be named `demo.csv` or `full.csv`) |
 | `mise run pipeline-test` | runs the offline tests (no network) |
 
-Without mise, run the same commands with `python -m data_pipeline.database check | crawl NAME | crawl --all | build`
+Without mise, run the same commands with `python -m uszipcode.data check | crawl NAME | crawl --all | build`
 from the repository root. Exit codes: 0 success, 2 registry / contract / PK-set problems, 1 download
 and file problems. Expected errors print one message without a traceback.
 
@@ -101,7 +108,11 @@ Five crawlers need a free key, so `crawl-all` needs both keys:
 A key is added to the request in memory only: it is never written to the cache, the manifest, the outputs
 or an error message.
 
-Files:
+When the requirements of the library itself are not installed, every command first prints a line such as
+`No module named 'sqlalchemy'`. It comes from `uszipcode/__init__.py`, which reports that the search engine
+cannot be imported. The pipeline does not need the search engine and runs as usual.
+
+Files (all in `data_pipeline/` at the repository root, outside the package):
 
 - `data_pipeline/.cache/crawlers/<name>/`: raw downloads and `manifest.json` (url, bytes, sha256, time); ignored by git
 - `data_pipeline/output/crawlers/<name>.csv` and `.json`: one row per ZIP (or ZIP and year) in the source; ignored by git
@@ -214,7 +225,7 @@ demo and full databases came out byte-identical to the earlier run. The Census A
 return its rows in the same order, so the `sha256` of a few cached files (and with it
 `db_demo_coverage.json`) changes from one download to the next, while the outputs do not.
 `mise run pipeline-build` then writes
-[`db_demo.csv`](../output/db_demo.csv): 3 rows x 307 columns. Its first columns:
+[`db_demo.csv`](../../data_pipeline/output/db_demo.csv): 3 rows x 307 columns. Its first columns:
 
 ```
 zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,timezone,land_area_in_sqmi,water_area_in_sqmi,bounds_west,bounds_east,bounds_north,bounds_south,population,...
@@ -224,11 +235,11 @@ zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,timezone,land_a
 ```
 
 20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA and no IRS row,
-so its other 301 columns are NULL, and it has no row in the history table. This is expected, not an error. [`db_demo_coverage.json`](../output/db_demo_coverage.json)
+so its other 301 columns are NULL, and it has no row in the history table. This is expected, not an error. [`db_demo_coverage.json`](../../data_pipeline/output/db_demo_coverage.json)
 counts it under `not_in_source` for those Fields. For 20037 the 2020-2024 ACS gives a median age of 30.4,
 a median home value of $685,300, a median household income of $111,153 and a median rent of $2,538; in tax
 year 2023, 81.2% of its returns had wages, averaging $128,954. Its population density is 20,417 people per
-square mile. [`db_demo_history.csv`](../output/db_demo_history.csv) has 16 years each for 10001 and 20037
+square mile. [`db_demo_history.csv`](../../data_pipeline/output/db_demo_history.csv) has 16 years each for 10001 and 20037
 (2000, 2010, 2011-2024): for 20037 the censuses counted 12,642, 14,642 and 14,945 people.
 
 With `--pk-set full` (42,730 ZIPs, no downloads; about 50 seconds, most of it for the 532,117 rows of the
@@ -308,7 +319,7 @@ history crawler, whose `parse()` puts the `year` in each source row (copy
 1. Add `crawlers/<name>.py` (copy [`census_dhc.py`](crawlers/census_dhc.py)): downloads, `parse()`, `CRAWLER`.
 2. List it in `MODULES` in [`crawlers/__init__.py`](crawlers/__init__.py).
 3. Run `mise run pipeline-check` and add the task block it prints to `mise.toml`.
-4. Add a parser test with a few real rows (see [`test_db_crawlers.py`](../tests/test_db_crawlers.py)).
+4. Add a parser test with a few real rows (see [`test_db_crawlers.py`](../../tests/data/test_db_crawlers.py)).
 
 Forgetting a step fails `mise run pipeline-check` or the tests (L1, K1, K3, K5, M1 or D2).
 
@@ -323,15 +334,24 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | 3 | How is history stored? | The main table holds the latest year; history goes to a separate table. 256 numbers over 14 years would be 3,584 columns, and SQLite allows 2,000 | done, with one change: `zipcode_history` has one row per (zipcode, year) and one typed column per history Field, instead of `(zipcode, field, year, value)`, so each column keeps its type and the same Field machinery applies. ACS 2011-2024 and the censuses 2000-2020 are in it; IRS years are not yet |
 | 4 | Where does the full database go? | A GitHub release asset, as in 2.x; git has only the demo | not published; waits for the Fields |
 | 5 | Are city, state and ZIP type Fields? | Yes, claimed by `zip-basics`, which falls back HUD, ZBP, 2.x | done |
-| 6 | Which Python? | 3.11+ for `data_pipeline/` only; `mise.toml` pins 3.12 and `pipeline-setup` installs pytest | done |
+| 6 | Which Python? | 3.11+ for `uszipcode/data/` only; `mise.toml` pins 3.12 and `pipeline-setup` installs pytest | done |
 | 7 | CI? | A separate workflow, [`data_pipeline.yml`](../../.github/workflows/data_pipeline.yml), runs these tests on the `dev-jcw591*` branches; the existing workflow is unchanged | done |
 | 8 | Island areas? | NULL for now. To add them later, `census-dhc` gets 4 more downloads (a Field has one crawler, so not a new crawler); the 4 island APIs list a ZCTA level, not tried yet | done (NULL) |
 
+## Decisions of the maintainer (2026-11-10)
+
+| Decision | Status |
+|---|---|
+| All crawler and data-cleaning code lives in `uszipcode/data/`. It does not depend on the rest of `uszipcode`, and its product is the SQLite database | done: the code moved here from `data_pipeline/`, and the demo and full databases came out byte-identical |
+| The product is one wide table with one row per ZIP. The values of a Field over time are one JSON structure in that row. The crawler stage may keep any shape | to do: `build` still writes `zipcode_history` as a second table |
+| `polygon` stays in the main table, compressed | to do: it is plain text now |
+| The `simple` release has only a part of the columns | to do |
+| The pipeline gets its own group of optional dependencies, `data`, in `pyproject.toml` | not added: the repository has no `pyproject.toml` yet, and the pipeline needs only the standard library (and pytest for its tests) |
+
 ## Open questions for the maintainer
 
-1. **"The whole code base."** Here the split is inside `data_pipeline/database/`, and `uszipcode/` is
-   untouched. `zipcode_universe/` still has its own download code, because it builds the PK list rather than
-   columns. Should it move onto `fetch.py`, and should the crawlers live inside the `uszipcode` package?
+1. **`zipcode_universe` downloads.** `zipcode_universe/` still has its own download code, because it builds
+   the PK list rather than columns. Should it move onto `fetch.py`?
 2. **`major_city` case.** It is upper case as HUD and ZBP write it; 2.x stored title case.
 3. **`zipcode_type` source.** It comes only from 2.x, because no free government source has it, so new ZIPs have
    no type. Infer it from the HUD address flags instead?
@@ -342,9 +362,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
    in all). Add them to the history table (average income per return over time, as 2.x showed)?
 7. **ZCTA basis in the history table.** The ZCTA set of a value follows from its source and year (see
    above). Should the table carry it as a column, as the research database did?
-8. **Where `polygon` lives, and how detailed it is.** It is a text column of the main table now (138 MB of
-   the 183 MB `db_full.csv`), as the boundary was in the 2.x comprehensive database. Keep it there, or move it
-   to its own table or file so that the main table stays small? And is the Census 1:500,000 generalization
+8. **How detailed `polygon` is.** Is the Census 1:500,000 generalization
    right, or should the full TIGER/Line boundary be simplified to a chosen tolerance instead (the research
    used about 30 m)?
 9. **Time zone of ZIPs without a ZCTA.** The 8,939 ZIPs of the full PK set without a ZCTA (PO box, unique,

@@ -36,7 +36,7 @@ SECRET_PARAMS = {"key", "token", "api_key", "apikey", "access_token"}
 
 def task_command(name: str) -> str:
     """The command a ``crawler-<name>`` mise task must run."""
-    return "python -m data_pipeline.database crawl " + name
+    return "python -m uszipcode.data crawl " + name
 
 
 def task_block(name: str) -> str:
@@ -164,7 +164,7 @@ def _load_toml(path: str):
     except ImportError:  # pragma: no cover
         return None, "[M0] mise.toml cannot be checked: Python 3.11 or newer is needed (tomllib)."
     if not os.path.exists(path):
-        return None, "[M0] mise.toml not found at %s: create it (see data_pipeline/database/README.md)." % path
+        return None, "[M0] mise.toml not found at %s: create it (see uszipcode/data/README.md)." % path
     try:
         with open(path, "rb") as fh:
             return tomllib.load(fh), None

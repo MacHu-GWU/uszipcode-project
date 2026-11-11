@@ -12,8 +12,8 @@ import urllib.request
 
 import pytest
 
-from data_pipeline.database import fetch
-from data_pipeline.database.core import Crawler, Download, DownloadError, Secret
+from uszipcode.data import fetch
+from uszipcode.data.core import Crawler, Download, DownloadError, Secret
 
 from fakes import FakeOpener
 

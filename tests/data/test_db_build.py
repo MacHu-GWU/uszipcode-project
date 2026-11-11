@@ -12,11 +12,11 @@ import sqlite3
 
 import pytest
 
-from data_pipeline.database import build as build_mod
-from data_pipeline.database import fetch
-from data_pipeline.database.checks import task_command
-from data_pipeline.database.cli import main
-from data_pipeline.database.core import ContractError, Crawler, Download, Field, Paths, PipelineError, PkSetError
+from uszipcode.data import build as build_mod
+from uszipcode.data import fetch
+from uszipcode.data.checks import task_command
+from uszipcode.data.cli import main
+from uszipcode.data.core import ContractError, Crawler, Download, Field, Paths, PipelineError, PkSetError
 
 from fakes import FakeOpener, make_fake_world
 

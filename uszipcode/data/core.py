@@ -102,14 +102,18 @@ class Paths:
 
     @classmethod
     def default(cls) -> "Paths":
-        """The folders of the repository (see data_pipeline/database/README.md)."""
-        pipeline = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        """The folders of the repository (see uszipcode/data/README.md).
+
+        Downloads and outputs go to ``data_pipeline/`` at the repository root, not into the package.
+        """
+        repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        pipeline = os.path.join(repo, "data_pipeline")
         return cls(
             cache_dir=os.path.join(pipeline, ".cache", "crawlers"),
             crawler_out_dir=os.path.join(pipeline, "output", "crawlers"),
             db_out_dir=os.path.join(pipeline, "output"),
             universe_csv=os.path.join(pipeline, "output", "zipcode_universe.csv"),
-            mise_toml=os.path.join(os.path.dirname(pipeline), "mise.toml"),
+            mise_toml=os.path.join(repo, "mise.toml"),
         )
 
     @classmethod

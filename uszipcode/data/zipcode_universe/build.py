@@ -5,9 +5,9 @@ Merge the ZIP lists of all sources into one primary-key table.
 
 Usage (from the repository root)::
 
-    python -m data_pipeline.zipcode_universe                 # all sources, including the 2.x list
-    python -m data_pipeline.zipcode_universe --no-v2         # government sources only
-    python -m data_pipeline.zipcode_universe --irs-years 2011-2022
+    python -m uszipcode.data.zipcode_universe                 # all sources, including the 2.x list
+    python -m uszipcode.data.zipcode_universe --no-v2         # government sources only
+    python -m uszipcode.data.zipcode_universe --irs-years 2011-2022
 
 Output: ``data_pipeline/output/zipcode_universe.csv`` (one row per ZIP) and
 ``zipcode_universe_summary.json`` (counts per source and coverage of the 2.x list).
@@ -25,7 +25,7 @@ import typing
 from .sources import SOURCES, Records, is_military_zip
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PIPELINE_DIR = os.path.dirname(HERE)
+PIPELINE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(HERE))), "data_pipeline")  # not in the package
 DEFAULT_CACHE_DIR = os.path.join(PIPELINE_DIR, ".cache", "zipcode_universe")
 DEFAULT_OUT = os.path.join(PIPELINE_DIR, "output", "zipcode_universe.csv")
 DEFAULT_SUMMARY = os.path.join(PIPELINE_DIR, "output", "zipcode_universe_summary.json")
@@ -125,7 +125,7 @@ def _parse_years(text: str) -> typing.List[int]:
 
 
 def main(argv: typing.Optional[typing.List[str]] = None) -> dict:
-    p = argparse.ArgumentParser(prog="python -m data_pipeline.zipcode_universe", description=__doc__.split("\n\n")[0])
+    p = argparse.ArgumentParser(prog="python -m uszipcode.data.zipcode_universe", description=__doc__.split("\n\n")[0])
     p.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR, help="where downloads are kept (default: %(default)s)")
     p.add_argument("--out", default=DEFAULT_OUT, help="CSV output (default: %(default)s)")
     p.add_argument("--summary", default=DEFAULT_SUMMARY, help="JSON summary output (default: %(default)s)")

@@ -20,7 +20,7 @@ import re
 import sqlite3
 import typing
 
-from ..zipcodes import normalize_zip
+from .zipcodes import normalize_zip
 from .checks import owners, require_valid
 from .core import ContractError, Crawler, Field, Paths, PkSetError, SQL_TYPES, format_problems
 from .crawl import check_downloads, coerce, read_meta, read_output, replace, write_csv, write_json

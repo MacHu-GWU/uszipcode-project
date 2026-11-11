@@ -10,10 +10,14 @@ Shared fixtures: no test may reach the network or the real home folder.
 """
 
 import socket
+import sys
 
 import pytest
 
-from data_pipeline.database import fetch
+if sys.version_info < (3, 11):  # the pipeline needs Python 3.11+; a test run of the library on an older Python skips this folder
+    collect_ignore_glob = ["test_*.py"]
+
+from uszipcode.data import fetch
 
 
 def _no_network(*args, **kwargs):

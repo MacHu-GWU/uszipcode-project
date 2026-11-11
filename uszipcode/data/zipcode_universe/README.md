@@ -9,10 +9,10 @@ and a ZIP that has no statistics still keeps its row.
 From the repository root (Python 3.6+, standard library only):
 
 ```
-python -m data_pipeline.zipcode_universe                     # all sources, including the 2.x list
-python -m data_pipeline.zipcode_universe --no-v2             # government sources only
-python -m data_pipeline.zipcode_universe --irs-years 2011-2022
-python -m pytest data_pipeline/tests -q                      # offline unit tests
+python -m uszipcode.data.zipcode_universe                     # all sources, including the 2.x list
+python -m uszipcode.data.zipcode_universe --no-v2             # government sources only
+python -m uszipcode.data.zipcode_universe --irs-years 2011-2022
+python -m pytest tests/data -q                               # offline unit tests
 ```
 
 The HUD step needs a free API token (account at <https://www.huduser.gov/hudapi/public/register>,

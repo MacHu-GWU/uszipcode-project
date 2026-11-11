@@ -9,13 +9,13 @@ import dataclasses
 
 import pytest
 
-from data_pipeline.database import crawlers, fields
-from data_pipeline.database.checks import require_valid, task_command, validate
-from data_pipeline.database.cli import main
-from data_pipeline.database.core import Crawler, Download, Field, Paths, RegistryError, Secret, column
-from data_pipeline.database.crawlers import CRAWLERS
-from data_pipeline.database.fields import FIELDS, history
-from data_pipeline.database.fields.history import HISTORY_FIELDS
+from uszipcode.data import crawlers, fields
+from uszipcode.data.checks import require_valid, task_command, validate
+from uszipcode.data.cli import main
+from uszipcode.data.core import Crawler, Download, Field, Paths, RegistryError, Secret, column
+from uszipcode.data.crawlers import CRAWLERS
+from uszipcode.data.fields import FIELDS, history
+from uszipcode.data.fields.history import HISTORY_FIELDS
 
 
 def test_real_registry_is_valid():
@@ -122,8 +122,8 @@ CASES = [
     ("M0", "mise.toml is not valid TOML", BASE_FIELDS, [_crawler()], "[tasks.crawler-src-a\n"),
     ("M1", "Crawler 'src-a' has no mise task: add to mise.toml\n[tasks.crawler-src-a]\nrun = \"%s\"" % task_command("src-a"),
      BASE_FIELDS, [_crawler()], "[tasks.pipeline-check]\nrun = \"x\"\n"),
-    ("M1", "mise task 'crawler-src-a' runs 'python -m data_pipeline.database crawl src_a': expected \"%s\"." % task_command("src-a"),
-     BASE_FIELDS, [_crawler()], '[tasks.crawler-src-a]\nrun = "python -m data_pipeline.database crawl src_a"\n'),
+    ("M1", "mise task 'crawler-src-a' runs 'python -m uszipcode.data crawl src_a': expected \"%s\"." % task_command("src-a"),
+     BASE_FIELDS, [_crawler()], '[tasks.crawler-src-a]\nrun = "python -m uszipcode.data crawl src_a"\n'),
     ("M2", "mise task 'crawler-old' has no crawler named 'old': remove the task or register the crawler.",
      BASE_FIELDS, [_crawler()], _mise(["src-a", "old"])),
 ]
@@ -158,7 +158,7 @@ def test_all_problems_are_reported_together(tmp_path):
         "  1. [K3] Field 'housing_units' is not claimed by any crawler: add it to one crawler's fields.",
         "  2. [M1] Crawler 'src-a' has no mise task: add to mise.toml",
         "       [tasks.crawler-src-a]",
-        '       run = "python -m data_pipeline.database crawl src-a"',
+        '       run = "python -m uszipcode.data crawl src-a"',
     ]
 
 
@@ -202,4 +202,4 @@ def test_a_field_name_may_be_in_both_catalogs(tmp_path):
 
 
 def test_task_command():
-    assert task_command("census-dhc") == "python -m data_pipeline.database crawl census-dhc"
+    assert task_command("census-dhc") == "python -m uszipcode.data crawl census-dhc"

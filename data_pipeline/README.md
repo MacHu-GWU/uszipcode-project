@@ -1,18 +1,16 @@
-# uszipcode 3.0 data pipeline
+# uszipcode 3.0 data pipeline: working folder
 
-Builds the 3.0 database from official U.S. sources (discussion:
-[issue #88](https://github.com/MacHu-GWU/uszipcode-project/issues/88)). This folder is separate from the
-installed `uszipcode` package and does not change it.
+The code of the pipeline is in [`uszipcode/data/`](../uszipcode/data/README.md) and its tests are in
+[`tests/data/`](../tests/data) (discussion: [issue #88](https://github.com/MacHu-GWU/uszipcode-project/issues/88)).
+This folder holds only what the pipeline downloads and writes, so that none of it is installed with the
+`uszipcode` package.
 
-Steps (in order; each one is a sub-package run with `python -m data_pipeline.<step>` from the repository root):
-
-| Step | Status | What it does |
+| Folder | What is in it | In git |
 |---|---|---|
-| [`zipcode_universe`](zipcode_universe/README.md) | done (draft) | the primary-key list: every 5-digit ZIP from free sources, with source flags |
-| [`database`](database/README.md) | in progress | the crawler registry: one module per Field, one module per crawler, and the join onto a PK set (8 crawlers, 306 Fields and a history table of 9 Fields so far) |
-| more columns | to do | the open questions of [`database/README.md`](database/README.md) (IRS history, time zones of ZIPs without a ZCTA, ...), each as a crawler or Field of the `database` step |
+| `.cache/` | the raw downloads, one folder per crawler, and the downloads of `zipcode_universe` | no |
+| `output/crawlers/` | one CSV and one JSON file per crawler | no |
+| `output/` | `zipcode_universe.csv` (the list of PKs) and the databases `db_<set>.*` | only `zipcode_universe.*` and the demo CSV and coverage files |
 
-The tasks of both steps are in [`mise.toml`](../mise.toml) (`mise run pipeline-check`, `mise run crawler-<name>`,
-`mise run pipeline-build`; see [`database/README.md`](database/README.md)).
-
-Tests: `python -m pytest data_pipeline/tests -q` or `mise run pipeline-test` (offline; needs pytest).
+The tasks are in [`mise.toml`](../mise.toml): `mise run pipeline-check`, `mise run crawler-<name>`,
+`mise run pipeline-build` and `mise run pipeline-test` (see the
+[README of the pipeline](../uszipcode/data/README.md)).

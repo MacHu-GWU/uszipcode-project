@@ -3,10 +3,10 @@
 """
 Command line of the database step (run from the repository root)::
 
-    python -m data_pipeline.database check
-    python -m data_pipeline.database crawl NAME [--refresh] [--force]
-    python -m data_pipeline.database crawl --all [--refresh] [--force]
-    python -m data_pipeline.database build [--pk-set demo|full|PATH]
+    python -m uszipcode.data check
+    python -m uszipcode.data crawl NAME [--refresh] [--force]
+    python -m uszipcode.data crawl --all [--refresh] [--force]
+    python -m uszipcode.data build [--pk-set demo|full|PATH]
 
 The mise tasks in ``mise.toml`` call these commands; ``mise run crawler-<name>``
 runs ``crawl <name>``. Exit codes: 0 success, 2 registry / contract / PK-set
@@ -35,7 +35,7 @@ def _rel(path: str) -> str:
 
 
 def _parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="python -m data_pipeline.database",
+    p = argparse.ArgumentParser(prog="python -m uszipcode.data",
                                 description="Crawler registry of the uszipcode 3.0 database.")
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("check", help="check the Field catalog, the claims and the mise tasks; print the catalog")

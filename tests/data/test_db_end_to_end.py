@@ -10,9 +10,9 @@ import sqlite3
 
 import pytest
 
-from data_pipeline.database import fetch
-from data_pipeline.database.cli import main
-from data_pipeline.database.core import SQL_TYPES
+from uszipcode.data import fetch
+from uszipcode.data.cli import main
+from uszipcode.data.core import SQL_TYPES
 
 from fakes import FakeOpener, make_fake_world
 

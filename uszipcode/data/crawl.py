@@ -20,7 +20,7 @@ import math
 import os
 import typing
 
-from ..zipcodes import normalize_zip
+from .zipcodes import normalize_zip
 from . import fetch
 from .core import ContractError, Crawler, Field, Paths, PipelineError
 

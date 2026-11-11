@@ -16,8 +16,8 @@ import os
 import typing
 import urllib.error
 
-from data_pipeline.database.checks import task_command
-from data_pipeline.database.core import Crawler, Download, Field, Paths, column
+from uszipcode.data.checks import task_command
+from uszipcode.data.core import Crawler, Download, Field, Paths, column
 
 
 ETAG = '"fake"'

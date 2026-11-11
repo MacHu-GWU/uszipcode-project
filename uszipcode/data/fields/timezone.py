@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="timezone",
         dtype=str,
+        simple=True,
         description=("Standard-time zone that contains the ZCTA internal point, e.g. Eastern (BTS NTAD Time Zones, "
                      "property zone). It does not say whether the place observes daylight saving time"),
         unit="zone name",

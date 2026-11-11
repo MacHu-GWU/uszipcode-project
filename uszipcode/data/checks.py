@@ -7,7 +7,7 @@ The checks that tie the Field catalog, the crawlers and ``mise.toml`` together.
 problem is one sentence ``[ID] what is wrong: how to fix it``. Importing a module
 validates nothing; ``check``, ``crawl`` and ``build`` call ``require_valid()`` first.
 
-Rules: F1-F9 Fields, C1-C8 crawlers, K1-K5 claims (every Field claimed exactly
+Rules: F1-F10 Fields, C1-C8 crawlers, K1-K5 claims (every Field claimed exactly
 once, or derived from earlier Fields), M0-M2 mise tasks (every crawler has
 ``crawler-<name>`` and vice versa), L1 (every module of ``fields/`` and
 ``crawlers/`` is listed in its ``MODULES``).
@@ -74,6 +74,8 @@ def _check_fields(fields: typing.Sequence[Field], catalog: str = MAIN_CATALOG) -
             problems.append("[K5] Field %r of %s is derived: derived Fields belong to FIELDS." % (f.name, catalog))
         if f.compressed and (f.dtype is not str or catalog == HISTORY_CATALOG):
             problems.append("[F8] Field %r is compressed: only a str Field of FIELDS can be compressed." % f.name)
+        if f.simple and catalog == HISTORY_CATALOG:
+            problems.append("[F10] History Field %r is marked simple: the simple release has only Fields of FIELDS." % f.name)
     return problems
 
 

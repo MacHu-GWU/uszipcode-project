@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="population",
         dtype=int,
+        simple=True,
         description="Total population of the ZCTA, 2020 Census DHC table P1 (P1_001N)",
         unit="people",
         extract=column("P1_001N", parse_int),

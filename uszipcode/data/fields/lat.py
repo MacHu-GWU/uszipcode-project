@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="lat",
         dtype=float,
+        simple=True,
         description="Latitude of the ZCTA internal point (Census Gazetteer INTPTLAT)",
         unit="degrees",
         extract=column("INTPTLAT", parse_float),

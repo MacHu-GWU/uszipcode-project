@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="housing_units",
         dtype=int,
+        simple=True,
         description="Housing units in the ZCTA, 2020 Census DHC table H1 (H1_001N)",
         unit="units",
         extract=column("H1_001N", parse_int),

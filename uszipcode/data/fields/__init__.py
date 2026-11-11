@@ -13,6 +13,9 @@ source column. A crawler claims Fields by their modules (``field_names``).
 Every Field must be claimed by exactly one crawler (``check`` verifies it). Names
 follow the 2.x column names where the meaning is the same. Census values are
 tabulated by ZCTA, so the descriptions say "ZCTA".
+
+A Field with ``simple=True`` is also a column of the simple release
+(``db_<set>_simple.sqlite``): the columns the 2.x ``simple_zipcode`` table had.
 """
 
 from . import (

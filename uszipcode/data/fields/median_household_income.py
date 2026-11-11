@@ -12,6 +12,7 @@ FIELDS = (
     Field(
         name="median_household_income",
         dtype=int,
+        simple=True,
         description="Median household income in the ZCTA, latest ACS 5-year table B19013 (B19013_001E)",
         unit="dollars",
         extract=column("B19013_001E", census_int),

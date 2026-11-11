@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="population_density",
         dtype=float,
+        simple=True,
         description="People per square mile of land in the ZCTA: population / land_area_in_sqmi; NULL where the land area is 0",
         unit="people per sq mi",
         inputs=("population", "land_area_in_sqmi"),

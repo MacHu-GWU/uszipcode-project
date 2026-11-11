@@ -13,6 +13,7 @@ FIELDS = (
     Field(
         name="county",
         dtype=str,
+        simple=True,
         description="Main county of the ZIP: HUD-USPS crosswalk with the Census Gazetteer county name, else uszipcode 2.x",
         extract=first_value("hud_county_name", "v2_county"),
         examples=(

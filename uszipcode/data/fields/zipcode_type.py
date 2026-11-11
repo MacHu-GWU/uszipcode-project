@@ -13,6 +13,7 @@ FIELDS = (
     Field(
         name="zipcode_type",
         dtype=str,
+        simple=True,
         description="STANDARD, PO BOX, UNIQUE or MILITARY, from uszipcode 2.x (not a government source)",
         extract=first_value("v2_zipcode_type"),
         examples=(({"v2_zipcode_type": "PO BOX", "hud_city": "WASHINGTON"}, "PO BOX"), ({"hud_city": "PHOENIX"}, None)),

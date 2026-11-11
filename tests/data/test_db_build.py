@@ -77,6 +77,13 @@ def test_a_pk_set_file_cannot_take_a_built_in_name(tmp_path, name):
     assert str(e.value) == "PK set file %r has the name of the built-in set %r: rename the file" % (path, name)
 
 
+def test_a_pk_set_file_cannot_take_the_name_of_a_simple_release(tmp_path):
+    path = _write(tmp_path / "east_simple.csv", "zipcode\n20037\n")  # db_east_simple.sqlite: the simple release of "east"
+    with pytest.raises(PkSetError) as e:
+        build_mod.load_pk_set(path, _paths(tmp_path))
+    assert str(e.value) == "PK set file name 'east_simple' ends with '_simple', the name of a simple release: rename the file"
+
+
 def test_unknown_pk_set(tmp_path):
     with pytest.raises(PkSetError) as e:
         build_mod.load_pk_set("nope", _paths(tmp_path))
@@ -321,6 +328,59 @@ def test_a_large_pk_set_gets_no_csv(world, monkeypatch):
     coverage = _build(world)
     assert list(coverage["files"]) == ["sqlite"]
     assert not os.path.exists(csv_path)  # the CSV of the earlier build would be stale
+
+
+def _table(path):
+    con = sqlite3.connect(path)
+    try:
+        declared = [(r[1], r[2], r[5]) for r in con.execute("PRAGMA table_info(zipcode_data)")]
+        tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
+        return tables, declared, con.execute("SELECT * FROM zipcode_data ORDER BY zipcode").fetchall()
+    finally:
+        con.close()
+
+
+def test_the_simple_release_is_a_part_of_the_columns(world, capsys):
+    # f02 (float), f03 (str, compressed) and f05 are simple; the history Field is never part of it
+    fields = [dataclasses.replace(f, simple=f.name in ("f02", "f03", "f05"), compressed=f.name == "f03")
+              for f in world.fields]
+    args = ["build", "--pk-set", world.pk_csv]
+    assert main(args, fields=fields, crawlers=world.crawlers, paths=world.paths) == 0
+    out = capsys.readouterr().out
+    assert "Simple release: 3 rows x 4 columns (zipcode and 3 Fields)" in out
+    stem = os.path.join(world.paths.db_out_dir, "db_pks_fake")
+    wrote = out.splitlines()[-1]
+    assert wrote.startswith("wrote ") and [os.path.basename(p) for p in wrote[len("wrote "):].replace(" and ", ", ").split(", ")] \
+        == ["db_pks_fake.sqlite", "db_pks_fake_simple.sqlite", "db_pks_fake.csv", "db_pks_fake_coverage.json"]
+
+    tables, declared, rows = _table(stem + "_simple.sqlite")
+    assert tables == ["zipcode_data"]
+    assert declared == [("zipcode", "TEXT", 1), ("f02", "REAL", 0), ("f03", "BLOB", 0), ("f05", "REAL", 0)]
+    _, full_declared, full_rows = _table(stem + ".sqlite")
+    keep = [i for i, (name, _, _) in enumerate(full_declared) if name in ("zipcode", "f02", "f03", "f05")]
+    assert rows == [tuple(row[i] for i in keep) for row in full_rows]  # the same values, the blob included
+    with open(stem + "_coverage.json", encoding="utf-8") as fh:
+        saved = json.load(fh)
+    assert saved["simple"] == {"columns": 4, "fields": ["f02", "f03", "f05"]}
+    assert saved["files"] == {"sqlite": "db_pks_fake.sqlite", "simple_sqlite": "db_pks_fake_simple.sqlite",
+                              "csv": "db_pks_fake.csv"}
+
+
+def test_without_simple_fields_there_is_no_simple_release(world):
+    fields = [dataclasses.replace(f, simple=f.name == "f01") for f in world.fields]
+    simple_path = build_mod.build(fields, world.crawlers, world.paths, pk_set=world.pk_csv)["files"]["simple_sqlite"]
+    assert os.path.exists(simple_path)
+    coverage = _build(world)  # no Field of the fake world is simple
+    assert "simple" not in coverage and list(coverage["files"]) == ["sqlite", "csv"]
+    assert not os.path.exists(simple_path)  # the file of the earlier build would be stale
+    assert "Simple release" not in build_mod.describe_coverage(coverage)
+
+
+def test_simple_table():
+    fields = [Field("a", int, "a", simple=True), Field("b", str, "b"), Field("c", float, "c", simple=True)]
+    kept, rows = build_mod.simple_table(fields, [["10001", 1, "x", 0.5], ["20013", None, None, None]])
+    assert [f.name for f in kept] == ["a", "c"]
+    assert rows == [["10001", 1, 0.5], ["20013", None, None]]
 
 
 def test_locked_database_gives_a_friendly_message(world, monkeypatch, capsys):

@@ -2641,8 +2641,33 @@
       }
     }
   },
+  "simple": {
+    "columns": 20,
+    "fields": [
+      "zipcode_type",
+      "major_city",
+      "state",
+      "county",
+      "lat",
+      "lng",
+      "timezone",
+      "land_area_in_sqmi",
+      "water_area_in_sqmi",
+      "bounds_west",
+      "bounds_east",
+      "bounds_north",
+      "bounds_south",
+      "population",
+      "population_density",
+      "housing_units",
+      "occupied_housing_units",
+      "median_home_value",
+      "median_household_income"
+    ]
+  },
   "files": {
     "sqlite": "db_demo.sqlite",
+    "simple_sqlite": "db_demo_simple.sqlite",
     "csv": "db_demo.csv"
   }
 }

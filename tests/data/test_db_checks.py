@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-The checks: every rule F1-F9, C1-C8, K1-K3 and M0-M2 fails on its own example,
+The checks: every rule F1-F10, C1-C8, K1-K3 and M0-M2 fails on its own example,
 and the real registry passes.
 """
 
@@ -34,8 +34,27 @@ def test_check_prints_the_catalog(capsys):
     assert ("History: %d Fields from 2 history crawlers; each is a JSON column <field>_by_year of the database."
             % len(HISTORY_FIELDS)) in out
     assert any(line.split()[:3] == ["polygon", "str", "(zlib)"] for line in out.splitlines())
+    assert "Simple release: zipcode and 19 of the %d Fields: zipcode_type, major_city, state, county, lat, " % len(FIELDS) in out
     assert any(line.split()[:2] == ["census_population", "int"] and line.split()[-1] == "census-decennial"
                for line in out.splitlines())
+
+
+#: the columns of the 2.x ``simple_zipcode`` table (``AbstractSimpleZipcode`` in uszipcode/model.py), without ``zipcode``
+SIMPLE_2X = (
+    "zipcode_type", "major_city", "post_office_city", "common_city_list", "county", "state", "lat", "lng",
+    "timezone", "radius_in_miles", "area_code_list", "population", "population_density",
+    "land_area_in_sqmi", "water_area_in_sqmi", "housing_units", "occupied_housing_units",
+    "median_home_value", "median_household_income", "bounds_west", "bounds_east", "bounds_north", "bounds_south",
+)
+#: 2.x simple columns that are not Fields yet (question 12 of the README)
+SIMPLE_2X_MISSING = ("post_office_city", "common_city_list", "radius_in_miles", "area_code_list")
+
+
+def test_the_simple_fields_are_the_2x_simple_columns():
+    names = {f.name for f in FIELDS}
+    assert sorted(set(SIMPLE_2X) - names) == sorted(SIMPLE_2X_MISSING)  # one of them became a Field: mark it simple
+    assert sorted(f.name for f in FIELDS if f.simple) == sorted(set(SIMPLE_2X) & names)
+    assert not any(f.simple for f in HISTORY_FIELDS)
 
 
 # ------------------------------------------------------------------------------- one rule at a time
@@ -193,6 +212,8 @@ def _history_crawler(name="hist-a", fields=("h",)):
      "Field 'g' of HISTORY_FIELDS is derived: derived Fields belong to FIELDS."),
     ((dataclasses.replace(_field("h", str), compressed=True),), [_history_crawler()], "F8",
      "Field 'h' is compressed: only a str Field of FIELDS can be compressed."),
+    ((dataclasses.replace(_field("h"), simple=True),), [_history_crawler()], "F10",
+     "History Field 'h' is marked simple: the simple release has only Fields of FIELDS."),
 ])
 def test_history_rules(tmp_path, history_fields, crawlers, rule, text):
     path = tmp_path / "mise.toml"

@@ -15,8 +15,12 @@ The product is ``db_<set>.sqlite`` in ``output/``, with one table, ``zipcode_dat
   year as JSON text, ``{"2011":13642,"2012":14304}``, years ascending. A year
   without a value is left out, and a ZIP without any value has NULL.
 
-``db_<set>_coverage.json`` is written next to it. A PK set of at most
-``CSV_MAX_ROWS`` rows also gets ``db_<set>.csv``, the same table as text (a
+``db_<set>_simple.sqlite`` is the simple release: the same table with a part of the
+columns, ``zipcode`` and the Fields marked ``simple``. It is written by the same
+build from the same rows, so the two files cannot differ.
+
+``db_<set>_coverage.json`` is written next to them. A PK set of at most
+``CSV_MAX_ROWS`` rows also gets ``db_<set>.csv``, the full table as text (a
 compressed Field as its text), for reading and reviewing.
 """
 
@@ -30,7 +34,8 @@ import zlib
 
 from .zipcodes import normalize_zip
 from .checks import owners, require_valid
-from .core import ContractError, Crawler, Field, Paths, PkSetError, SQL_TYPES, format_problems, history_column
+from .core import (ContractError, Crawler, Field, Paths, PkSetError, SIMPLE_SUFFIX, SQL_TYPES, format_problems,
+                   history_column)
 from .crawl import check_downloads, coerce, read_meta, read_output, replace, write_csv, write_json
 
 #: the minimal example: two standard ZIPs and a PO box ZIP without a ZCTA (so no Census values)
@@ -78,6 +83,9 @@ def load_pk_set(spec: str, paths: Paths) -> typing.Tuple[str, typing.List[str]]:
         raise PkSetError("PK set file name %r may only use A-Z a-z 0-9 _ -" % name)
     if name in ("demo", "full"):  # its outputs would replace db_demo.* / db_full.*
         raise PkSetError("PK set file %r has the name of the built-in set %r: rename the file" % (spec, name))
+    if name.endswith(SIMPLE_SUFFIX):  # db_<name>.sqlite would be the simple release of another set
+        raise PkSetError("PK set file name %r ends with %r, the name of a simple release: rename the file"
+                         % (name, SIMPLE_SUFFIX))
     return name, sorted(_read_pk_csv(spec, name))
 
 
@@ -148,6 +156,12 @@ def history_json(by_year: typing.Dict[int, typing.Any]) -> typing.Optional[str]:
     if not by_year:
         return None
     return json.dumps({str(year): by_year[year] for year in sorted(by_year)}, separators=(",", ":"))
+
+
+def simple_table(fields: typing.Sequence[Field], rows: typing.List[list]) -> typing.Tuple[typing.List[Field], typing.List[list]]:
+    """The simple release: the Fields marked ``simple`` and their part of every row, ``[zipcode] + [value per Field]``."""
+    keep = [j for j, f in enumerate(fields, start=1) if f.simple]
+    return [fields[j - 1] for j in keep], [[row[0]] + [row[j] for j in keep] for row in rows]
 
 
 def _write_sqlite(path: str, fields: typing.Sequence[Field], history_fields: typing.Sequence[Field],
@@ -233,6 +247,13 @@ def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], pa
     stem = os.path.join(paths.db_out_dir, "db_%s" % name)
     files = {"sqlite": stem + ".sqlite"}
     _write_sqlite(files["sqlite"], fields, history_fields, table)
+    simple_fields, simple_rows = simple_table(fields, rows)
+    simple_path = stem + SIMPLE_SUFFIX + ".sqlite"
+    if simple_fields:
+        files["simple_sqlite"] = simple_path
+        _write_sqlite(simple_path, simple_fields, (), simple_rows)
+    elif os.path.exists(simple_path):  # of an earlier catalog: it would be stale
+        os.remove(simple_path)
     if len(pks) <= CSV_MAX_ROWS:
         files["csv"] = stem + ".csv"
         write_csv(files["csv"], ["zipcode"] + [f.name for f in fields] + [history_column(f) for f in history_fields], table)
@@ -271,6 +292,8 @@ def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], pa
     if history:
         coverage["history"] = _history_coverage(history_fields, history, history_owner, history_outputs,
                                                 folded, pk_index, metas)
+    if simple_fields:
+        coverage["simple"] = {"columns": 1 + len(simple_fields), "fields": [f.name for f in simple_fields]}
     coverage["files"] = files
     # keys in build order (Fields in catalog order, crawlers in registry order); still deterministic
     write_json(stem + "_coverage.json", dict(coverage, files={k: os.path.basename(v) for k, v in coverage["files"].items()}),
@@ -303,4 +326,8 @@ def describe_coverage(coverage: dict) -> str:
                          "%d-%d (%d)" % (span[0], span[-1], len(span)) if span else "-"))
         widths = [max(len(r[i]) for r in rows) for i in range(len(rows[0]))]
         lines += ["  " + "  ".join(cell.ljust(w) for cell, w in zip(r, widths)).rstrip() for r in rows]
+    simple = coverage.get("simple")
+    if simple:
+        lines.append("Simple release: %d rows x %d columns (zipcode and %d Fields)" % (
+            coverage["pks"], simple["columns"], len(simple["fields"])))
     return "\n".join(lines)

@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="water_area_in_sqmi",
         dtype=float,
+        simple=True,
         description="Water area of the ZCTA (Census Gazetteer AWATER_SQMI)",
         unit="sq mi",
         extract=column("AWATER_SQMI", parse_float),

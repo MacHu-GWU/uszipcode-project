@@ -13,6 +13,7 @@ FIELDS = (
     Field(
         name="major_city",
         dtype=str,
+        simple=True,
         description="USPS preferred city of the ZIP: HUD-USPS crosswalk, else Census ZBP, else uszipcode 2.x",
         extract=first_value("hud_city", "zbp_city", "v2_city", convert=upper_text),
         examples=(

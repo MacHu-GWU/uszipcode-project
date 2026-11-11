@@ -82,6 +82,9 @@ def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths]
                 print("History: %d Fields from %d history crawlers; each is a JSON column <field>%s of the database."
                       % (len(history_fields), len(history), HISTORY_SUFFIX))
                 print(describe(history_fields, history))
+            simple = [f.name for f in fields if f.simple]
+            if simple:
+                print("Simple release: zipcode and %d of the %d Fields: %s." % (len(simple), len(fields), ", ".join(simple)))
             return 0
         if args.command == "crawl":
             if bool(args.name) == bool(args.all):

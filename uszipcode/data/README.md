@@ -34,11 +34,13 @@ if a module crosses these lines.
 | **Derived Field** | a Field with `inputs`: other Fields earlier in the catalog. No crawler claims it; `build` computes it after the join (e.g. `population_density`) |
 | **History Field** | a Field of the second catalog, `HISTORY_FIELDS`, claimed by a history crawler (`history=True`). A history crawler has one row per ZIP and year, and adds a `year` column to its source rows. In the database a history Field `x` is one column, `x_by_year`: the values of the ZIP by year, as JSON |
 | **Compressed Field** | a `str` Field with `compressed=True` (the boundary): text in the crawler output, a zlib BLOB in the database |
+| **Simple Field** | a Field with `simple=True`: also a column of the simple release, the small database with a part of the columns |
 
 `crawl` runs one crawler: fetch (the only network step, cached), parse (offline), each claimed Field
 reads its value from the source rows, check the output contract, write. `build` left-joins every crawler
 output onto the PK set, computes the derived Fields, and folds the rows of the history crawlers into one
-JSON value per ZIP and history Field; it never downloads anything, so switching PK sets is free.
+JSON value per ZIP and history Field. From the same rows it also writes the simple release. It never
+downloads anything, so switching PK sets is free.
 
 A Field module is this short ([`fields/population.py`](fields/population.py)):
 
@@ -118,6 +120,7 @@ Files (all in `data_pipeline/` at the repository root, outside the package):
 - `data_pipeline/.cache/crawlers/<name>/`: raw downloads and `manifest.json` (url, bytes, sha256, time); ignored by git
 - `data_pipeline/output/crawlers/<name>.csv` and `.json`: one row per ZIP (or ZIP and year) in the source; ignored by git
 - `data_pipeline/output/db_<set>.sqlite`: the database; ignored by git
+- `data_pipeline/output/db_<set>_simple.sqlite`: the simple release, a part of its columns; ignored by git
 - `data_pipeline/output/db_<set>_coverage.json`: what each Field and crawler covers; the demo one is committed
 - `data_pipeline/output/db_<set>.csv`: the same table as text, for reading and reviewing. It is written only
   for a PK set of at most 1,000 rows, so not for `full`; the demo one is committed
@@ -145,6 +148,24 @@ json.loads(zlib.decompress(polygon))["type"]  # 'MultiPolygon'
 
 The history columns are plain JSON text, so SQLite can read them too:
 `SELECT json_extract(acs_population_by_year, '$.2024') FROM zipcode_data`.
+
+### The simple release
+
+`db_<set>_simple.sqlite` is the small database: the same table `zipcode_data` with the same rows and a
+part of the columns, `zipcode` and the Fields marked `simple=True`. `build` writes it from the rows it
+has just written to `db_<set>.sqlite`, so the two files cannot differ, and a column is added to it by
+adding `simple=True` to its Field. It has no history columns.
+
+The 19 simple Fields are the columns of the 2.x `simple_zipcode` table that are Fields today (a test
+compares the two lists):
+
+`zipcode_type`, `major_city`, `state`, `county`, `lat`, `lng`, `timezone`, `land_area_in_sqmi`,
+`water_area_in_sqmi`, `bounds_west`, `bounds_east`, `bounds_north`, `bounds_south`, `population`,
+`population_density`, `housing_units`, `occupied_housing_units`, `median_home_value`,
+`median_household_income`.
+
+The 2.x table had four more columns, which are not Fields yet: `post_office_city`, `common_city_list`,
+`radius_in_miles` and `area_code_list`.
 
 ## Crawlers and Fields
 
@@ -218,7 +239,7 @@ with how to fix it:
 
 | IDs | Checks |
 |---|---|
-| F1-F9 | Field names are snake_case, `zipcode` (and `year` for a history Field) is reserved, no duplicates, dtype is `int`/`float`/`str`, a description is given, an `extract` is given, the database fits SQLite's 2,000 columns (F7); only a `str` Field of `FIELDS` is compressed (F8); no history column `<field>_by_year` has the name of a Field (F9) |
+| F1-F10 | Field names are snake_case, `zipcode` (and `year` for a history Field) is reserved, no duplicates, dtype is `int`/`float`/`str`, a description is given, an `extract` is given, the database fits SQLite's 2,000 columns (F7); only a `str` Field of `FIELDS` is compressed (F8); no history column `<field>_by_year` has the name of a Field (F9); no history Field is marked `simple` (F10) |
 | C1-C8 | crawler names are kebab-case and unique; a crawler claims Fields and declares 1 to 100 downloads; filenames are safe and unique; URLs are `https://` and hold no key; a Secret is well formed; no URL is downloaded by two crawlers |
 | K1-K5 | every claim names a Field of the catalog (with "did you mean"; history crawlers claim from `HISTORY_FIELDS`), no Field is claimed twice, **no Field is left unclaimed** unless it is derived; a derived Field is claimed by no crawler (K4) and derives only from Fields before it in `FIELDS` (K5) |
 | M0-M2 | `mise.toml` is valid, every crawler has its `crawler-<name>` task (the check prints the block to add), no task points to a missing crawler |
@@ -270,7 +291,8 @@ square mile. The history columns of 10001 and 20037 hold 16 years (2000, 2010, 2
 `census_population_by_year` is `{"2000":12642,"2010":14642,"2020":14945}`.
 
 With `--pk-set full` (42,730 ZIPs, no downloads; about 12 seconds; `db_full.sqlite` is 150 MB, of which
-45 MB are the compressed boundaries, 138 MB as text):
+45 MB are the compressed boundaries, 138 MB as text; `db_full_simple.sqlite` is 6.6 MB, 42,730 rows x 20
+columns, each identical to the same column of `db_full.sqlite`):
 
 | Fields | ZIPs with a value |
 |---|---|
@@ -342,6 +364,8 @@ The registry is not tied to these numbers: the tests build fake registries of 1 
 [`population_density.py`](fields/population_density.py)), listed after its inputs in `fields/__init__.py`;
 no crawler claims it.
 
+**Also in the simple release:** add `simple=True` to the Field.
+
 **A history column:** the same steps in [`fields/history/`](fields/history), claimed by a
 history crawler, whose `parse()` puts the `year` in each source row (copy
 [`census_acs5_history.py`](crawlers/census_acs5_history.py)).
@@ -377,7 +401,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | All crawler and data-cleaning code lives in `uszipcode/data/`. It does not depend on the rest of `uszipcode`, and its product is the SQLite database | done: the code moved here from `data_pipeline/`, and the demo and full databases came out byte-identical |
 | The product is one wide table with one row per ZIP. The values of a Field over time are one JSON structure in that row. The crawler stage may keep any shape | done: `db_<set>.sqlite` has the one table `zipcode_data`; a history Field `x` is the column `x_by_year`, a JSON object `{year: value}` (see [The database](#the-database)) |
 | `polygon` stays in the main table, compressed | done: a zlib BLOB, 45 MB instead of 138 MB; the full database is 150 MB instead of 227 MB |
-| The `simple` release has only a part of the columns | to do |
+| The `simple` release has only a part of the columns | done: a Field with `simple=True` is also a column of `db_<set>_simple.sqlite`, which `build` writes from the same rows (see [The simple release](#the-simple-release)); 19 Fields, 6.6 MB for all ZIPs |
 | The pipeline gets its own group of optional dependencies, `data`, in `pyproject.toml` | not added: the repository has no `pyproject.toml` yet, and the pipeline needs only the standard library (and pytest for its tests) |
 
 ## Open questions for the maintainer
@@ -403,3 +427,6 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
    crawlers would be two Fields plus one derived Field that takes the first non-NULL. Add it?
 10. **529 MB for four numbers.** The TIGER/Line file is downloaded only for the exact `bounds_*`. The 67 MB
     generalized file alone would give a box that is close but not exact. Keep the exact box?
+11. **Columns of the simple release.** It has the 2.x simple columns that are Fields today. `county_fips`
+    is new in 3.0 and is not in it. Should it be? And should the simple database keep the table name
+    `zipcode_data`, or be `simple_zipcode` as in 2.x?

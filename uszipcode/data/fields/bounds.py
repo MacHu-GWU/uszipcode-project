@@ -18,6 +18,7 @@ FIELDS = (
     Field(
         name="bounds_west",
         dtype=float,
+        simple=True,
         description="West edge (smallest longitude) of the ZCTA bounding box; %s (Xmin)" % SOURCE,
         unit="degrees",
         extract=column("Xmin", parse_float),
@@ -26,6 +27,7 @@ FIELDS = (
     Field(
         name="bounds_east",
         dtype=float,
+        simple=True,
         description="East edge (largest longitude) of the ZCTA bounding box; %s (Xmax)" % SOURCE,
         unit="degrees",
         extract=column("Xmax", parse_float),
@@ -34,6 +36,7 @@ FIELDS = (
     Field(
         name="bounds_north",
         dtype=float,
+        simple=True,
         description="North edge (largest latitude) of the ZCTA bounding box; %s (Ymax)" % SOURCE,
         unit="degrees",
         extract=column("Ymax", parse_float),
@@ -42,6 +45,7 @@ FIELDS = (
     Field(
         name="bounds_south",
         dtype=float,
+        simple=True,
         description="South edge (smallest latitude) of the ZCTA bounding box; %s (Ymin)" % SOURCE,
         unit="degrees",
         extract=column("Ymin", parse_float),

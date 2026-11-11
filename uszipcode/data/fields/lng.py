@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="lng",
         dtype=float,
+        simple=True,
         description="Longitude of the ZCTA internal point (Census Gazetteer INTPTLONG)",
         unit="degrees",
         extract=column("INTPTLONG", parse_float),

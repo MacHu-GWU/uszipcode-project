@@ -12,6 +12,7 @@ FIELDS = (
     Field(
         name="median_home_value",
         dtype=int,
+        simple=True,
         description="Median value of owner-occupied housing units in the ZCTA, latest ACS 5-year table B25077 (B25077_001E)",
         unit="dollars",
         extract=column("B25077_001E", census_int),

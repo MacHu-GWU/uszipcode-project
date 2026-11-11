@@ -454,6 +454,16 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
         rows = {r["zipcode"]: r for r in reader}
     assert sorted(rows) == ["10001", "20013", "20037"]
     assert not os.path.exists(os.path.join(paths.db_out_dir, "db_demo_history.csv"))  # history is in the main table
+    simple = [f.name for f in FIELDS if f.simple]
+    con = sqlite3.connect(os.path.join(paths.db_out_dir, "db_demo_simple.sqlite"))
+    try:
+        assert [r[1] for r in con.execute("PRAGMA table_info(zipcode_data)")] == ["zipcode"] + simple
+        released = {r[0]: r[1:] for r in con.execute("SELECT * FROM zipcode_data")}
+    finally:
+        con.close()
+    assert len(simple) == 19 and sorted(released) == sorted(rows)
+    for zipcode, values in released.items():  # the same values as the full table
+        assert ["" if v is None else str(v) for v in values] == [rows[zipcode][name] for name in simple]
     for zipcode in ("10001", "20037"):
         assert list(json.loads(rows[zipcode]["census_population_by_year"])) == ["2000", "2010", "2020"]
         assert list(json.loads(rows[zipcode]["acs_population_by_year"])) == [str(y) for y in range(2011, 2025)]

@@ -8,6 +8,7 @@ FIELDS = (
     Field(
         name="state",
         dtype=str,
+        simple=True,
         description="Two-letter state of the ZIP: HUD-USPS crosswalk, else Census ZBP, else uszipcode 2.x",
         extract=first_value("hud_state", "zbp_state", "v2_state", convert=upper_text),
         examples=(

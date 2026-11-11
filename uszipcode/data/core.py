@@ -22,6 +22,9 @@ SQL_TYPES = {int: "INTEGER", float: "REAL", str: "TEXT"}
 #: a history Field ``x`` is the column ``x_by_year`` of the database: its values by year, as JSON text
 HISTORY_SUFFIX = "_by_year"
 
+#: ``db_<set>_simple.sqlite`` is the simple release: ``zipcode`` and the Fields marked ``simple``
+SIMPLE_SUFFIX = "_simple"
+
 #: one source row: {column of the source: raw value}. The source's own names, untouched.
 SourceRow = typing.Mapping[str, typing.Any]
 
@@ -39,6 +42,9 @@ class Field:
 
     A ``compressed`` Field holds long text (a boundary). The crawler output and the CSV
     keep the text; the SQLite database stores it as a BLOB, ``zlib.compress`` of its UTF-8 bytes.
+
+    A ``simple`` Field is also a column of the simple release, the small database with a
+    part of the columns (the columns of the 2.x ``simple_zipcode`` table).
     """
 
     name: str
@@ -49,6 +55,7 @@ class Field:
     examples: typing.Tuple[typing.Tuple[dict, typing.Any], ...] = ()
     inputs: typing.Tuple[str, ...] = ()
     compressed: bool = False
+    simple: bool = False
 
 
 def history_column(field: Field) -> str:
@@ -108,7 +115,7 @@ class Crawler:
 class Paths:
     cache_dir: str  # raw downloads + manifest.json, one folder per crawler
     crawler_out_dir: str  # <crawler>.csv and <crawler>.json
-    db_out_dir: str  # db_<pkset>.sqlite, _coverage.json and, for a small PK set, .csv
+    db_out_dir: str  # db_<pkset>.sqlite, _simple.sqlite, _coverage.json and, for a small PK set, .csv
     universe_csv: str  # the full PK set (output of zipcode_universe)
     mise_toml: str
 

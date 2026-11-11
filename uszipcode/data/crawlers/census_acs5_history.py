@@ -2,7 +2,7 @@
 
 """
 census-acs5-history: a few ACS 5-year estimates for every vintage from 2011, for the
-history table. One Census Data API call per vintage (about 2 MB each), with the same
+history columns. One Census Data API call per vintage (about 2 MB each), with the same
 free key as ``census-dhc``. The API has no ZCTA data in the 5-year files before 2011.
 A source row is one row of one vintage, with ``year`` set to that vintage.
 

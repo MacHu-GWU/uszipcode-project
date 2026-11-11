@@ -20,7 +20,7 @@ if a module crosses these lines.
 | `uszipcode/data/*.py` | **the functionality**: [`core`](core.py), [`checks`](checks.py), [`fetch`](fetch.py), [`crawl`](crawl.py), [`build`](build.py), [`cli`](cli.py) | knows no data source and no column; only `fetch.py` opens a URL |
 | [`crawlers/`](crawlers) | **one module per data source**; [`__init__.py`](crawlers/__init__.py) holds `CRAWLERS`, the registry | downloads and parses; claims Fields by their modules; cannot open a URL and never reads a value |
 | [`fields/`](fields) | **one module per Field or per group of Fields**; [`__init__.py`](fields/__init__.py) holds `FIELDS`, the catalog | says what the column is and how to read it from a source row; imports only `core` |
-| [`fields/history/`](fields/history) | the same for the history table; [`__init__.py`](fields/history/__init__.py) holds `HISTORY_FIELDS` | the same rules |
+| [`fields/history/`](fields/history) | the same for the history Fields; [`__init__.py`](fields/history/__init__.py) holds `HISTORY_FIELDS` | the same rules |
 | [`__main__.py`](__main__.py) | joins the three | the only place that does |
 | [`zipcode_universe/`](zipcode_universe/README.md) | builds the list of PKs | the functionality does not import it |
 
@@ -32,12 +32,13 @@ if a module crosses these lines.
 | **Source row** | one row of a data source under its own column names, e.g. `{"P1_001N": "32612"}` |
 | **Crawler** | a name, the Fields it claims, the files it downloads and a pure `parse()` that yields `(zipcode, source row)`. Every Field is claimed by exactly one crawler |
 | **Derived Field** | a Field with `inputs`: other Fields earlier in the catalog. No crawler claims it; `build` computes it after the join (e.g. `population_density`) |
-| **History table** | `zipcode_history`, one row per PK and year, with its own catalog `HISTORY_FIELDS`. A history crawler (`history=True`) adds a `year` column to its source rows |
+| **History Field** | a Field of the second catalog, `HISTORY_FIELDS`, claimed by a history crawler (`history=True`). A history crawler has one row per ZIP and year, and adds a `year` column to its source rows. In the database a history Field `x` is one column, `x_by_year`: the values of the ZIP by year, as JSON |
+| **Compressed Field** | a `str` Field with `compressed=True` (the boundary): text in the crawler output, a zlib BLOB in the database |
 
 `crawl` runs one crawler: fetch (the only network step, cached), parse (offline), each claimed Field
 reads its value from the source rows, check the output contract, write. `build` left-joins every crawler
-output onto the PK set, computes the derived Fields, and joins the history crawler outputs into the
-history table; it never downloads anything, so switching PK sets is free.
+output onto the PK set, computes the derived Fields, and folds the rows of the history crawlers into one
+JSON value per ZIP and history Field; it never downloads anything, so switching PK sets is free.
 
 A Field module is this short ([`fields/population.py`](fields/population.py)):
 
@@ -116,8 +117,34 @@ Files (all in `data_pipeline/` at the repository root, outside the package):
 
 - `data_pipeline/.cache/crawlers/<name>/`: raw downloads and `manifest.json` (url, bytes, sha256, time); ignored by git
 - `data_pipeline/output/crawlers/<name>.csv` and `.json`: one row per ZIP (or ZIP and year) in the source; ignored by git
-- `data_pipeline/output/db_<set>.sqlite` (tables `zipcode_data` and `zipcode_history`), `db_<set>.csv`,
-  `db_<set>_history.csv` and `db_<set>_coverage.json`; only the demo CSV files and coverage are committed
+- `data_pipeline/output/db_<set>.sqlite`: the database; ignored by git
+- `data_pipeline/output/db_<set>_coverage.json`: what each Field and crawler covers; the demo one is committed
+- `data_pipeline/output/db_<set>.csv`: the same table as text, for reading and reviewing. It is written only
+  for a PK set of at most 1,000 rows, so not for `full`; the demo one is committed
+
+## The database
+
+`db_<set>.sqlite` has one table, `zipcode_data`, with one row per ZIP:
+
+| Columns | Stored as |
+|---|---|
+| `zipcode` | TEXT, the primary key |
+| one per Field, in catalog order | INTEGER, REAL or TEXT; NULL means "no value" |
+| `polygon` (a compressed Field) | BLOB: `zlib.compress` of the UTF-8 GeoJSON text. This is what `CompressedJSONType` of `sqlalchemy_mate` reads, the type of `polygon` in 2.x |
+| one per history Field, `<field>_by_year` | TEXT: a JSON object of the values by year, `{"2011":13642,"2012":14304}`, years ascending. A year without a value is left out; a ZIP without any value has NULL |
+
+```python
+import json, sqlite3, zlib
+
+con = sqlite3.connect("data_pipeline/output/db_demo.sqlite")
+by_year, polygon = con.execute(
+    "SELECT acs_population_by_year, polygon FROM zipcode_data WHERE zipcode = '20037'").fetchone()
+json.loads(by_year)["2024"]                   # 13156
+json.loads(zlib.decompress(polygon))["type"]  # 'MultiPolygon'
+```
+
+The history columns are plain JSON text, so SQLite can read them too:
+`SELECT json_extract(acs_population_by_year, '$.2024') FROM zipcode_data`.
 
 ## Crawlers and Fields
 
@@ -131,7 +158,7 @@ Files (all in `data_pipeline/` at the repository root, outside the package):
 | `irs-soi` | IRS [SOI ZIP Code Data](https://www.irs.gov/statistics/soi-tax-stats-individual-income-tax-statistics-zip-code-data-soi), latest tax year (`YEAR = 2023`) | 1 file, 40 MB, no key | for 11 income sources, the share of tax returns with it and the average amount among them (22 columns): `sources_of_household_income_*` (wages, business, partnership and S corporation, unemployment), `household_investment_income_*` (interest, ordinary and qualified dividends, capital gains), `household_retirement_income_*` (IRA distributions, pensions and annuities, Social Security) |
 | derived | computed by `build` | none | `population_density` = `population` / `land_area_in_sqmi` (NULL where the land area is 0) |
 
-History table (`zipcode_history`):
+History Fields (the columns `<field>_by_year`):
 
 | Crawler | Source | Download | History Fields |
 |---|---|---|---|
@@ -191,7 +218,7 @@ with how to fix it:
 
 | IDs | Checks |
 |---|---|
-| F1-F7 | Field names are snake_case, `zipcode` (and `year` in the history table) is reserved, no duplicates, dtype is `int`/`float`/`str`, a description is given, an `extract` is given, the catalog fits SQLite's 2,000 columns |
+| F1-F9 | Field names are snake_case, `zipcode` (and `year` for a history Field) is reserved, no duplicates, dtype is `int`/`float`/`str`, a description is given, an `extract` is given, the database fits SQLite's 2,000 columns (F7); only a `str` Field of `FIELDS` is compressed (F8); no history column `<field>_by_year` has the name of a Field (F9) |
 | C1-C8 | crawler names are kebab-case and unique; a crawler claims Fields and declares 1 to 100 downloads; filenames are safe and unique; URLs are `https://` and hold no key; a Secret is well formed; no URL is downloaded by two crawlers |
 | K1-K5 | every claim names a Field of the catalog (with "did you mean"; history crawlers claim from `HISTORY_FIELDS`), no Field is claimed twice, **no Field is left unclaimed** unless it is derived; a derived Field is claimed by no crawler (K4) and derives only from Fields before it in `FIELDS` (K5) |
 | M0-M2 | `mise.toml` is valid, every crawler has its `crawler-<name>` task (the check prints the block to add), no task points to a missing crawler |
@@ -225,7 +252,7 @@ demo and full databases came out byte-identical to the earlier run. The Census A
 return its rows in the same order, so the `sha256` of a few cached files (and with it
 `db_demo_coverage.json`) changes from one download to the next, while the outputs do not.
 `mise run pipeline-build` then writes
-[`db_demo.csv`](../../data_pipeline/output/db_demo.csv): 3 rows x 307 columns. Its first columns:
+[`db_demo.csv`](../../data_pipeline/output/db_demo.csv): 3 rows x 316 columns (`zipcode`, 306 Fields, 9 history columns). Its first columns:
 
 ```
 zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,timezone,land_area_in_sqmi,water_area_in_sqmi,bounds_west,bounds_east,bounds_north,bounds_south,population,...
@@ -235,15 +262,15 @@ zipcode,zipcode_type,major_city,state,county,county_fips,lat,lng,timezone,land_a
 ```
 
 20013 is a Washington, DC PO box ZIP: it has a city, a state and a county, but no ZCTA and no IRS row,
-so its other 301 columns are NULL, and it has no row in the history table. This is expected, not an error. [`db_demo_coverage.json`](../../data_pipeline/output/db_demo_coverage.json)
+so its other 310 columns are NULL, the 9 history columns included. This is expected, not an error. [`db_demo_coverage.json`](../../data_pipeline/output/db_demo_coverage.json)
 counts it under `not_in_source` for those Fields. For 20037 the 2020-2024 ACS gives a median age of 30.4,
 a median home value of $685,300, a median household income of $111,153 and a median rent of $2,538; in tax
 year 2023, 81.2% of its returns had wages, averaging $128,954. Its population density is 20,417 people per
-square mile. [`db_demo_history.csv`](../../data_pipeline/output/db_demo_history.csv) has 16 years each for 10001 and 20037
-(2000, 2010, 2011-2024): for 20037 the censuses counted 12,642, 14,642 and 14,945 people.
+square mile. The history columns of 10001 and 20037 hold 16 years (2000, 2010, 2011-2024): for 20037,
+`census_population_by_year` is `{"2000":12642,"2010":14642,"2020":14945}`.
 
-With `--pk-set full` (42,730 ZIPs, no downloads; about 50 seconds, most of it for the 532,117 rows of the
-history table and the 138 MB of boundaries; `db_full.sqlite` is 227 MB):
+With `--pk-set full` (42,730 ZIPs, no downloads; about 12 seconds; `db_full.sqlite` is 150 MB, of which
+45 MB are the compressed boundaries, 138 MB as text):
 
 | Fields | ZIPs with a value |
 |---|---|
@@ -257,9 +284,14 @@ history table and the 138 MB of boundaries; `db_full.sqlite` is 227 MB):
 | `poverty_rate`, `median_age`, `median_household_income`, `median_home_value`, `median_rent` | 32,878, 32,820, 30,547, 30,260, 25,751 |
 | the 22 IRS income-source columns | 27,689 |
 
-The history table has 532,117 rows for 34,231 PKs: `acs_population` has 466,292 values (2011-2024),
-`median_rent` 379,157, and `census_population` 98,748 (2000, 2010, 2020; 184 ZCTAs of the old censuses
-are not in the PK list).
+The history columns hold 3,522,533 values for 34,231 PKs: `acs_population_by_year` has 466,292
+(2011-2024, 33,971 PKs), `median_rent_by_year` 379,157, and `census_population_by_year` 98,748 (2000, 2010,
+2020; 184 ZCTAs of the old censuses are not in the PK list).
+
+When the history moved into the main table and `polygon` was compressed, the new full database was compared
+with the one before (tables `zipcode_data` and `zipcode_history`, `polygon` as text): the 306 other columns
+of all 42,730 rows are identical, every boundary decompresses to the same text, and the JSON columns hold
+exactly the 3,522,533 values of the 532,117 rows of the old history table.
 
 Checked against earlier work:
 
@@ -310,7 +342,7 @@ The registry is not tied to these numbers: the tests build fake registries of 1 
 [`population_density.py`](fields/population_density.py)), listed after its inputs in `fields/__init__.py`;
 no crawler claims it.
 
-**A column of the history table:** the same steps in [`fields/history/`](fields/history), claimed by a
+**A history column:** the same steps in [`fields/history/`](fields/history), claimed by a
 history crawler, whose `parse()` puts the `year` in each source row (copy
 [`census_acs5_history.py`](crawlers/census_acs5_history.py)).
 
@@ -331,7 +363,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 |---|---|---|---|
 | 1 | Does `crawler-<name>` download again? | No: it reuses the cache and parses again; `-- --refresh` downloads again, at most once per 24 h | done |
 | 2 | How are distributions stored? | One Field per number, generated by `field_group` in one module | done: the 21 distributions of the research, 256 columns |
-| 3 | How is history stored? | The main table holds the latest year; history goes to a separate table. 256 numbers over 14 years would be 3,584 columns, and SQLite allows 2,000 | done, with one change: `zipcode_history` has one row per (zipcode, year) and one typed column per history Field, instead of `(zipcode, field, year, value)`, so each column keeps its type and the same Field machinery applies. ACS 2011-2024 and the censuses 2000-2020 are in it; IRS years are not yet |
+| 3 | How is history stored? | The main table holds the latest year; history goes to a separate table. 256 numbers over 14 years would be 3,584 columns, and SQLite allows 2,000 | replaced by the maintainer's decision below: the crawler outputs keep one row per (zipcode, year), and `build` folds them into one JSON column per history Field of the main table. ACS 2011-2024 and the censuses 2000-2020 are in it; IRS years are not yet |
 | 4 | Where does the full database go? | A GitHub release asset, as in 2.x; git has only the demo | not published; waits for the Fields |
 | 5 | Are city, state and ZIP type Fields? | Yes, claimed by `zip-basics`, which falls back HUD, ZBP, 2.x | done |
 | 6 | Which Python? | 3.11+ for `uszipcode/data/` only; `mise.toml` pins 3.12 and `pipeline-setup` installs pytest | done |
@@ -343,8 +375,8 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | Decision | Status |
 |---|---|
 | All crawler and data-cleaning code lives in `uszipcode/data/`. It does not depend on the rest of `uszipcode`, and its product is the SQLite database | done: the code moved here from `data_pipeline/`, and the demo and full databases came out byte-identical |
-| The product is one wide table with one row per ZIP. The values of a Field over time are one JSON structure in that row. The crawler stage may keep any shape | to do: `build` still writes `zipcode_history` as a second table |
-| `polygon` stays in the main table, compressed | to do: it is plain text now |
+| The product is one wide table with one row per ZIP. The values of a Field over time are one JSON structure in that row. The crawler stage may keep any shape | done: `db_<set>.sqlite` has the one table `zipcode_data`; a history Field `x` is the column `x_by_year`, a JSON object `{year: value}` (see [The database](#the-database)) |
+| `polygon` stays in the main table, compressed | done: a zlib BLOB, 45 MB instead of 138 MB; the full database is 150 MB instead of 227 MB |
 | The `simple` release has only a part of the columns | to do |
 | The pipeline gets its own group of optional dependencies, `data`, in `pyproject.toml` | not added: the repository has no `pyproject.toml` yet, and the pipeline needs only the standard library (and pytest for its tests) |
 
@@ -359,9 +391,9 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 5. **One county per ZIP.** About 29% of ZIPs span more than one county; `county` keeps the one with most
    residential addresses. Should all of them be kept, in a separate ZIP-county table?
 6. **IRS history.** The IRS publishes one ZIP file per tax year (2011-2023, about 40 MB each, about 500 MB
-   in all). Add them to the history table (average income per return over time, as 2.x showed)?
-7. **ZCTA basis in the history table.** The ZCTA set of a value follows from its source and year (see
-   above). Should the table carry it as a column, as the research database did?
+   in all). Add them as history columns (average income per return over time, as 2.x showed)?
+7. **ZCTA basis of the history values.** The ZCTA set of a value follows from its source and year (see
+   above). Should the JSON carry it, as the research database had it in a column?
 8. **How detailed `polygon` is.** Is the Census 1:500,000 generalization
    right, or should the full TIGER/Line boundary be simplified to a chosen tolerance instead (the research
    used about 30 m)?

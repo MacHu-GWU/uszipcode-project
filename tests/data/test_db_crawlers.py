@@ -447,20 +447,19 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     assert len(opener.calls) == len(downloads)  # cached: no new request
     assert main(["build"], FIELDS, CRAWLERS, **kw) == 0
 
-    with open(os.path.join(paths.db_out_dir, "db_demo_history.csv"), encoding="utf-8", newline="") as fh:
-        reader = csv.DictReader(fh)
-        assert reader.fieldnames == ["zipcode", "year"] + [f.name for f in HISTORY_FIELDS]
-        history = {(r["zipcode"], int(r["year"])): r for r in reader}
-    years = [2000, 2010] + list(range(2011, 2025))
-    assert sorted(history) == [(z, y) for z in ("10001", "20037") for y in years]  # 20013 has no ZCTA: no history
-    assert [history[("20037", y)]["census_population"] for y in (2000, 2010, 2020)] == ["12642", "14642", "14945"]
-    assert history[("20037", 2011)]["median_home_value"] == "546500" and history[("20037", 2000)]["acs_population"] == ""
-
+    by_year = [f.name + "_by_year" for f in HISTORY_FIELDS]
     with open(os.path.join(paths.db_out_dir, "db_demo.csv"), encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
-        assert reader.fieldnames == ["zipcode"] + [f.name for f in FIELDS]
+        assert reader.fieldnames == ["zipcode"] + [f.name for f in FIELDS] + by_year
         rows = {r["zipcode"]: r for r in reader}
     assert sorted(rows) == ["10001", "20013", "20037"]
+    assert not os.path.exists(os.path.join(paths.db_out_dir, "db_demo_history.csv"))  # history is in the main table
+    for zipcode in ("10001", "20037"):
+        assert list(json.loads(rows[zipcode]["census_population_by_year"])) == ["2000", "2010", "2020"]
+        assert list(json.loads(rows[zipcode]["acs_population_by_year"])) == [str(y) for y in range(2011, 2025)]
+    assert rows["20037"]["census_population_by_year"] == '{"2000":12642,"2010":14642,"2020":14945}'
+    assert json.loads(rows["20037"]["median_home_value_by_year"])["2011"] == 546500
+    assert all(rows["20013"][name] == "" for name in by_year)  # 20013 has no ZCTA: no history
     assert [rows["20037"][k] for k in ("zipcode_type", "major_city", "state", "county", "county_fips", "lat",
                                        "water_area_in_sqmi", "population", "occupied_housing_units")] \
         == ["STANDARD", "WASHINGTON", "DC", "District of Columbia", "11001", "38.892459", "0.231", "14945", "8178"]

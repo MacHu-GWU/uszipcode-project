@@ -2,7 +2,7 @@
 
 """
 census-decennial: the population counted by each decennial census since 2000, for
-the history table. One Census Data API call per census (under 1 MB each), with the
+the history columns. One Census Data API call per census (under 1 MB each), with the
 same free key as ``census-dhc``. A source row is one row of one census, with
 ``year`` set to the census year; the variable is ``P001001`` in 2000 and 2010
 (Summary File 1) and ``P1_001N`` in 2020 (DHC).

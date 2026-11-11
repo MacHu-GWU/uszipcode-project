@@ -14,7 +14,7 @@ from . import (
 )
 
 #: every module of this folder; ``check`` fails if one is left out (rule L1).
-#: History crawlers (``history=True``) fill the history table and claim from ``HISTORY_FIELDS``.
+#: History crawlers (``history=True``) have one row per ZIP and year and claim from ``HISTORY_FIELDS``.
 MODULES = (census_gazetteer, census_dhc, census_acs5, irs_soi, zip_basics, census_acs5_history, census_decennial,
            zcta_geometry)
 

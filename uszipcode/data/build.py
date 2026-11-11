@@ -7,28 +7,36 @@ Rows are the PKs, columns are ``zipcode`` plus every Field in catalog order, and
 NULL means "no value" (normal: a PO box ZIP has no Census statistics). Building
 never downloads anything, so switching PK sets is free.
 
-Outputs in ``output/``: ``db_<set>.sqlite`` (table ``zipcode_data``),
-``db_<set>.csv`` (the same table) and ``db_<set>_coverage.json``. When there are
-history crawlers, the SQLite file also has the table ``zipcode_history`` (one row
-per PK and year, columns ``zipcode``, ``year`` and the history Fields), also
-written to ``db_<set>_history.csv``.
+The product is ``db_<set>.sqlite`` in ``output/``, with one table, ``zipcode_data``:
+
+- ``zipcode``, then one column per Field;
+- a ``compressed`` Field (the boundary) is a BLOB: ``zlib.compress`` of its UTF-8 text;
+- then one column ``<field>_by_year`` per history Field: the values of the ZIP by
+  year as JSON text, ``{"2011":13642,"2012":14304}``, years ascending. A year
+  without a value is left out, and a ZIP without any value has NULL.
+
+``db_<set>_coverage.json`` is written next to it. A PK set of at most
+``CSV_MAX_ROWS`` rows also gets ``db_<set>.csv``, the same table as text (a
+compressed Field as its text), for reading and reviewing.
 """
 
 import csv
+import json
 import os
 import re
 import sqlite3
 import typing
+import zlib
 
 from .zipcodes import normalize_zip
 from .checks import owners, require_valid
-from .core import ContractError, Crawler, Field, Paths, PkSetError, SQL_TYPES, format_problems
+from .core import ContractError, Crawler, Field, Paths, PkSetError, SQL_TYPES, format_problems, history_column
 from .crawl import check_downloads, coerce, read_meta, read_output, replace, write_csv, write_json
 
 #: the minimal example: two standard ZIPs and a PO box ZIP without a ZCTA (so no Census values)
 DEMO_PKS = ("10001", "20013", "20037")
 TABLE = "zipcode_data"
-HISTORY_TABLE = "zipcode_history"
+CSV_MAX_ROWS = 1000  # the CSV copy is for reading and reviewing; a larger set gets only the SQLite file
 SET_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
@@ -73,32 +81,27 @@ def load_pk_set(spec: str, paths: Paths) -> typing.Tuple[str, typing.List[str]]:
     return name, sorted(_read_pk_csv(spec, name))
 
 
-def _join(keys: typing.Sequence, n_key: int, fields: typing.Sequence[Field], owner: typing.Dict[str, str],
-          outputs: typing.Dict[str, dict]) -> typing.List[list]:
-    """One row per key, ``key + [value per Field]``; one lookup per crawler and key (this runs per cell)."""
+def assemble(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
+             outputs: typing.Dict[str, typing.Dict[str, dict]]) -> typing.List[list]:
+    """
+    Pure left join: one row per PK, ``[zipcode] + [value per Field]``, with one lookup per
+    crawler and PK (this runs per cell). Derived Fields are None here.
+    """
     plan = {}
-    for j, f in enumerate(fields, start=n_key):
+    for j, f in enumerate(fields, start=1):
         if f.name in owner:
             plan.setdefault(owner[f.name], []).append((j, f.name))
     plan = [(outputs[name], columns) for name, columns in plan.items()]
-    width = n_key + len(fields)
     rows = []
-    for key in keys:
-        row = [None] * width
-        row[:n_key] = key if n_key > 1 else (key,)
+    for pk in pks:
+        row = [pk] + [None] * len(fields)
         for out, columns in plan:
-            record = out.get(key)
+            record = out.get(pk)
             if record is not None:
                 for j, name in columns:
                     row[j] = record[name]
         rows.append(row)
     return rows
-
-
-def assemble(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
-             outputs: typing.Dict[str, typing.Dict[str, dict]]) -> typing.List[list]:
-    """Pure left join: one row per PK, ``[zipcode] + [value per Field]``. Derived Fields are None here."""
-    return _join(pks, 1, fields, owner, outputs)
 
 
 def derive(rows: typing.List[list], fields: typing.Sequence[Field]) -> None:
@@ -120,35 +123,58 @@ def derive(rows: typing.List[list], fields: typing.Sequence[Field]) -> None:
         raise ContractError(format_problems("derived Fields failed", problems, limit=20))
 
 
-def assemble_history(pk_index: typing.Set[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
-                     outputs: typing.Dict[str, typing.Dict[tuple, dict]]) -> typing.List[list]:
+def fold_history(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
+                 outputs: typing.Dict[str, typing.Dict[tuple, dict]]) -> typing.List[typing.List[dict]]:
     """
-    The history table: one row per (zipcode, year) that a history crawler has for a PK,
-    ``[zipcode, year] + [value per history Field]``, sorted.
+    The history of every PK: one ``{year: value}`` per history Field. A year without a
+    value is left out, so a Field without any value has ``{}``.
     """
-    keys = sorted({key for out in outputs.values() for key in out if key[0] in pk_index})
-    return _join(keys, 2, fields, owner, outputs)
+    index = {pk: i for i, pk in enumerate(pks)}
+    folded = [[{} for _ in fields] for _ in pks]
+    for crawler, out in outputs.items():
+        claimed = [(j, f.name) for j, f in enumerate(fields) if owner.get(f.name) == crawler]
+        for (zipcode, year), record in out.items():
+            i = index.get(zipcode)
+            if i is None:
+                continue
+            for j, name in claimed:
+                if record[name] is not None:
+                    folded[i][j][year] = record[name]
+    return folded
 
 
-def _create_table(con, table: str, key: typing.List[str], fields: typing.Sequence[Field], rows: typing.List[list],
-                  constraints: typing.Sequence[str] = ()) -> None:
-    columns = key + ['"%s" %s' % (f.name, SQL_TYPES[f.dtype]) for f in fields] + list(constraints)
-    con.execute('CREATE TABLE "%s" (%s)' % (table, ", ".join(columns)))
-    con.executemany('INSERT INTO "%s" VALUES (%s)' % (table, ", ".join("?" * (len(fields) + len(key)))), rows)
+def history_json(by_year: typing.Dict[int, typing.Any]) -> typing.Optional[str]:
+    """``{2012: 14304, 2011: 13642}`` -> ``{"2011":13642,"2012":14304}``; no value at all -> None."""
+    if not by_year:
+        return None
+    return json.dumps({str(year): by_year[year] for year in sorted(by_year)}, separators=(",", ":"))
 
 
-def _write_sqlite(path: str, fields: typing.Sequence[Field], rows: typing.List[list],
-                  history_fields: typing.Sequence[Field] = (), history_rows: typing.Optional[typing.List[list]] = None) -> None:
+def _write_sqlite(path: str, fields: typing.Sequence[Field], history_fields: typing.Sequence[Field],
+                  rows: typing.List[list]) -> None:
+    """``rows``: ``[zipcode] + [value per Field] + [JSON text per history Field]``."""
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     part = path + ".part"
     if os.path.exists(part):
         os.remove(part)
+    columns = (['"zipcode" TEXT PRIMARY KEY NOT NULL']
+               + ['"%s" %s' % (f.name, "BLOB" if f.compressed else SQL_TYPES[f.dtype]) for f in fields]
+               + ['"%s" TEXT' % history_column(f) for f in history_fields])
+    compressed = [j for j, f in enumerate(fields, start=1) if f.compressed]
+
+    def stored(row):
+        if not compressed:
+            return row
+        row = list(row)
+        for j in compressed:
+            if row[j] is not None:
+                row[j] = zlib.compress(row[j].encode("utf-8"))
+        return row
+
     con = sqlite3.connect(part)
     try:
-        _create_table(con, TABLE, ['"zipcode" TEXT PRIMARY KEY NOT NULL'], fields, rows)
-        if history_rows is not None:
-            _create_table(con, HISTORY_TABLE, ['"zipcode" TEXT NOT NULL', '"year" INTEGER NOT NULL'], history_fields,
-                          history_rows, constraints=['PRIMARY KEY ("zipcode", "year")'])
+        con.execute('CREATE TABLE "%s" (%s)' % (TABLE, ", ".join(columns)))
+        con.executemany('INSERT INTO "%s" VALUES (%s)' % (TABLE, ", ".join("?" * len(columns))), map(stored, rows))
         con.commit()
     finally:
         con.close()
@@ -167,15 +193,16 @@ def _crawler_coverage(out: dict, pk_index: typing.Set[str], meta: dict) -> dict:
 
 
 def _history_coverage(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], owner: typing.Dict[str, str],
-                      outputs: dict, rows: typing.List[list], pk_index: typing.Set[str], metas: dict) -> dict:
+                      outputs: dict, folded: typing.List[typing.List[dict]], pk_index: typing.Set[str], metas: dict) -> dict:
+    """Per history Field: its column, the PKs that have it, its values (PK x year) and its years."""
     field_cov = {}
-    columns = list(zip(*rows)) if rows else [()] * (2 + len(fields))
-    for j, f in enumerate(fields, start=2):
-        field_cov[f.name] = {"crawler": owner[f.name], "non_null": len(rows) - columns[j].count(None),
-                             "years": sorted({y for y, v in zip(columns[1], columns[j]) if v is not None})}
+    for j, f in enumerate(fields):
+        cells = [history[j] for history in folded if history[j]]
+        field_cov[f.name] = {"column": history_column(f), "crawler": owner[f.name], "pks": len(cells),
+                             "values": sum(map(len, cells)), "years": sorted(set().union(*cells))}
     return {
-        "table": HISTORY_TABLE, "rows": len(rows), "pks": len({r[0] for r in rows}),
-        "columns": 2 + len(fields), "years": sorted({r[1] for r in rows}),
+        "pks": sum(1 for history in folded if any(history)),
+        "years": sorted(set().union(*(c["years"] for c in field_cov.values()))),
         "fields": field_cov,
         "crawlers": {c.name: _crawler_coverage(outputs[c.name], pk_index, metas[c.name]) for c in crawlers},
     }
@@ -200,15 +227,17 @@ def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], pa
         check_downloads(c, metas[c.name], paths.crawler_out_dir)
     rows = assemble(pks, fields, owner, outputs)
     derive(rows, fields)
-    history_rows = assemble_history(pk_index, history_fields, history_owner, history_outputs) if history else None
+    folded = fold_history(pks, history_fields, history_owner, history_outputs)
+    table = [row + [history_json(by_year) for by_year in history] for row, history in zip(rows, folded)]
 
     stem = os.path.join(paths.db_out_dir, "db_%s" % name)
-    files = {"sqlite": stem + ".sqlite", "csv": stem + ".csv"}
-    _write_sqlite(files["sqlite"], fields, rows, history_fields, history_rows)
-    write_csv(files["csv"], ["zipcode"] + [f.name for f in fields], rows)
-    if history_rows is not None:
-        files["history_csv"] = stem + "_history.csv"
-        write_csv(files["history_csv"], ["zipcode", "year"] + [f.name for f in history_fields], history_rows)
+    files = {"sqlite": stem + ".sqlite"}
+    _write_sqlite(files["sqlite"], fields, history_fields, table)
+    if len(pks) <= CSV_MAX_ROWS:
+        files["csv"] = stem + ".csv"
+        write_csv(files["csv"], ["zipcode"] + [f.name for f in fields] + [history_column(f) for f in history_fields], table)
+    elif os.path.exists(stem + ".csv"):  # of an earlier, smaller set with this name: it would be stale
+        os.remove(stem + ".csv")
 
     column = {f.name: j for j, f in enumerate(fields, start=1)}
     columns = list(zip(*rows))  # counted with list.count, which runs in C
@@ -234,14 +263,14 @@ def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], pa
         n = len(r) - 1 - r.count(None)
         by_count[str(n)] = by_count.get(str(n), 0) + 1
     coverage = {
-        "pk_set": name, "pks": len(pks), "columns": 1 + len(fields),
+        "pk_set": name, "pks": len(pks), "columns": 1 + len(fields) + len(history_fields),
         "fields": field_cov, "crawlers": crawler_cov,
         "pks_by_non_null_fields": dict(sorted(by_count.items(), key=lambda kv: int(kv[0]))),
         "pks_without_any_value": [r[0] for r in rows if r.count(None) == len(r) - 1],
     }
-    if history_rows is not None:
+    if history:
         coverage["history"] = _history_coverage(history_fields, history, history_owner, history_outputs,
-                                                history_rows, pk_index, metas)
+                                                folded, pk_index, metas)
     coverage["files"] = files
     # keys in build order (Fields in catalog order, crawlers in registry order); still deterministic
     write_json(stem + "_coverage.json", dict(coverage, files={k: os.path.basename(v) for k, v in coverage["files"].items()}),
@@ -265,12 +294,12 @@ def describe_coverage(coverage: dict) -> str:
     history = coverage.get("history")
     if history:
         years = history["years"]
-        lines.append("History table %s: %d rows (zipcode x year) for %d PKs, years %s" % (
-            history["table"], history["rows"], history["pks"], "%d-%d" % (years[0], years[-1]) if years else "none"))
-        rows = [("field", "crawler", "values", "years")]
-        for name, c in history["fields"].items():
+        lines.append("History: %d JSON columns, %d PKs with a value, years %s" % (
+            len(history["fields"]), history["pks"], "%d-%d" % (years[0], years[-1]) if years else "none"))
+        rows = [("column", "crawler", "PKs", "values", "years")]
+        for c in history["fields"].values():
             span = c["years"]
-            rows.append((name, c["crawler"], str(c["non_null"]),
+            rows.append((c["column"], c["crawler"], str(c["pks"]), str(c["values"]),
                          "%d-%d (%d)" % (span[0], span[-1], len(span)) if span else "-"))
         widths = [max(len(r[i]) for r in rows) for i in range(len(rows[0]))]
         lines += ["  " + "  ".join(cell.ljust(w) for cell, w in zip(r, widths)).rstrip() for r in rows]

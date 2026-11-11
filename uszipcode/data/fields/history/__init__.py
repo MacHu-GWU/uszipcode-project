@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
-The history catalog: one module per history Field. ``HISTORY_FIELDS`` is the list
-of columns of the table ``zipcode_history``, one row per PK and year, next to
-``zipcode`` and ``year``. History crawlers claim these Fields; the modules follow the
-rules of ``fields/`` (``FIELDS``, named after the Field, import only ``core``).
+The history catalog: one module per history Field. A history crawler has one row
+per ZIP and year and claims these Fields. In the database, a history Field ``x`` is
+the column ``x_by_year`` of the main table: the values of the ZIP by year, as JSON
+(``{"2011": 13642, "2012": 14304}``). The modules follow the rules of ``fields/``
+(``FIELDS``, named after the Field, import only ``core``).
 
 Comparing years needs care, and the descriptions say so:
 

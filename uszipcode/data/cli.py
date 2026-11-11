@@ -23,7 +23,7 @@ import typing
 
 from . import build as build_mod
 from .checks import describe, require_valid, unlisted_modules, validate
-from .core import Paths, PipelineError, RegistryError
+from .core import HISTORY_SUFFIX, Paths, PipelineError, RegistryError
 from .crawl import run_crawler
 
 
@@ -62,7 +62,7 @@ def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths]
          packages: typing.Sequence = (), history_fields=()) -> int:
     """
     ``packages``: the Python packages of the Fields and crawlers, for rule L1 of ``check``.
-    ``history_fields``: the catalog of the history table, claimed by the history crawlers.
+    ``history_fields``: the catalog of the history Fields, claimed by the history crawlers.
     """
     paths = Paths.default() if paths is None else paths
     args = _parser().parse_args(argv)
@@ -79,7 +79,8 @@ def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths]
                   % (len(fields), len(crawlers), " or derived (%d)" % n_derived if n_derived else ""))
             print(describe(fields, [c for c in crawlers if not c.history]))
             if history:
-                print("History table: %d Fields from %d history crawlers." % (len(history_fields), len(history)))
+                print("History: %d Fields from %d history crawlers; each is a JSON column <field>%s of the database."
+                      % (len(history_fields), len(history), HISTORY_SUFFIX))
                 print(describe(history_fields, history))
             return 0
         if args.command == "crawl":

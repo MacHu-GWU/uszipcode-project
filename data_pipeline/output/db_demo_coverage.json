@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 307,
+  "columns": 316,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -2314,10 +2314,7 @@
   },
   "pks_without_any_value": [],
   "history": {
-    "table": "zipcode_history",
-    "rows": 32,
     "pks": 2,
-    "columns": 11,
     "years": [
       2000,
       2010,
@@ -2338,8 +2335,10 @@
     ],
     "fields": {
       "census_population": {
+        "column": "census_population_by_year",
         "crawler": "census-decennial",
-        "non_null": 6,
+        "pks": 2,
+        "values": 6,
         "years": [
           2000,
           2010,
@@ -2347,8 +2346,10 @@
         ]
       },
       "acs_population": {
+        "column": "acs_population_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2367,8 +2368,10 @@
         ]
       },
       "acs_population_moe": {
+        "column": "acs_population_moe_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2387,8 +2390,10 @@
         ]
       },
       "median_household_income": {
+        "column": "median_household_income_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2407,8 +2412,10 @@
         ]
       },
       "median_household_income_moe": {
+        "column": "median_household_income_moe_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2427,8 +2434,10 @@
         ]
       },
       "median_home_value": {
+        "column": "median_home_value_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2447,8 +2456,10 @@
         ]
       },
       "median_home_value_moe": {
+        "column": "median_home_value_moe_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2467,8 +2478,10 @@
         ]
       },
       "median_rent": {
+        "column": "median_rent_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 28,
+        "pks": 2,
+        "values": 28,
         "years": [
           2011,
           2012,
@@ -2487,8 +2500,10 @@
         ]
       },
       "median_rent_moe": {
+        "column": "median_rent_moe_by_year",
         "crawler": "census-acs5-history",
-        "non_null": 27,
+        "pks": 2,
+        "values": 27,
         "years": [
           2011,
           2012,
@@ -2628,7 +2643,6 @@
   },
   "files": {
     "sqlite": "db_demo.sqlite",
-    "csv": "db_demo.csv",
-    "history_csv": "db_demo_history.csv"
+    "csv": "db_demo.csv"
   }
 }

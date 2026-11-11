@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-The checks: every rule F1-F7, C1-C8, K1-K3 and M0-M2 fails on its own example,
+The checks: every rule F1-F9, C1-C8, K1-K3 and M0-M2 fails on its own example,
 and the real registry passes.
 """
 
@@ -31,7 +31,9 @@ def test_check_prints_the_catalog(capsys):
     for f in FIELDS:
         assert any(line.split()[:2] == [f.name, f.dtype.__name__] for line in out.splitlines())
     assert "population" in out and "census-dhc" in out and "census-gazetteer" in out
-    assert "History table: %d Fields from 2 history crawlers." % len(HISTORY_FIELDS) in out
+    assert ("History: %d Fields from 2 history crawlers; each is a JSON column <field>_by_year of the database."
+            % len(HISTORY_FIELDS)) in out
+    assert any(line.split()[:3] == ["polygon", "str", "(zlib)"] for line in out.splitlines())
     assert any(line.split()[:2] == ["census_population", "int"] and line.split()[-1] == "census-decennial"
                for line in out.splitlines())
 
@@ -75,8 +77,10 @@ CASES = [
      [_crawler(fields=("a", "b", "c"))], None),
     ("F6", "Field 'c' has no extract function: say how to read it from a source row.",
      BASE_FIELDS + (_field("c", extract=None),), [_crawler(fields=("a", "b", "c"))], None),
-    ("F7", "The catalog has 2000 Fields, but SQLite allows 2000 columns including zipcode",
+    ("F7", "The database would have 2001 columns (zipcode, 2000 Fields, 0 history Fields), but SQLite allows 2000",
      tuple(_field("f%d" % i) for i in range(2000)), [_crawler(fields=tuple("f%d" % i for i in range(2000)))], None),
+    ("F8", "Field 'c' is compressed: only a str Field of FIELDS can be compressed.",
+     BASE_FIELDS + (dataclasses.replace(_field("c"), compressed=True),), [_crawler(fields=("a", "b", "c"))], None),
     ("C1", "Crawler name 'Src_A' is not kebab-case", BASE_FIELDS, [_crawler("Src_A")], None),
     ("C1", "Crawler name '%s' is not kebab-case" % ("a" * 31), BASE_FIELDS, [_crawler("a" * 31)], None),
     ("C2", "Crawler name 'src-a' is used 2 times: names must be unique.", BASE_FIELDS,
@@ -187,12 +191,34 @@ def _history_crawler(name="hist-a", fields=("h",)):
      "Field name 'year' is reserved for the primary key"),
     ((_field("h"), Field("g", float, "h per h", extract=column("h"), inputs=("h",))), [_history_crawler()], "K5",
      "Field 'g' of HISTORY_FIELDS is derived: derived Fields belong to FIELDS."),
+    ((dataclasses.replace(_field("h", str), compressed=True),), [_history_crawler()], "F8",
+     "Field 'h' is compressed: only a str Field of FIELDS can be compressed."),
 ])
 def test_history_rules(tmp_path, history_fields, crawlers, rule, text):
     path = tmp_path / "mise.toml"
     path.write_text(_mise(["src-a"] + [c.name for c in crawlers]), encoding="utf-8")
     problems = validate(list(BASE_FIELDS), [_crawler()] + crawlers, str(path), list(history_fields))
     assert any(p.startswith("[%s] " % rule) and text in p for p in problems), problems
+
+
+def test_a_history_column_may_not_have_the_name_of_a_field(tmp_path):
+    path = tmp_path / "mise.toml"
+    path.write_text(_mise(["src-a", "hist-a"]), encoding="utf-8")
+    fields = [_field("a"), _field("a_by_year")]
+    problems = validate(fields, [_crawler(fields=("a", "a_by_year")), _history_crawler(fields=("a",))], str(path),
+                        [_field("a")])
+    assert problems == ["[F9] History Field 'a' is the column 'a_by_year' of the database, which is also a Field "
+                        "of FIELDS: rename one."]
+
+
+def test_history_fields_count_towards_the_column_limit(tmp_path):
+    path = tmp_path / "mise.toml"
+    path.write_text(_mise(["src-a", "hist-a"]), encoding="utf-8")
+    names = tuple("h%d" % i for i in range(1998))
+    problems = validate(list(BASE_FIELDS), [_crawler(), _history_crawler(fields=names)], str(path),
+                        [_field(n) for n in names])
+    assert problems == ["[F7] The database would have 2001 columns (zipcode, 2 Fields, 1998 history Fields), "
+                        "but SQLite allows 2000: remove Fields."]
 
 
 def test_a_field_name_may_be_in_both_catalogs(tmp_path):

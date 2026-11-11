@@ -19,6 +19,9 @@ import typing
 #: SQLite column type for each allowed Field dtype
 SQL_TYPES = {int: "INTEGER", float: "REAL", str: "TEXT"}
 
+#: a history Field ``x`` is the column ``x_by_year`` of the database: its values by year, as JSON text
+HISTORY_SUFFIX = "_by_year"
+
 #: one source row: {column of the source: raw value}. The source's own names, untouched.
 SourceRow = typing.Mapping[str, typing.Any]
 
@@ -33,6 +36,9 @@ class Field:
     A derived Field names its ``inputs``: other Fields, earlier in the catalog. No
     crawler claims it; ``build`` computes it after the join, and its source row is
     ``{input: value}`` of the same PK.
+
+    A ``compressed`` Field holds long text (a boundary). The crawler output and the CSV
+    keep the text; the SQLite database stores it as a BLOB, ``zlib.compress`` of its UTF-8 bytes.
     """
 
     name: str
@@ -42,6 +48,12 @@ class Field:
     extract: typing.Optional[typing.Callable[[SourceRow], typing.Any]] = None
     examples: typing.Tuple[typing.Tuple[dict, typing.Any], ...] = ()
     inputs: typing.Tuple[str, ...] = ()
+    compressed: bool = False
+
+
+def history_column(field: Field) -> str:
+    """The database column of a history Field."""
+    return field.name + HISTORY_SUFFIX
 
 
 @dataclasses.dataclass(frozen=True)
@@ -79,9 +91,9 @@ class Crawler:
     framework downloads the files, once, before ``parse`` runs. It does not know
     the Fields either: each claimed Field reads its value from the source row.
 
-    A history crawler (``history=True``) fills the history table, keyed by
-    (zipcode, year): each source row has a ``year`` column, and it claims Fields of
-    ``HISTORY_FIELDS`` instead of ``FIELDS``.
+    A history crawler (``history=True``) has one row per ZIP and year: each source
+    row has a ``year`` column, and it claims Fields of ``HISTORY_FIELDS`` instead of
+    ``FIELDS``. ``build`` folds the years of a ZIP into one JSON value per history Field.
     """
 
     name: str  # kebab-case; the mise task is crawler-<name>
@@ -96,7 +108,7 @@ class Crawler:
 class Paths:
     cache_dir: str  # raw downloads + manifest.json, one folder per crawler
     crawler_out_dir: str  # <crawler>.csv and <crawler>.json
-    db_out_dir: str  # db_<pkset>.sqlite / .csv / _coverage.json
+    db_out_dir: str  # db_<pkset>.sqlite, _coverage.json and, for a small PK set, .csv
     universe_csv: str  # the full PK set (output of zipcode_universe)
     mise_toml: str
 

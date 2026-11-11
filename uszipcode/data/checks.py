@@ -7,7 +7,7 @@ The checks that tie the Field catalog, the crawlers and ``mise.toml`` together.
 problem is one sentence ``[ID] what is wrong: how to fix it``. Importing a module
 validates nothing; ``check``, ``crawl`` and ``build`` call ``require_valid()`` first.
 
-Rules: F1-F7 Fields, C1-C8 crawlers, K1-K5 claims (every Field claimed exactly
+Rules: F1-F9 Fields, C1-C8 crawlers, K1-K5 claims (every Field claimed exactly
 once, or derived from earlier Fields), M0-M2 mise tasks (every crawler has
 ``crawler-<name>`` and vice versa), L1 (every module of ``fields/`` and
 ``crawlers/`` is listed in its ``MODULES``).
@@ -21,7 +21,7 @@ import re
 import typing
 import urllib.parse
 
-from .core import Crawler, Field, RegistryError, SQL_TYPES
+from .core import Crawler, Field, RegistryError, SQL_TYPES, history_column
 
 MAIN_CATALOG, HISTORY_CATALOG = "FIELDS", "HISTORY_FIELDS"
 MAIN_KEY, HISTORY_KEY = ("zipcode",), ("zipcode", "year")
@@ -72,9 +72,23 @@ def _check_fields(fields: typing.Sequence[Field], catalog: str = MAIN_CATALOG) -
             problems.append("[F6] Field %r has no extract function: say how to read it from a source row." % f.name)
         if f.inputs and catalog == HISTORY_CATALOG:
             problems.append("[K5] Field %r of %s is derived: derived Fields belong to FIELDS." % (f.name, catalog))
-    if len(fields) + len(key) > SQLITE_MAX_COLUMNS:
-        problems.append("[F7] The catalog has %d Fields, but SQLite allows %d columns including %s: "
-                        "keep history in a separate table." % (len(fields), SQLITE_MAX_COLUMNS, " and ".join(key)))
+        if f.compressed and (f.dtype is not str or catalog == HISTORY_CATALOG):
+            problems.append("[F8] Field %r is compressed: only a str Field of FIELDS can be compressed." % f.name)
+    return problems
+
+
+def _check_columns(fields: typing.Sequence[Field], history_fields: typing.Sequence[Field]) -> typing.List[str]:
+    """The database has one table: ``zipcode``, the Fields, and one column per history Field."""
+    problems = []
+    names = {f.name for f in fields}
+    for f in history_fields:
+        if history_column(f) in names:
+            problems.append("[F9] History Field %r is the column %r of the database, which is also a Field of FIELDS: "
+                            "rename one." % (f.name, history_column(f)))
+    columns = len(MAIN_KEY) + len(fields) + len(history_fields)
+    if columns > SQLITE_MAX_COLUMNS:
+        problems.append("[F7] The database would have %d columns (zipcode, %d Fields, %d history Fields), "
+                        "but SQLite allows %d: remove Fields." % (columns, len(fields), len(history_fields), SQLITE_MAX_COLUMNS))
     return problems
 
 
@@ -205,6 +219,7 @@ def validate(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler],
     problems = _check_fields(fields)
     if history_fields or history:
         problems += _check_fields(history_fields, HISTORY_CATALOG)
+    problems += _check_columns(fields, history_fields)
     problems += _check_crawlers(crawlers) + _check_claims(fields, main)
     if history_fields or history:
         problems += _check_claims(history_fields, history, HISTORY_CATALOG)
@@ -231,6 +246,6 @@ def describe(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler])
     """The Field catalog as a table: name, type, unit, claiming crawler."""
     owner = owners(crawlers)
     rows = [("field", "type", "unit", "crawler")]
-    rows += [(f.name, f.dtype.__name__, f.unit or "-", "derived" if f.inputs else owner.get(f.name, "-")) for f in fields]
+    rows += [(f.name, f.dtype.__name__ + (" (zlib)" if f.compressed else ""), f.unit or "-", "derived" if f.inputs else owner.get(f.name, "-")) for f in fields]
     widths = [max(len(r[i]) for r in rows) for i in range(4)]
     return "\n".join("  " + "  ".join(cell.ljust(w) for cell, w in zip(r, widths)).rstrip() for r in rows)

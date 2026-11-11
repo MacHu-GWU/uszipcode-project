@@ -9,6 +9,7 @@ import dataclasses
 import json
 import os
 import sqlite3
+import zlib
 
 import pytest
 
@@ -247,7 +248,7 @@ def test_a_failing_derived_field_stops_the_build(world):
     assert "[B4] derived Field broken, zipcode 00501: ZeroDivisionError: division by zero" in str(e.value)
 
 
-def test_history_table(world, monkeypatch):
+def test_history_is_one_json_column_per_history_field(world, monkeypatch):
     yearly = Field("h", int, "a yearly count", extract=lambda row: int(row["h"]) if row["h"] else None)
 
     def parse(files):
@@ -257,7 +258,8 @@ def test_history_table(world, monkeypatch):
 
     hist = Crawler("fake-history", ("h",), (Download("hist.csv", "https://fake.test/hist.csv", magic=b"zipcode,"),),
                    parse, history=True)
-    body = "zipcode,year,h\n00501,2011,1\n00501,2012,2\n00538,2012,\n99001,2012,9\n"
+    # 00501: two years, written out of order; 00538: a year without a value; 99001: outside the PK set
+    body = "zipcode,year,h\n00501,2012,2\n00501,2011,1\n00538,2012,\n99001,2012,9\n"
     monkeypatch.setattr(fetch, "urlopen", FakeOpener({"https://fake.test/hist.csv": body.encode()}))
     with open(world.paths.mise_toml, "a", encoding="utf-8") as fh:
         fh.write('[tasks.crawler-fake-history]\nrun = "%s"\n' % task_command("fake-history"))
@@ -268,24 +270,57 @@ def test_history_table(world, monkeypatch):
 
     con = sqlite3.connect(coverage["files"]["sqlite"])
     try:
-        rows = con.execute("SELECT * FROM zipcode_history ORDER BY zipcode, year").fetchall()
-        info = con.execute("PRAGMA table_info(zipcode_history)").fetchall()
-        main_rows = con.execute("SELECT COUNT(*) FROM zipcode_data").fetchone()[0]
+        rows = dict(con.execute("SELECT zipcode, h_by_year FROM zipcode_data"))
+        info = con.execute("PRAGMA table_info(zipcode_data)").fetchall()
+        tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
     finally:
         con.close()
-    assert rows == [("00501", 2011, 1), ("00501", 2012, 2), ("00538", 2012, None)]  # 99001 is outside the PK set
-    assert [(c[1], c[2], c[5]) for c in info] == [("zipcode", "TEXT", 1), ("year", "INTEGER", 2), ("h", "INTEGER", 0)]
-    assert main_rows == 3 and coverage["columns"] == 1 + len(world.fields)
-    with open(coverage["files"]["history_csv"], "rb") as fh:
-        assert fh.read() == b"zipcode,year,h\n00501,2011,1\n00501,2012,2\n00538,2012,\n"
+    assert tables == ["zipcode_data"]  # no second table
+    assert rows == {"00501": '{"2011":1,"2012":2}', "00538": None, world.pks[2]: None}
+    assert (info[-1][1], info[-1][2]) == ("h_by_year", "TEXT")
+    assert len(info) == coverage["columns"] == 1 + len(world.fields) + 1
+    with open(coverage["files"]["csv"], encoding="utf-8", newline="") as fh:
+        in_csv = {r["zipcode"]: r["h_by_year"] for r in csv.DictReader(fh)}
+    assert in_csv == {"00501": '{"2011":1,"2012":2}', "00538": "", world.pks[2]: ""}
     h = coverage["history"]
-    assert (h["table"], h["rows"], h["pks"], h["years"]) == ("zipcode_history", 3, 2, [2011, 2012])
-    assert h["fields"]["h"] == {"crawler": "fake-history", "non_null": 2, "years": [2011, 2012]}
+    assert (h["pks"], h["years"]) == (1, [2011, 2012])
+    assert h["fields"]["h"] == {"column": "h_by_year", "crawler": "fake-history", "pks": 1, "values": 2,
+                                "years": [2011, 2012]}
     assert {k: v for k, v in h["crawlers"]["fake-history"].items() if k != "downloads"} == {
         "source_rows": 4, "rows_in_pk_set": 3, "rows_outside_pk_set": 1}
     assert "fake-history" not in coverage["crawlers"]
-    assert "History table zipcode_history: 3 rows (zipcode x year) for 2 PKs, years 2011-2012" \
-        in build_mod.describe_coverage(coverage)
+    assert "History: 1 JSON columns, 1 PKs with a value, years 2011-2012" in build_mod.describe_coverage(coverage)
+
+
+def test_history_json():
+    assert build_mod.history_json({2012: 14304, 2011: 13642}) == '{"2011":13642,"2012":14304}'
+    assert build_mod.history_json({2020: 0.5}) == '{"2020":0.5}'
+    assert build_mod.history_json({}) is None
+
+
+def test_a_compressed_field_is_a_zlib_blob_in_sqlite_and_text_in_the_csv(world):
+    fields = [dataclasses.replace(f, compressed=f.name == "f03") for f in world.fields]  # f03 is a str Field
+    coverage = build_mod.build(fields, world.crawlers, world.paths, pk_set=world.pk_csv)
+    con = sqlite3.connect(coverage["files"]["sqlite"])
+    try:
+        stored = dict(con.execute("SELECT zipcode, f03 FROM zipcode_data"))
+        declared = {r[1]: r[2] for r in con.execute("PRAGMA table_info(zipcode_data)")}
+    finally:
+        con.close()
+    with open(coverage["files"]["csv"], encoding="utf-8", newline="") as fh:
+        text = {r["zipcode"]: r["f03"] for r in csv.DictReader(fh)}
+    assert declared["f03"] == "BLOB" and any(text.values())
+    for zipcode, blob in stored.items():
+        assert (zlib.decompress(blob).decode("utf-8") if blob is not None else "") == text[zipcode]
+
+
+def test_a_large_pk_set_gets_no_csv(world, monkeypatch):
+    csv_path = _build(world)["files"]["csv"]
+    assert os.path.exists(csv_path)
+    monkeypatch.setattr(build_mod, "CSV_MAX_ROWS", 2)  # the set has 3 PKs
+    coverage = _build(world)
+    assert list(coverage["files"]) == ["sqlite"]
+    assert not os.path.exists(csv_path)  # the CSV of the earlier build would be stale
 
 
 def test_locked_database_gives_a_friendly_message(world, monkeypatch, capsys):

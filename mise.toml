@@ -38,9 +38,9 @@ description = "Join the crawler outputs onto a PK set (default: demo) and write 
 run = "python -m uszipcode.data build"
 
 # ---- one task per crawler -------------------------------------------------------------------------
-[tasks.crawler-census-gazetteer]
-description = "Census Gazetteer 2025 ZCTA -> lat, lng, land_area_in_sqmi"
-run = "python -m uszipcode.data crawl census-gazetteer"
+[tasks.crawler-zip-basics]
+description = "HUD-USPS crosswalk, Census Gazetteer, ZBP, uszipcode 2.x, BTS time zones -> ZIP type, city, state, county, point, area, time zone"
+run = "python -m uszipcode.data crawl zip-basics"
 
 [tasks.crawler-census-dhc]
 description = "2020 Census DHC -> population, housing units and 10 distributions"
@@ -62,10 +62,10 @@ run = "python -m uszipcode.data crawl census-acs5-history"
 description = "Census 2000, 2010 and 2020 -> history: population by census year"
 run = "python -m uszipcode.data crawl census-decennial"
 
-[tasks.crawler-zip-basics]
-description = "HUD-USPS crosswalk, Census counties and ZBP, uszipcode 2.x -> ZIP type, city, state, county"
-run = "python -m uszipcode.data crawl zip-basics"
+[tasks.crawler-irs-soi-history]
+description = "IRS SOI ZIP Code Data 2011-2023 -> history: tax returns, their people and average income by year"
+run = "python -m uszipcode.data crawl irs-soi-history"
 
 [tasks.crawler-zcta-geometry]
-description = "Census TIGER/Line and cartographic ZCTA boundaries, BTS time zones -> bounding box, time zone, polygon"
+description = "Census TIGER/Line and cartographic ZCTA boundaries -> bounding box, polygon"
 run = "python -m uszipcode.data crawl zcta-geometry"

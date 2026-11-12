@@ -22,11 +22,12 @@ import os
 import sys
 import typing
 
-from .sources import SOURCES, Records, is_military_zip
+from ..core import PipelineError
+from .sources import CACHE_NAME, SOURCES, Records, is_military_zip
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PIPELINE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(HERE))), "data_pipeline")  # not in the package
-DEFAULT_CACHE_DIR = os.path.join(PIPELINE_DIR, ".cache", "zipcode_universe")
+DEFAULT_CACHE_DIR = os.path.join(PIPELINE_DIR, ".cache")
 DEFAULT_OUT = os.path.join(PIPELINE_DIR, "output", "zipcode_universe.csv")
 DEFAULT_SUMMARY = os.path.join(PIPELINE_DIR, "output", "zipcode_universe_summary.json")
 
@@ -112,6 +113,14 @@ def summarize(rows: typing.List[dict], records: typing.Dict[str, Records], param
     }
 
 
+def _shown(path: str) -> str:
+    """The path relative to the current folder, or as it is when it is on another drive."""
+    try:
+        return os.path.relpath(path)
+    except ValueError:
+        return path
+
+
 def _parse_years(text: str) -> typing.List[int]:
     years = []
     for part in text.split(","):
@@ -126,7 +135,8 @@ def _parse_years(text: str) -> typing.List[int]:
 
 def main(argv: typing.Optional[typing.List[str]] = None) -> dict:
     p = argparse.ArgumentParser(prog="python -m uszipcode.data.zipcode_universe", description=__doc__.split("\n\n")[0])
-    p.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR, help="where downloads are kept (default: %(default)s)")
+    p.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR,
+                   help="downloads are kept in its folder " + CACHE_NAME + " (default: %(default)s)")
     p.add_argument("--out", default=DEFAULT_OUT, help="CSV output (default: %(default)s)")
     p.add_argument("--summary", default=DEFAULT_SUMMARY, help="JSON summary output (default: %(default)s)")
     p.add_argument("--zbp-year", type=int, default=2023, help="ZIP Code Business Patterns year (default: %(default)s)")
@@ -158,9 +168,19 @@ def main(argv: typing.Optional[typing.List[str]] = None) -> dict:
     for t, c in summary["v2_coverage_by_type"].items():
         print("  2.x %-9s %6d, of which in a government source %6d (%.1f%%)" % (
             t, c["in_v2"], c["in_a_government_source"], 100 * (c["share"] or 0)))
-    print("wrote", os.path.relpath(args.out), "and", os.path.relpath(args.summary))
+    print("wrote", _shown(args.out), "and", _shown(args.summary))
     return summary
 
 
+def run(argv: typing.Optional[typing.List[str]] = None) -> int:
+    """``main`` for the command line: an expected failure is one line on stderr and an exit code, not a traceback."""
+    try:
+        main(argv)
+    except PipelineError as e:
+        print("error: %s" % e, file=sys.stderr)
+        return e.exit_code
+    return 0
+
+
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    sys.exit(run(sys.argv[1:]))

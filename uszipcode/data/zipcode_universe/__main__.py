@@ -2,6 +2,6 @@
 
 import sys
 
-from .build import main
+from .build import run
 
-main(sys.argv[1:])
+sys.exit(run(sys.argv[1:]))

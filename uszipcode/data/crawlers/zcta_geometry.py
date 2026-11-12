@@ -1,20 +1,15 @@
 # -*- coding: utf-8 -*-
 
 """
-zcta-geometry: where a ZCTA is. Three downloads, no key:
+zcta-geometry: the shape of a ZCTA. Two downloads, no key:
 
 - Census TIGER/Line 2025 ZCTA shapefile (about 529 MB), the full-resolution
-  boundaries of the 2020 ZCTAs. Only two things are read from it: the box that each
+  boundaries of the 2020 ZCTAs. Only one thing is read from it: the box that each
   shape record carries (``Xmin``, ``Ymin``, ``Xmax``, ``Ymax``, as the shapefile
-  specification names them) and the internal point (``INTPTLAT20``, ``INTPTLON20``).
+  specification names them).
 - Census cartographic boundary file 2020 ZCTA at 1:500,000 (about 67 MB): the same
   ZCTAs, generalized by the Census Bureau for maps. Column ``geometry`` is the shape
   as GeoJSON text.
-- BTS NTAD Time Zones (about 9 MB of GeoJSON, one polygon per standard-time zone):
-  ``zone`` and ``utc`` of the zone that contains the internal point.
-
-A time zone needs a point, and the point is in a Census file. A second crawler
-could not download that file again (rule C8), so the three files are one crawler.
 
 The shapefiles are read by the small reader below (standard library only): a
 ``.shp`` file is a 100-byte header and one record per shape; a ``.dbf`` file holds
@@ -23,28 +18,22 @@ the attributes, one record per shape, in the same order.
 
 import array
 import json
-import math
 import os
 import struct
 import sys
 import zipfile
 
 from ..core import Crawler, Download, field_names
-from ..fields import bounds, polygon, timezone
+from ..fields import bounds, polygon
 
 TIGER_URL = "https://www2.census.gov/geo/tiger/TIGER2025/ZCTA520/tl_2025_us_zcta520.zip"
 TIGER_FILENAME = "tl_2025_us_zcta520.zip"
 CB_URL = "https://www2.census.gov/geo/tiger/GENZ2020/shp/cb_2020_us_zcta520_500k.zip"
 CB_FILENAME = "cb_2020_us_zcta520_500k.zip"
-BTS_URL = ("https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Time_Zones/FeatureServer/0/"
-           "query?where=1%3D1&outFields=zone,utc&outSR=4326&f=geojson")
-BTS_FILENAME = "ntad_time_zones.geojson"
 
 KEY_COLUMN = "ZCTA5CE20"
-POINT_COLUMNS = ("INTPTLAT20", "INTPTLON20")
 BOX_COLUMNS = ("Xmin", "Ymin", "Xmax", "Ymax")
 DECIMALS = 6  # of the GeoJSON coordinates: about 0.1 m
-BAND = 0.01  # degrees of latitude per bucket of zone edges
 
 
 # ------------------------------------------------------------------------------------------ shapefile
@@ -177,47 +166,11 @@ def to_geojson(content: bytes) -> str:
     return json.dumps(geometry, separators=(",", ":"))
 
 
-class TimeZones:
-    """The BTS zone polygons, with their edges in bands of latitude so that a lookup reads few edges."""
-
-    def __init__(self, features):
-        self.zones = []
-        for feature in features:
-            geometry = feature["geometry"]
-            parts = [geometry["coordinates"]] if geometry["type"] == "Polygon" else geometry["coordinates"]
-            edges, extent = {}, None
-            for ring in (ring for part in parts for ring in part):
-                ring = [tuple(p[:2]) for p in ring]
-                if ring[0] != ring[-1]:
-                    ring.append(ring[0])
-                e = _extent(ring)
-                extent = e if extent is None else (min(extent[0], e[0]), min(extent[1], e[1]),
-                                                   max(extent[2], e[2]), max(extent[3], e[3]))
-                for (x1, y1), (x2, y2) in zip(ring, ring[1:]):
-                    if y1 != y2:  # a horizontal edge never crosses a horizontal ray
-                        for band in range(math.floor(min(y1, y2) / BAND), math.floor(max(y1, y2) / BAND) + 1):
-                            edges.setdefault(band, []).append((x1, y1, x2, y2))
-            self.zones.append((dict(feature["properties"]), extent, edges))
-
-    def find(self, x: float, y: float) -> dict:
-        """The properties of the first zone that contains the point (even-odd rule), else {}."""
-        band = math.floor(y / BAND)
-        for properties, (x_min, y_min, x_max, y_max), edges in self.zones:
-            if x_min <= x <= x_max and y_min <= y <= y_max:
-                inside = False
-                for x1, y1, x2, y2 in edges.get(band, ()):
-                    if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
-                        inside = not inside
-                if inside:
-                    return properties
-        return {}
-
-
 # ---------------------------------------------------------------------------------------------- parse
 def _tiger(path):
-    """(ZCTA, {internal point, box}) for every record of the TIGER/Line file."""
+    """(ZCTA, {box}) for every record of the TIGER/Line file."""
     with zipfile.ZipFile(path) as z:
-        attributes = read_dbf(z.read(_member(z, ".dbf")), (KEY_COLUMN,) + POINT_COLUMNS)
+        attributes = read_dbf(z.read(_member(z, ".dbf")), (KEY_COLUMN,))
         with z.open(_member(z, ".shp")) as fh:
             for i, content in enumerate(shp_records(fh)):
                 row = attributes[i]
@@ -235,26 +188,21 @@ def _cartographic(path) -> dict:
 
 
 def parse(files):
-    with open(files[BTS_FILENAME], encoding="utf-8") as fh:
-        zones = TimeZones(json.load(fh)["features"])
     shapes = _cartographic(files[CB_FILENAME])
-    empty = dict.fromkeys(POINT_COLUMNS + BOX_COLUMNS + ("zone", "utc", "geometry"))
+    empty = dict.fromkeys(BOX_COLUMNS + ("geometry",))
     for zcta, row in _tiger(files[TIGER_FILENAME]):
-        lat, lng = (row[c] for c in POINT_COLUMNS)
-        zone = zones.find(float(lng), float(lat)) if lat and lng else {}
-        yield zcta, dict(empty, **row, zone=zone.get("zone"), utc=zone.get("utc"), geometry=shapes.pop(zcta, None))
+        yield zcta, dict(empty, **row, geometry=shapes.pop(zcta, None))
     for zcta, geometry in shapes.items():  # in the cartographic file only
         yield zcta, dict(empty, **{KEY_COLUMN: zcta, "geometry": geometry})
 
 
 CRAWLER = Crawler(
     name="zcta-geometry",
-    fields=field_names(bounds, timezone, polygon),
+    fields=field_names(bounds, polygon),
     downloads=(
         Download(TIGER_FILENAME, TIGER_URL, magic=b"PK\x03\x04"),
         Download(CB_FILENAME, CB_URL, magic=b"PK\x03\x04"),
-        Download(BTS_FILENAME, BTS_URL, magic=b"{"),
     ),
     parse=parse,
-    description="Census TIGER/Line and cartographic ZCTA boundaries, BTS time zones -> bounding box, time zone, polygon",
+    description="Census TIGER/Line and cartographic ZCTA boundaries -> bounding box, polygon",
 )

@@ -1,7 +1,7 @@
 {
   "pk_set": "demo",
   "pks": 3,
-  "columns": 316,
+  "columns": 321,
   "fields": {
     "zipcode_type": {
       "crawler": "zip-basics",
@@ -38,40 +38,47 @@
       "not_in_source": 0,
       "empty_in_source": 0
     },
+    "county_list": {
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
+      "empty_in_source": 0
+    },
     "lat": {
-      "crawler": "census-gazetteer",
+      "crawler": "zip-basics",
       "non_null": 2,
       "share": 0.6667,
-      "not_in_source": 1,
-      "empty_in_source": 0
+      "not_in_source": 0,
+      "empty_in_source": 1
     },
     "lng": {
-      "crawler": "census-gazetteer",
+      "crawler": "zip-basics",
       "non_null": 2,
       "share": 0.6667,
-      "not_in_source": 1,
-      "empty_in_source": 0
+      "not_in_source": 0,
+      "empty_in_source": 1
     },
     "timezone": {
-      "crawler": "zcta-geometry",
-      "non_null": 2,
-      "share": 0.6667,
-      "not_in_source": 1,
+      "crawler": "zip-basics",
+      "non_null": 3,
+      "share": 1.0,
+      "not_in_source": 0,
       "empty_in_source": 0
     },
     "land_area_in_sqmi": {
-      "crawler": "census-gazetteer",
+      "crawler": "zip-basics",
       "non_null": 2,
       "share": 0.6667,
-      "not_in_source": 1,
-      "empty_in_source": 0
+      "not_in_source": 0,
+      "empty_in_source": 1
     },
     "water_area_in_sqmi": {
-      "crawler": "census-gazetteer",
+      "crawler": "zip-basics",
       "non_null": 2,
       "share": 0.6667,
-      "not_in_source": 1,
-      "empty_in_source": 0
+      "not_in_source": 0,
+      "empty_in_source": 1
     },
     "bounds_west": {
       "crawler": "zcta-geometry",
@@ -100,6 +107,19 @@
       "share": 0.6667,
       "not_in_source": 1,
       "empty_in_source": 0
+    },
+    "radius_in_miles": {
+      "crawler": "derived",
+      "non_null": 2,
+      "share": 0.6667,
+      "not_in_source": 1,
+      "empty_in_source": 0,
+      "derived_from": [
+        "bounds_west",
+        "bounds_east",
+        "bounds_north",
+        "bounds_south"
+      ]
     },
     "population": {
       "crawler": "census-dhc",
@@ -2151,16 +2171,46 @@
     }
   },
   "crawlers": {
-    "census-gazetteer": {
-      "source_rows": 33791,
-      "rows_in_pk_set": 2,
-      "rows_outside_pk_set": 33789,
+    "zip-basics": {
+      "source_rows": 42730,
+      "rows_in_pk_set": 3,
+      "rows_outside_pk_set": 42727,
       "downloads": {
+        "2025_Gaz_counties_national.zip": {
+          "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_counties_national.zip",
+          "bytes": 138993,
+          "sha256": "4c90d0f805779923b5958ab13d0c1e9b99fe4932b786bfcf75dd739bb2dcb4ea",
+          "fetched_at_utc": "2026-11-09T16:47:30Z"
+        },
         "2025_Gaz_zcta_national.zip": {
           "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip",
           "bytes": 952026,
           "sha256": "51516a4283bab5cd2376eec75609ddc4b363a18297e8adeeaac7b03cf7c84dbe",
-          "fetched_at_utc": "2026-10-30T08:34:12Z"
+          "fetched_at_utc": "2026-11-12T08:02:06Z"
+        },
+        "hud_zip_county_all.json": {
+          "url": "https://www.huduser.gov/hudapi/public/usps?type=2&query=All",
+          "bytes": 7804619,
+          "sha256": "233b59ac27be71a824b0bc2a85fd864473ff4c8bee15796f4a7ada14a50dc4a6",
+          "fetched_at_utc": "2026-11-04T17:10:23Z"
+        },
+        "ntad_time_zones.geojson": {
+          "url": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Time_Zones/FeatureServer/0/query?where=1%3D1&outFields=zone,utc&outSR=4326&f=geojson",
+          "bytes": 9333309,
+          "sha256": "17ce2092016c13e029619e8ca5dfb244881ba3edd2b5c2c11d4fb847e6eb5391",
+          "fetched_at_utc": "2026-11-12T08:03:14Z"
+        },
+        "v2_simple_db.sqlite": {
+          "url": "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/simple_db.sqlite",
+          "bytes": 10727424,
+          "sha256": "43383f108ef14dccd925107bc77705f622b1014111ad5c9e5e2a6837bb7f64ff",
+          "fetched_at_utc": "2026-11-04T17:10:43Z"
+        },
+        "zbp23totals.zip": {
+          "url": "https://www2.census.gov/programs-surveys/cbp/datasets/2023/zbp23totals.zip",
+          "bytes": 803810,
+          "sha256": "109c181205bef49a972935fa059d8b067754cb4a0c2fceff7280b4b3c665e6e8",
+          "fetched_at_utc": "2026-11-04T17:10:29Z"
         }
       }
     },
@@ -2251,37 +2301,6 @@
         }
       }
     },
-    "zip-basics": {
-      "source_rows": 42730,
-      "rows_in_pk_set": 3,
-      "rows_outside_pk_set": 42727,
-      "downloads": {
-        "2025_Gaz_counties_national.zip": {
-          "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_counties_national.zip",
-          "bytes": 138993,
-          "sha256": "4c90d0f805779923b5958ab13d0c1e9b99fe4932b786bfcf75dd739bb2dcb4ea",
-          "fetched_at_utc": "2026-11-09T16:47:30Z"
-        },
-        "hud_zip_county_all.json": {
-          "url": "https://www.huduser.gov/hudapi/public/usps?type=2&query=All",
-          "bytes": 7804619,
-          "sha256": "233b59ac27be71a824b0bc2a85fd864473ff4c8bee15796f4a7ada14a50dc4a6",
-          "fetched_at_utc": "2026-11-04T17:10:23Z"
-        },
-        "v2_simple_db.sqlite": {
-          "url": "https://github.com/MacHu-GWU/uszipcode-project/releases/download/1.0.1.db/simple_db.sqlite",
-          "bytes": 10727424,
-          "sha256": "43383f108ef14dccd925107bc77705f622b1014111ad5c9e5e2a6837bb7f64ff",
-          "fetched_at_utc": "2026-11-04T17:10:43Z"
-        },
-        "zbp23totals.zip": {
-          "url": "https://www2.census.gov/programs-surveys/cbp/datasets/2023/zbp23totals.zip",
-          "bytes": 803810,
-          "sha256": "109c181205bef49a972935fa059d8b067754cb4a0c2fceff7280b4b3c665e6e8",
-          "fetched_at_utc": "2026-11-04T17:10:29Z"
-        }
-      }
-    },
     "zcta-geometry": {
       "source_rows": 33791,
       "rows_in_pk_set": 2,
@@ -2293,12 +2312,6 @@
           "sha256": "c69a4ede8aebebfc7ed3a98a9075c6aaa1b75d514a129bc5c662fd806d2f3d17",
           "fetched_at_utc": "2026-11-09T19:49:01Z"
         },
-        "ntad_time_zones.geojson": {
-          "url": "https://services.arcgis.com/xOi1kZaI0eWDREZv/ArcGIS/rest/services/NTAD_Time_Zones/FeatureServer/0/query?where=1%3D1&outFields=zone,utc&outSR=4326&f=geojson",
-          "bytes": 9333309,
-          "sha256": "17ce2092016c13e029619e8ca5dfb244881ba3edd2b5c2c11d4fb847e6eb5391",
-          "fetched_at_utc": "2026-11-09T19:49:06Z"
-        },
         "tl_2025_us_zcta520.zip": {
           "url": "https://www2.census.gov/geo/tiger/TIGER2025/ZCTA520/tl_2025_us_zcta520.zip",
           "bytes": 529118424,
@@ -2309,8 +2322,8 @@
     }
   },
   "pks_by_non_null_fields": {
-    "5": 1,
-    "306": 2
+    "7": 1,
+    "308": 2
   },
   "pks_without_any_value": [],
   "history": {
@@ -2520,6 +2533,69 @@
           2023,
           2024
         ]
+      },
+      "tax_returns": {
+        "column": "tax_returns_by_year",
+        "crawler": "irs-soi-history",
+        "pks": 2,
+        "values": 26,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "people_on_tax_returns": {
+        "column": "people_on_tax_returns_by_year",
+        "crawler": "irs-soi-history",
+        "pks": 2,
+        "values": 26,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
+      },
+      "average_income_per_return": {
+        "column": "average_income_per_return_by_year",
+        "crawler": "irs-soi-history",
+        "pks": 2,
+        "values": 26,
+        "years": [
+          2011,
+          2012,
+          2013,
+          2014,
+          2015,
+          2016,
+          2017,
+          2018,
+          2019,
+          2020,
+          2021,
+          2022,
+          2023
+        ]
       }
     },
     "crawlers": {
@@ -2638,11 +2714,96 @@
             "fetched_at_utc": "2026-11-09T17:27:45Z"
           }
         }
+      },
+      "irs-soi-history": {
+        "source_rows": 361760,
+        "rows_in_pk_set": 26,
+        "rows_outside_pk_set": 361734,
+        "downloads": {
+          "11zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/11zpallnoagi.csv",
+            "bytes": 18183840,
+            "sha256": "56d6e90b09c2ed894f1038727761d8e5adcb76b5256d7497b9e2e91451cd0181",
+            "fetched_at_utc": "2026-11-12T08:23:51Z"
+          },
+          "12zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/12zpallnoagi.csv",
+            "bytes": 19196441,
+            "sha256": "6654831a1152f2290665dec307400db8ccf2f154e607c29685f77f0fe8ec1f02",
+            "fetched_at_utc": "2026-11-12T08:24:11Z"
+          },
+          "13zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/13zpallnoagi.csv",
+            "bytes": 27967426,
+            "sha256": "f347d20dab0f442b700ebf7ad7bc561f1ed8dfb87236359d550230ecd4474974",
+            "fetched_at_utc": "2026-11-12T08:24:41Z"
+          },
+          "14zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/14zpallnoagi.csv",
+            "bytes": 13737562,
+            "sha256": "e6b822aad68b33f07b2ee41e03b6aa7bfa59e376ec6340bfec70ec19f74f7275",
+            "fetched_at_utc": "2026-11-12T08:24:55Z"
+          },
+          "15zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/15zpallnoagi.csv",
+            "bytes": 31783001,
+            "sha256": "5ec757bc183a89e639baac86b5bada0e42acbef81d575736385adf5c8db222b6",
+            "fetched_at_utc": "2026-11-12T08:25:25Z"
+          },
+          "16zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/16zpallnoagi.csv",
+            "bytes": 16411298,
+            "sha256": "011beb91e7acc87ef266402bf3772f83ee44aee33d258aac565492b866f30bd1",
+            "fetched_at_utc": "2026-11-12T08:25:46Z"
+          },
+          "17zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/17zpallnoagi.csv",
+            "bytes": 36902384,
+            "sha256": "914c75b52310cc06ca1fd2b530eb2bcf47a4241ab68e8d922218b356e1beb775",
+            "fetched_at_utc": "2026-11-12T08:26:16Z"
+          },
+          "18zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/18zpallnoagi.csv",
+            "bytes": 36786884,
+            "sha256": "b7b5802abc9ad9ad03f8e135a67983977422a90488c7bd973cfefbe8e8753e11",
+            "fetched_at_utc": "2026-11-12T08:26:50Z"
+          },
+          "19zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/19zpallnoagi.csv",
+            "bytes": 36593862,
+            "sha256": "301f8d28f4fda1a9c5a295c8d208245e2698717f4525ee66f86d327e46808c53",
+            "fetched_at_utc": "2026-11-12T08:27:18Z"
+          },
+          "20zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/20zpallnoagi.csv",
+            "bytes": 39774067,
+            "sha256": "213135e1a87b95f505228db88af4f7d650a3474986fb72c92adacf594c7c00fc",
+            "fetched_at_utc": "2026-11-12T08:30:04Z"
+          },
+          "21zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/21zpallnoagi.csv",
+            "bytes": 40057723,
+            "sha256": "fe446e6f3808a1d8fcce5652be3d83f6d18879bd83158059f1b9bf36f7706f09",
+            "fetched_at_utc": "2026-11-12T08:30:34Z"
+          },
+          "22zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/22zpallnoagi.csv",
+            "bytes": 39609713,
+            "sha256": "7ae217f654b320613da91631d4f2f86540469b6656477a77f732b3202e8fd017",
+            "fetched_at_utc": "2026-11-12T08:31:11Z"
+          },
+          "23zpallnoagi.csv": {
+            "url": "https://www.irs.gov/pub/irs-soi/23zpallnoagi.csv",
+            "bytes": 40231496,
+            "sha256": "a5d29db62d1f5cd55ed9f502adddf7b78450ed9bd75c948afbd1f5e45ef9000d",
+            "fetched_at_utc": "2026-11-12T08:31:42Z"
+          }
+        }
       }
     }
   },
   "simple": {
-    "columns": 20,
+    "columns": 21,
     "fields": [
       "zipcode_type",
       "major_city",
@@ -2657,6 +2818,7 @@
       "bounds_east",
       "bounds_north",
       "bounds_south",
+      "radius_in_miles",
       "population",
       "population_density",
       "housing_units",

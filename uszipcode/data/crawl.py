@@ -129,23 +129,17 @@ def check_rows(crawler: Crawler, catalog: typing.Dict[str, Field],
     return sorted(records.items()), stats
 
 
-def format_value(value) -> str:
-    """CSV cell: NULL -> empty, int -> str(), float -> repr() (round-trips exactly), str as is."""
-    if value is None:
-        return ""
-    if isinstance(value, float):
-        return repr(value)
-    return str(value)
-
-
 def write_csv(path: str, header: typing.List[str], rows: typing.Iterable[typing.Sequence]) -> None:
-    """UTF-8 without BOM, ``\\n`` line endings, written through ``.part`` + ``os.replace``."""
+    """
+    UTF-8 without BOM, ``\\n`` line endings, written through ``.part`` + ``os.replace``.
+    A cell: NULL -> empty, int -> str(), float -> repr() (round-trips exactly), str as is.
+    """
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     part = path + ".part"
     with open(part, "w", encoding="utf-8", newline="") as fh:
         writer = csv.writer(fh, lineterminator="\n")
         writer.writerow(header)
-        for row in rows:  # format_value, inlined: this loop runs once per cell of the database
+        for row in rows:  # not a function per cell: this loop runs once per cell of the database
             writer.writerow(["" if v is None else repr(v) if v.__class__ is float else str(v) for v in row])
     replace(part, path)
 

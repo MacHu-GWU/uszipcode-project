@@ -7,4 +7,4 @@ See ``README.md`` in this folder for the sources, the numbers and the open quest
 """
 
 from .sources import normalize_zip, is_military_zip, SOURCES
-from .build import merge, write_csv, summarize, main
+from .build import merge, write_csv, summarize, main, run

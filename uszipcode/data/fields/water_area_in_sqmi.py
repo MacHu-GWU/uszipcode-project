@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""``water_area_in_sqmi``. Claimed by ``census-gazetteer``."""
+"""``water_area_in_sqmi``. Claimed by ``zip-basics``."""
 
 from ..core import Field, column, parse_float
 

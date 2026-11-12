@@ -13,6 +13,7 @@ Building blocks of the crawler registry. Nothing in this module does I/O.
 """
 
 import dataclasses
+import math
 import os
 import typing
 
@@ -202,6 +203,12 @@ def parse_float(value) -> typing.Optional[float]:
     return float(value)
 
 
+def parse_count(value) -> typing.Optional[int]:
+    """``None`` / blank -> None, else the whole number of ``"6320.0000"``: some sources write counts with decimals."""
+    number = parse_float(value)
+    return None if number is None else int(round(number))
+
+
 def census_int(value) -> typing.Optional[int]:
     """Like ``parse_int``, but the Census "not available" codes (negative, e.g. -666666666) are None."""
     number = parse_int(value)
@@ -271,6 +278,32 @@ def ratio(numerator: str, denominator: str, scale: float = 1, convert: typing.Ca
             return None
         value = scale * top / bottom
         return int(round(value)) if whole else value
+    return extract
+
+
+#: mean radius of the Earth in miles (6,371.0088 km)
+EARTH_RADIUS_MILES = 6371.0088 / 1.609344
+
+
+def great_circle_miles(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """The distance in miles between two points given in degrees, along the great circle (haversine formula)."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    a = (math.sin((phi2 - phi1) / 2) ** 2
+         + math.cos(phi1) * math.cos(phi2) * math.sin(math.radians(lng2 - lng1) / 2) ** 2)
+    return 2 * EARTH_RADIUS_MILES * math.asin(math.sqrt(min(1.0, a)))
+
+
+def half_diagonal_miles(west: str, east: str, north: str, south: str, convert: typing.Callable = parse_float):
+    """
+    An ``extract`` function: half the distance in miles between the south-west and the north-east
+    corner of a box, given by four source columns in degrees; None if one of them is blank. It is the
+    radius of the circle around the middle of the box that reaches its corners.
+    """
+    def extract(row: SourceRow):
+        w, e, n, s = (convert(row[name]) for name in (west, east, north, south))
+        if None in (w, e, n, s):
+            return None
+        return great_circle_miles(s, w, n, e) / 2
     return extract
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""``lat``. Claimed by ``census-gazetteer``."""
+"""``lat``. Claimed by ``zip-basics``."""
 
 from ..core import Field, column, parse_float
 

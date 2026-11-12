@@ -5,7 +5,9 @@ Free sources of 5-digit ZIP codes.
 
 Each source has a ``parse_*`` function that turns the raw file into
 ``{zipcode: {attribute: value}}`` (no network, easy to test) and a ``load_*``
-function that downloads the file into a cache folder and parses it.
+function that gets the file and parses it. The files are downloaded by
+``fetch.py``, like those of the crawlers: once, into ``<cache>/zipcode_universe/``,
+with its retries, its resumed downloads and its check of the first bytes.
 
 ==============  ================================================  ===================================
 source          what it is                                        what it misses
@@ -24,19 +26,21 @@ v2              the uszipcode 2.x ``simple_db.sqlite`` release    not a governme
 """
 
 import csv
+import dataclasses
 import io
 import json
-import os
 import sqlite3
-import time
 import typing
-import urllib.error
-import urllib.request
 import zipfile
 
+from .. import fetch
+from ..core import Crawler, Download
+from ..keys import HUD_TOKEN
 from ..zipcodes import normalize_zip
 
-USER_AGENT = "uszipcode-data-pipeline"
+#: the folder of these downloads inside the cache folder
+CACHE_NAME = "zipcode_universe"
+ZIP_MAGIC = b"PK\x03\x04"
 
 GAZETTEER_ZCTA_URL = (
     "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"
@@ -65,40 +69,14 @@ def is_military_zip(zipcode: str) -> bool:
 
 
 # ------------------------------------------------------------------------------------------ download
-def download(url: str, dest: str, headers: typing.Optional[dict] = None,
-             attempts: int = 6, timeout: int = 300) -> str:
+def download(cache_dir: str, *downloads: Download) -> typing.List[str]:
     """
-    Download ``url`` to ``dest`` unless ``dest`` already exists. Retries from the
-    start on failure (the IRS server sometimes closes the connection mid-file).
+    The local paths of ``downloads``, in order. ``fetch.py`` fetches those that are
+    not yet in ``<cache_dir>/zipcode_universe/`` and keeps a manifest there.
     """
-    if os.path.exists(dest) and os.path.getsize(dest) > 0:
-        return dest
-    os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
-    part = dest + ".part"
-    req_headers = {"User-Agent": USER_AGENT}
-    req_headers.update(headers or {})
-    last_error = None
-    for attempt in range(1, attempts + 1):
-        try:
-            request = urllib.request.Request(url, headers=req_headers)
-            with urllib.request.urlopen(request, timeout=timeout) as response, open(part, "wb") as fh:
-                while True:
-                    chunk = response.read(1 << 20)
-                    if not chunk:
-                        break
-                    fh.write(chunk)
-            os.replace(part, dest)
-            return dest
-        except urllib.error.HTTPError as e:
-            last_error = "HTTP %s" % e.code
-            if e.code in (401, 403, 404):
-                break
-        except (urllib.error.URLError, OSError) as e:
-            last_error = type(e).__name__
-        if os.path.exists(part):
-            os.remove(part)
-        time.sleep(3 * attempt)
-    raise RuntimeError("download failed (%s): %s" % (last_error, url.split("?")[0]))
+    source = Crawler(CACHE_NAME, (), tuple(downloads), parse=lambda files: ())
+    files, _ = fetch.fetch_all(source, cache_dir)
+    return [files[d.filename] for d in downloads]
 
 
 def _zip_member_text(path: str, suffix: str, encoding: str) -> str:
@@ -188,46 +166,30 @@ def parse_v2(db_path: str) -> Records:
 
 # ------------------------------------------------------------------------------------------ loaders
 def load_census_zcta(cache_dir: str, **_) -> Records:
-    path = download(GAZETTEER_ZCTA_URL, os.path.join(cache_dir, "2025_Gaz_zcta_national.zip"))
+    path, = download(cache_dir, Download("2025_Gaz_zcta_national.zip", GAZETTEER_ZCTA_URL, magic=ZIP_MAGIC))
     return parse_gazetteer(_zip_member_text(path, ".txt", "utf-8"))
 
 
-def read_hud_token(token_file: typing.Optional[str] = None) -> str:
-    """The HUD API token, from ``$HUD_API_TOKEN`` or a file (default ``~/.hud_token``)."""
-    token = os.environ.get("HUD_API_TOKEN")
-    if token:
-        return token.strip()
-    path = os.path.expanduser(token_file or "~/.hud_token")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as fh:
-            return fh.read().strip()
-    raise RuntimeError(
-        "no HUD API token: set HUD_API_TOKEN or save the token in ~/.hud_token "
-        "(free account at https://www.huduser.gov/hudapi/public/register, dataset 'USPS Crosswalk')"
-    )
-
-
 def load_hud(cache_dir: str, hud_token_file: typing.Optional[str] = None, **_) -> Records:
-    path = os.path.join(cache_dir, "hud_zip_county_all.json")
-    if not os.path.exists(path):
-        token = read_hud_token(hud_token_file)
-        download(HUD_ZIP_COUNTY_URL, path,
-                 headers={"Authorization": "Bearer " + token, "Accept": "application/json"})
+    """The token is read from ``$HUD_API_TOKEN``, else from ``hud_token_file`` (default ``~/.hud_token``)."""
+    token = dataclasses.replace(HUD_TOKEN, file=hud_token_file) if hud_token_file else HUD_TOKEN
+    path, = download(cache_dir, Download("hud_zip_county_all.json", HUD_ZIP_COUNTY_URL, magic=b"{", secret=token))
     with open(path, encoding="utf-8") as fh:
         return parse_hud(json.load(fh))
 
 
 def load_zbp(cache_dir: str, zbp_year: int = 2023, **_) -> Records:
     url = ZBP_TOTALS_URL.format(year=zbp_year, yy=zbp_year % 100)
-    path = download(url, os.path.join(cache_dir, "zbp%02dtotals.zip" % (zbp_year % 100)))
+    path, = download(cache_dir, Download("zbp%02dtotals.zip" % (zbp_year % 100), url, magic=ZIP_MAGIC))
     return parse_zbp(_zip_member_text(path, ".txt", "latin-1"))
 
 
 def load_irs(cache_dir: str, irs_years: typing.Iterable[int] = (2022,), **_) -> Records:
     out = {}
-    for year in sorted(irs_years):
-        url = IRS_ZIP_URL.format(yy=year % 100)
-        path = download(url, os.path.join(cache_dir, "%02dzpallnoagi.csv" % (year % 100)))
+    years = sorted(irs_years)
+    paths = download(cache_dir, *[Download("%02dzpallnoagi.csv" % (year % 100), IRS_ZIP_URL.format(yy=year % 100),
+                                           magic=b"STATEFIPS,") for year in years])
+    for year, path in zip(years, paths):
         with open(path, encoding="utf-8", errors="replace") as fh:
             for z, attrs in parse_irs(fh.read()).items():
                 rec = out.setdefault(z, {"state": attrs["state"], "irs_years": []})
@@ -236,7 +198,7 @@ def load_irs(cache_dir: str, irs_years: typing.Iterable[int] = (2022,), **_) -> 
 
 
 def load_v2(cache_dir: str, **_) -> Records:
-    path = download(V2_SIMPLE_DB_URL, os.path.join(cache_dir, "v2_simple_db.sqlite"))
+    path, = download(cache_dir, Download("v2_simple_db.sqlite", V2_SIMPLE_DB_URL, magic=b"SQLite format 3\x00"))
     return parse_v2(path)
 
 

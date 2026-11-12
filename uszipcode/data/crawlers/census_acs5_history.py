@@ -11,17 +11,12 @@ A source row is one row of one vintage, with ``year`` set to that vintage.
 
 import json
 
-from ..core import Crawler, Download, Secret, field_names
+from ..core import Crawler, Download, field_names
+from ..keys import CENSUS_KEY
 from ..fields.history import acs_population, median_household_income, median_home_value, median_rent
 
 FIRST_YEAR, LAST_YEAR = 2011, 2024
 URL = "https://api.census.gov/data/{year}/acs/acs5?get={variables}&for=zip%20code%20tabulation%20area:*"
-CENSUS_KEY = Secret(
-    env="CENSUS_API_KEY",
-    file="~/.census_key",
-    signup_url="https://api.census.gov/data/key_signup.html",
-    query_param="key",
-)
 KEY_COLUMN = "zip code tabulation area"
 VARIABLES = ("B01003_001E", "B01003_001M", "B19013_001E", "B19013_001M",
              "B25077_001E", "B25077_001M", "B25064_001E", "B25064_001M")

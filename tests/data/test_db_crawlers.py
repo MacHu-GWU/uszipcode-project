@@ -18,10 +18,10 @@ import pytest
 
 from uszipcode.data import fetch
 from uszipcode.data.cli import main
-from uszipcode.data.core import Paths
+from uszipcode.data.core import Paths, great_circle_miles
 from uszipcode.data.crawl import check_rows
 from uszipcode.data.crawlers import (
-    CRAWLERS, census_acs5, census_acs5_history, census_decennial, census_dhc, census_gazetteer, irs_soi, zip_basics,
+    CRAWLERS, census_acs5, census_acs5_history, census_decennial, census_dhc, irs_soi, irs_soi_history, zip_basics,
     zcta_geometry,
 )
 from uszipcode.data.fields import FIELDS
@@ -61,6 +61,14 @@ COUNTIES = ("USPS|GEOID|ANSICODE|NAME|ALAND|AWATER|ALAND_SQMI|AWATER_SQMI|INTPTL
             "KY|21047|00516870|Christian County|1855209014|11396406|716.302|4.400|36.892|-87.490\n"
             "NY|36061|00974129|New York County|58690498|28541727|22.661|11.020|40.776|-73.970\n"
             "TN|47125|01648580|Montgomery County|1394406843|12813398|538.384|4.947|36.497|-87.383\n")
+# what zip-basics makes of the HUD records above: the main county first, with the Gazetteer name and state
+COUNTIES_NY = ('[{"county_fips":"36061","county":"New York County","state":"NY",'
+               '"res_ratio":1,"bus_ratio":1,"oth_ratio":1,"tot_ratio":1}]')
+COUNTIES_DC = '[{"county_fips":"11001","county":"District of Columbia","state":"DC","res_ratio":1,"bus_ratio":1,"oth_ratio":1,"tot_ratio":1}]'
+COUNTIES_42223 = ('[{"county_fips":"47125","county":"Montgomery County","state":"TN",'
+                  '"res_ratio":0.911,"bus_ratio":0.582,"oth_ratio":0.694,"tot_ratio":0.894},'
+                  '{"county_fips":"21047","county":"Christian County","state":"KY",'
+                  '"res_ratio":0.089,"bus_ratio":0.418,"oth_ratio":0.306,"tot_ratio":0.106}]')
 ZBP = 'zip,name,est,city,stabbr\n00501,"HOLTSVILLE, NY",3,HOLTSVILLE,NY\n99999,UNCLASSIFIED,10,,\n10001,"NEW YORK, NY",9,NEW YORK,NY\n'
 V2 = [("09001", "MILITARY", "Apo", None, "AE"), ("10001", "STANDARD", "New York", "New York County", "NY"),
       ("20013", "PO BOX", "Washington", "District of Columbia", "DC"),
@@ -103,12 +111,31 @@ IRS_20037 = ("5460", "4390", "539853", "870", "37601", "400", "79281", "70", "54
              "2550", "39400", "2310", "73715", "730", "39781", "840", "52110", "750", "22101")
 
 
+# N1, N2 and A00100 (returns, people, adjusted gross income in thousands of dollars) of 20037 in the IRS files of
+# 2011 and 2018; the last one goes with IRS_20037, the row of the latest year in these tests
+IRS_HISTORY_20037 = {2011: ("5316", "6338", "628004"), 2018: ("5220", "6320", "915227"),
+                     irs_soi.YEAR: ("5460", "6410", "930149")}
+
+
+def _irs_history_csv(year: int) -> str:
+    """One tax year, with the header in the case of that year and N1 as the IRS writes it."""
+    header = "STATEFIPS,STATE,ZIPCODE,%s,N1,N2,A00100" % ("AGI_STUB" if year < 2019 else "agi_stub")
+    lines = [header, "11,DC,00000,0,300000.0000,500000.0000,30000000.0000",
+             "11,DC,20037,0,%s.0000,%s.0000,%s.0000" % IRS_HISTORY_20037.get(year, ("6000", "7000", "900000")),
+             "36,NY,10001,0,20000.0000,30000.0000,3000000.0000", "36,NY,99999,0,50.0000,80.0000,1000.0000"]
+    if year == 2011:
+        lines.append("36,NY,10002,0,0.0000,0.0000,0.0000")  # no returns: counts of 0 and no average
+    return "\n".join(lines) + "\n"
+
+
 def _irs_csv() -> str:
-    lines = ["STATEFIPS,STATE,ZIPCODE,agi_stub," + ",".join(IRS_COLUMNS)]
-    for fips, state, zipcode, values in (("11", "DC", "00000", ["100"] * len(IRS_COLUMNS)),
-                                         ("11", "DC", "20037", IRS_20037),
-                                         ("36", "NY", "10001", ["10"] * len(IRS_COLUMNS)),
-                                         ("36", "NY", "99999", ["10"] * len(IRS_COLUMNS))):
+    """The file of the latest tax year, which both irs-soi and irs-soi-history read."""
+    lines = ["STATEFIPS,STATE,ZIPCODE,agi_stub," + ",".join(IRS_COLUMNS) + ",N2,A00100"]
+    assert IRS_HISTORY_20037[irs_soi.YEAR][0] == IRS_20037[0]  # N1
+    for fips, state, zipcode, values in (("11", "DC", "00000", ["100"] * len(IRS_COLUMNS) + ["100", "100"]),
+                                         ("11", "DC", "20037", IRS_20037 + IRS_HISTORY_20037[irs_soi.YEAR][1:]),
+                                         ("36", "NY", "10001", ["10"] * len(IRS_COLUMNS) + ["10", "10"]),
+                                         ("36", "NY", "99999", ["10"] * len(IRS_COLUMNS) + ["10", "10"])):
         lines.append("%s,%s,%s,0,%s" % (fips, state, zipcode, ",".join(v + ".0000" for v in values)))
     return "\n".join(lines) + "\n"
 
@@ -142,8 +169,14 @@ def _zip_basics_files(folder) -> dict:
     con.executemany("INSERT INTO simple_zipcode VALUES (?, ?, ?, ?, ?)", V2)
     con.commit()
     con.close()
+    bts = os.path.join(str(folder), zip_basics.BTS_FILENAME)
+    with open(bts, "w", encoding="utf-8") as fh:
+        json.dump(TIME_ZONES, fh)
     return {
         zip_basics.HUD_FILENAME: hud,
+        zip_basics.ZCTA_FILENAME: _zip_file(os.path.join(str(folder), zip_basics.ZCTA_FILENAME),
+                                            "2025_Gaz_zcta_national.txt", GAZETTEER),
+        zip_basics.BTS_FILENAME: bts,
         zip_basics.COUNTIES_FILENAME: _zip_file(os.path.join(str(folder), zip_basics.COUNTIES_FILENAME),
                                                 "2025_Gaz_counties_national.txt", COUNTIES),
         zip_basics.ZBP_FILENAME: _zip_file(os.path.join(str(folder), zip_basics.ZBP_FILENAME),
@@ -224,28 +257,13 @@ TIME_ZONES = {"type": "FeatureCollection", "features": [
 
 def _geometry_files(folder) -> dict:
     folder = str(folder)
-    bts = os.path.join(folder, zcta_geometry.BTS_FILENAME)
-    with open(bts, "w", encoding="utf-8") as fh:
-        json.dump(TIME_ZONES, fh)
     return {
         zcta_geometry.TIGER_FILENAME: _shapefile_zip(os.path.join(folder, zcta_geometry.TIGER_FILENAME),
                                                      "tl_2025_us_zcta520", ("ZCTA5CE20", "INTPTLAT20", "INTPTLON20"),
                                                      TIGER_ROWS, TIGER_SHAPES),
         zcta_geometry.CB_FILENAME: _shapefile_zip(os.path.join(folder, zcta_geometry.CB_FILENAME),
                                                   "cb_2020_us_zcta520_500k", ("ZCTA5CE20",), CB_ROWS, CB_SHAPES),
-        zcta_geometry.BTS_FILENAME: bts,
     }
-
-
-def test_gazetteer(tmp_path):
-    files = {census_gazetteer.FILENAME: _zip_file(str(tmp_path / census_gazetteer.FILENAME),
-                                                  "2025_Gaz_zcta_national.txt", GAZETTEER)}
-    rows = dict(census_gazetteer.parse(files))
-    assert rows["10001"]["INTPTLAT"] == "40.750649" and rows["20037"]["INTPTLONG"] == "-77.053811"
-    records, _ = check_rows(census_gazetteer.CRAWLER, CATALOG, census_gazetteer.parse(files))
-    assert records == [("00601", [18.180555, -66.749961, 64.416, 0.308]),
-                       ("10001", [40.750649, -73.997298, 0.624, 0.0]),
-                       ("20037", [38.892459, -77.053811, 0.732, 0.231])]
 
 
 @pytest.mark.parametrize("module", [census_dhc, census_acs5], ids=["census-dhc", "census-acs5"])
@@ -311,14 +329,42 @@ CENSUS_20037 = {2000: "12642", 2010: "14642", 2020: "14945"}
 
 
 def _history_responses() -> dict:
-    """url -> body for every download of the two history crawlers."""
-    out = {}
+    """url -> body for every download of the three history crawlers."""
+    out = {d.url: _irs_history_csv(year).encode() for year, d in zip(irs_soi_history.YEARS, irs_soi_history.CRAWLER.downloads)}
     for year, d in zip(census_acs5_history.YEARS, census_acs5_history.CRAWLER.downloads):
         out[d.url] = _census_json(census_acs5_history.VARIABLES,
                                   {"10001": {}, "20037": ACS_HISTORY_20037.get(year, {})})
     for (year, (_, variable)), d in zip(census_decennial.CENSUSES.items(), census_decennial.CRAWLER.downloads):
         out[d.url] = _census_json([variable], {"10001": {}, "20037": {variable: CENSUS_20037[year]}})
     return out
+
+
+def test_irs_history(tmp_path):
+    crawler = irs_soi_history.CRAWLER
+    files = {}
+    for year in irs_soi_history.YEARS:
+        path = tmp_path / irs_soi_history.filename(year)
+        path.write_text(_irs_history_csv(year), encoding="utf-8")
+        files[irs_soi_history.filename(year)] = str(path)
+    records, stats = check_rows(crawler, {f.name: f for f in HISTORY_FIELDS}, crawler.parse(files))
+    values = {key: dict(zip(crawler.fields, v)) for key, v in records}
+    assert sorted({year for _, year in values}) == list(range(2011, 2024))
+    assert sorted({zipcode for zipcode, _ in values}) == ["10001", "10002", "20037"]
+    # 2.x had 6,338 and 6,320 as population_by_year, 118,134.69 and 175,330.84 as average_household_income_over_time
+    assert values[("20037", 2011)] == {"tax_returns": 5316, "people_on_tax_returns": 6338, "average_income_per_return": 118135}
+    assert values[("20037", 2018)] == {"tax_returns": 5220, "people_on_tax_returns": 6320, "average_income_per_return": 175331}
+    assert values[("20037", 2023)] == {"tax_returns": 5460, "people_on_tax_returns": 6410, "average_income_per_return": 170357}
+    assert values[("10001", 2015)] == {"tax_returns": 20000, "people_on_tax_returns": 30000, "average_income_per_return": 150000}
+    assert values[("10002", 2011)] == {"tax_returns": 0, "people_on_tax_returns": 0, "average_income_per_return": None}
+    assert stats["skipped_keys"] == 2 * 13  # 00000 and 99999 of every year
+
+
+def test_the_irs_history_ends_with_the_tax_year_of_the_main_table():
+    assert irs_soi_history.LAST_YEAR == irs_soi.YEAR and irs_soi_history.FIRST_YEAR == 2011
+    latest = irs_soi_history.CRAWLER.downloads[-1]
+    assert (latest.url, latest.filename) == (irs_soi.CRAWLER.downloads[0].url, irs_soi.CRAWLER.downloads[0].filename)
+    assert [d.filename for d in irs_soi_history.CRAWLER.downloads[:2]] == ["11zpallnoagi.csv", "12zpallnoagi.csv"]
+    assert len(irs_soi_history.CRAWLER.downloads) == 13
 
 
 def test_history_crawlers(tmp_path):
@@ -363,50 +409,115 @@ def test_zip_basics_merges_the_sources(tmp_path):
     files = _zip_basics_files(tmp_path)
     rows = dict(zip_basics.parse(files))
     assert rows["10001"] == {"hud_city": "NEW YORK", "hud_state": "NY", "hud_county_fips": "36061",
-                             "hud_county_name": "New York County", "zbp_city": "NEW YORK", "zbp_state": "NY",
+                             "hud_county_name": "New York County", "hud_counties": COUNTIES_NY,
+                             "zbp_city": "NEW YORK", "zbp_state": "NY",
                              "v2_zipcode_type": "STANDARD", "v2_city": "New York", "v2_county": "New York County",
-                             "v2_state": "NY"}
+                             "v2_state": "NY",
+                             "GEOID": "10001", "GEOIDFQ": "860Z200US10001", "ALAND": "1616221", "AWATER": "0",
+                             "ALAND_SQMI": "0.624", "AWATER_SQMI": "0.", "INTPTLAT": "40.750649",
+                             "INTPTLONG": "-73.997298",  # the header name is stripped
+                             "zcta_zone": "Eastern", "county_zone": "Eastern", "v2_county_zone": "Eastern",
+                             "hud_state_zone": "Eastern", "zbp_state_zone": "Eastern", "v2_state_zone": "Eastern"}
+    # a ZIP without a ZCTA has the Gazetteer columns too, all None; a zone column is absent when there is no zone
+    assert rows["20013"]["INTPTLAT"] is None and rows["20013"]["ALAND_SQMI"] is None
+    assert "zcta_zone" not in rows["20013"] and rows["20013"]["county_zone"] == "Eastern"
+    assert {k: v for k, v in rows["42223"].items() if k.endswith("_zone")} == {"county_zone": "Central",
+                                                                             "hud_state_zone": "Central"}
+    # 77352 has no county code, and the sample has no county of TX: its 2.x county is not the one of TN
+    assert not any(k.endswith("_zone") for k in rows["77352"])
+    assert rows["00501"]["zbp_state_zone"] == "Eastern" and "v2_county_zone" not in rows["00501"]  # Suffolk: not listed
     assert "99999" not in rows
     records, stats = check_rows(zip_basics.CRAWLER, CATALOG, zip_basics.parse(files))
+    names = list(zip_basics.CRAWLER.fields)
+    assert names == ["zipcode_type", "major_city", "state", "county", "county_fips", "county_list", "lat", "lng",
+                     "timezone", "land_area_in_sqmi", "water_area_in_sqmi"]
+    none = [None, None]
     assert dict(records) == {
-        "00501": ["UNIQUE", "HOLTSVILLE", "NY", "Suffolk County", None],  # not in HUD: ZBP, then 2.x
-        "09001": ["MILITARY", "APO", "AE", None, None],  # only in 2.x
-        "10001": ["STANDARD", "NEW YORK", "NY", "New York County", "36061"],
-        "20013": ["PO BOX", "WASHINGTON", "DC", "District of Columbia", "11001"],
-        "20037": ["STANDARD", "WASHINGTON", "DC", "District of Columbia", "11001"],
-        "42223": [None, "FORT CAMPBELL", "KY", "Montgomery County", "47125"],  # two counties: most residents in 47125
-        "77352": ["STANDARD", "HOUSTON", "TX", "Montgomery County", None],  # HUD code "48" is incomplete
+        # not in HUD: ZBP, then 2.x; the zone of its state
+        "00501": ["UNIQUE", "HOLTSVILLE", "NY", "Suffolk County", None, None] + none + ["Eastern"] + none,
+        "00601": [None] * 6 + [18.180555, -66.749961, "Eastern", 64.416, 0.308],  # only in the Gazetteer
+        "09001": ["MILITARY", "APO", "AE", None, None, None] + none + [None] + none,  # only in 2.x
+        "10001": ["STANDARD", "NEW YORK", "NY", "New York County", "36061", COUNTIES_NY, 40.750649, -73.997298,
+                  "Eastern", 0.624, 0.0],
+        # a PO box without a ZCTA: the zone of its county
+        "20013": ["PO BOX", "WASHINGTON", "DC", "District of Columbia", "11001", COUNTIES_DC] + none + ["Eastern"] + none,
+        "20037": ["STANDARD", "WASHINGTON", "DC", "District of Columbia", "11001", COUNTIES_DC, 38.892459, -77.053811,
+                  "Eastern", 0.732, 0.231],
+        # two counties in two states: most residents in 47125, which is the main county and the first of the list
+        "42223": [None, "FORT CAMPBELL", "KY", "Montgomery County", "47125", COUNTIES_42223] + none + ["Central"] + none,
+        # HUD code "48" is not a county: no code and no list
+        "77352": ["STANDARD", "HOUSTON", "TX", "Montgomery County", None, None] + none + [None] + none,
     }
-    assert stats["non_null"]["county_fips"] == 4
+    assert stats["non_null"]["county_fips"] == 4 and stats["non_null"]["timezone"] == 6
+    assert stats["non_null"]["county_list"] == 4
+    assert [c["county_fips"] for c in json.loads(COUNTIES_42223)] == ["47125", "21047"]
+
+
+def test_county_list():
+    counties = {"36061": {"NAME": "New York County", "USPS": "NY"}, "72003": {"NAME": "Aguada Municipio", "USPS": "PR"},
+                "72005": {"NAME": "A\u00f1asco Municipio", "USPS": "PR"}}
+    records = [{"geoid": "72005", "res_ratio": 0.75, "bus_ratio": 1, "oth_ratio": 0, "tot_ratio": 0.8},
+               {"geoid": "72", "res_ratio": 0, "bus_ratio": 0, "oth_ratio": 1, "tot_ratio": 0.1},  # not a county
+               {"geoid": "99999", "res_ratio": 0.25, "bus_ratio": 0, "oth_ratio": 0, "tot_ratio": 0.1}]  # not listed
+    text = zip_basics._county_list(records, counties)
+    assert text == ('[{"county_fips":"72005","county":"A\u00f1asco Municipio","state":"PR",'
+                    '"res_ratio":0.75,"bus_ratio":1,"oth_ratio":0,"tot_ratio":0.8},'
+                    '{"county_fips":"99999","county":null,"state":null,'
+                    '"res_ratio":0.25,"bus_ratio":0,"oth_ratio":0,"tot_ratio":0.1}]')
+    assert "\\u" not in text  # the name is written as it is, not escaped
+    assert zip_basics._county_list(records[1:2], counties) is None and zip_basics._county_list([], counties) is None
+    # the main county: most residential addresses, then most addresses, then the lowest code
+    tie = [{"geoid": "36061", "res_ratio": 0.5, "tot_ratio": 0.4}, {"geoid": "72003", "res_ratio": 0.5, "tot_ratio": 0.6},
+           {"geoid": "72005", "res_ratio": 0.5, "tot_ratio": 0.6}, {"geoid": "10001", "res_ratio": "", "tot_ratio": None}]
+    assert [r["geoid"] for r in sorted(tie, key=zip_basics._main_county_first)] == ["72003", "72005", "36061", "10001"]
+
+
+def test_the_zone_of_a_state_needs_all_its_counties_in_one_zone():
+    zones = zip_basics.TimeZones(TIME_ZONES["features"])
+    counties = [{"USPS": "DC", "GEOID": "11001", "NAME": "District of Columbia", "INTPTLAT": "38.904", "INTPTLONG": "-77.016"},
+                {"USPS": "KY", "GEOID": "21047", "NAME": "Twin County", "INTPTLAT": "36.892", "INTPTLONG": "-87.490"},  # Central
+                {"USPS": "KY", "GEOID": "21999", "NAME": "Twin County", "INTPTLAT": "38.360", "INTPTLONG": "-79.900"},
+                {"USPS": "KY", "GEOID": "21019", "NAME": "Boyd County", "INTPTLAT": "38.360", "INTPTLONG": "-79.900"},  # Eastern here
+                {"USPS": "TX", "GEOID": "48201", "NAME": "Harris County", "INTPTLAT": "29.857", "INTPTLONG": "-95.393"},  # in no zone
+                {"USPS": "AK", "GEOID": "02016", "NAME": "Aleutians West Census Area", "INTPTLAT": "", "INTPTLONG": ""}]  # no point
+    by_code, by_name, by_state = zip_basics._zones_of_places(counties, zones)
+    assert by_code == {"11001": "Eastern", "21047": "Central", "21999": "Eastern", "21019": "Eastern"}
+    assert by_state == {"DC": "Eastern"}  # KY has two zones; a county of TX and of AK has none
+    # by state and name, whatever the case; a name that two counties in two zones share has no zone
+    assert by_name == {("DC", "district of columbia"): "Eastern", ("KY", "boyd county"): "Eastern"}
+    assert zip_basics._county_key(" ky ", "Boyd County ") == ("KY", "boyd county")
+    assert zip_basics._county_key(None, None) == ("", "")
 
 
 def test_zcta_geometry(tmp_path):
     files = _geometry_files(tmp_path)
     rows = dict(zcta_geometry.parse(files))
     assert sorted(rows) == ["00000", "00601", "10001", "20037", "99546"]
-    assert {k: rows["20037"][k] for k in ("INTPTLAT20", "INTPTLON20", "zone", "utc")} \
-        == {"INTPTLAT20": "+38.8924590", "INTPTLON20": "-077.0538110", "zone": "Eastern", "utc": "-05:00"}
-    assert rows["00601"]["Xmin"] is None and rows["00601"]["zone"] is None  # only in the cartographic file
+    assert sorted(rows["20037"]) == ["Xmax", "Xmin", "Ymax", "Ymin", "ZCTA5CE20", "geometry"]
+    assert rows["00601"]["Xmin"] is None  # only in the cartographic file
     records, stats = check_rows(zcta_geometry.CRAWLER, CATALOG, zcta_geometry.parse(files))
     records = dict(records)
-    assert records["20037"][:5] == [-77.064696, -77.04624, 38.910414, 38.87131, "Eastern"]
-    assert json.loads(records["20037"][5]) == {"type": "Polygon", "coordinates": [  # reversed: RFC 7946 orientation
+    assert records["20037"][:4] == [-77.064696, -77.04624, 38.910414, 38.87131]
+    assert json.loads(records["20037"][4]) == {"type": "Polygon", "coordinates": [  # reversed: RFC 7946 orientation
         [[-77.064696, 38.87131], [-77.04624, 38.87131], [-77.04624, 38.910414], [-77.064696, 38.910414],
          [-77.064696, 38.87131]],
         [[-77.06, 38.89], [-77.06, 38.9], [-77.05, 38.9], [-77.05, 38.89], [-77.06, 38.89]]]}
-    assert json.loads(records["10001"][5])["type"] == "MultiPolygon" and records["10001"][4] == "Eastern"
-    assert records["99546"][:5] == [179.5, -179.5, 51.9, 51.8, None]  # across the 180th meridian; no zone
-    assert json.loads(records["00601"][5])["coordinates"][0][0] == [-66.836666, 18.11]  # 6 decimals
+    assert json.loads(records["10001"][4])["type"] == "MultiPolygon"
+    assert records["99546"][:4] == [179.5, -179.5, 51.9, 51.8]  # across the 180th meridian
+    assert json.loads(records["00601"][4])["coordinates"][0][0] == [-66.836666, 18.11]  # 6 decimals
     assert stats["skipped_keys"] == 1  # 00000
 
 
 def test_time_zone_lookup():
-    zones = zcta_geometry.TimeZones(TIME_ZONES["features"])
+    zones = zip_basics.TimeZones(TIME_ZONES["features"])
     assert zones.find(-77.053811, 38.892459)["zone"] == "Eastern"
     assert zones.find(-87.6, 41.9)["zone"] == "Central"
     assert zones.find(-77.03, 38.86) == {}  # in the hole of Eastern
     assert zones.find(-66.0, 18.0)["zone"] == "Eastern"  # in the open ring, closed when read
     assert zones.find(-100.0, 40.0) == {}
+    assert zones.zone_at({"INTPTLAT": "38.892459", "INTPTLONG": "-77.053811"}) == "Eastern"
+    assert zones.zone_at({"INTPTLAT": "40.0", "INTPTLONG": "-100.0"}) is None  # in no zone
+    assert zones.zone_at({"INTPTLAT": None, "INTPTLONG": None}) is None and zones.zone_at({}) is None  # no point
 
 
 def test_a_hole_goes_to_the_outer_ring_around_it():
@@ -422,12 +533,11 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
     """The real registry and the repo mise.toml, with the sample files served by a FakeOpener."""
     files = _zip_basics_files(tmp_path)
     dhc = _dhc_responses()
-    served = {census_gazetteer.URL: _read(_zip_file(str(tmp_path / "gaz.zip"), "gaz.txt", GAZETTEER))}
-    served.update({d.url: dhc[d.filename] for d in census_dhc.CRAWLER.downloads})
+    served = {d.url: dhc[d.filename] for d in census_dhc.CRAWLER.downloads}
     acs = _acs_responses()
     served.update({d.url: acs[d.filename] for d in census_acs5.CRAWLER.downloads})
-    served[irs_soi.CRAWLER.downloads[0].url] = _irs_csv().encode()
     served.update(_history_responses())
+    served[irs_soi.CRAWLER.downloads[0].url] = _irs_csv().encode()  # also the latest year of irs-soi-history
     served.update({d.url: _read(files[d.filename]) for d in zip_basics.CRAWLER.downloads})
     geometry = _geometry_files(tmp_path)
     served.update({d.url: _read(geometry[d.filename]) for d in zcta_geometry.CRAWLER.downloads})
@@ -461,26 +571,37 @@ def test_demo_database(tmp_path, monkeypatch, capsys):
         released = {r[0]: r[1:] for r in con.execute("SELECT * FROM zipcode_data")}
     finally:
         con.close()
-    assert len(simple) == 19 and sorted(released) == sorted(rows)
+    assert len(simple) == 20 and sorted(released) == sorted(rows)
     for zipcode, values in released.items():  # the same values as the full table
         assert ["" if v is None else str(v) for v in values] == [rows[zipcode][name] for name in simple]
+    assert rows["20013"]["radius_in_miles"] == ""  # no ZCTA, so no box
     for zipcode in ("10001", "20037"):
+        box = [float(rows[zipcode]["bounds_" + edge]) for edge in ("south", "west", "north", "east")]
+        assert float(rows[zipcode]["radius_in_miles"]) == pytest.approx(great_circle_miles(*box) / 2)
+        assert 0.5 < float(rows[zipcode]["radius_in_miles"]) < 3
         assert list(json.loads(rows[zipcode]["census_population_by_year"])) == ["2000", "2010", "2020"]
         assert list(json.loads(rows[zipcode]["acs_population_by_year"])) == [str(y) for y in range(2011, 2025)]
     assert rows["20037"]["census_population_by_year"] == '{"2000":12642,"2010":14642,"2020":14945}'
+    returns = json.loads(rows["20037"]["tax_returns_by_year"])
+    assert list(returns) == [str(y) for y in range(2011, 2024)] and (returns["2011"], returns["2023"]) == (5316, 5460)
+    assert json.loads(rows["20037"]["people_on_tax_returns_by_year"])["2018"] == 6320
+    income = json.loads(rows["20037"]["average_income_per_return_by_year"])
+    assert (income["2011"], income["2018"], income["2023"]) == (118135, 175331, 170357)
+    assert rows["20013"]["tax_returns_by_year"] == ""  # no tax returns from a PO box ZIP in these files
     assert json.loads(rows["20037"]["median_home_value_by_year"])["2011"] == 546500
     assert all(rows["20013"][name] == "" for name in by_year)  # 20013 has no ZCTA: no history
     assert [rows["20037"][k] for k in ("zipcode_type", "major_city", "state", "county", "county_fips", "lat",
                                        "water_area_in_sqmi", "population", "occupied_housing_units")] \
         == ["STANDARD", "WASHINGTON", "DC", "District of Columbia", "11001", "38.892459", "0.231", "14945", "8178"]
-    assert [rows["20013"][k] for k in ("zipcode_type", "major_city", "state", "county")] \
-        == ["PO BOX", "WASHINGTON", "DC", "District of Columbia"]
-    census = [f.name for f in FIELDS if f.name not in zip_basics.CRAWLER.fields]
-    assert all(rows["20013"][name] == "" for name in census)  # a PO box: no ZCTA, so no Census values
+    in_20013 = {"zipcode_type": "PO BOX", "major_city": "WASHINGTON", "state": "DC", "county": "District of Columbia",
+                "county_fips": "11001", "county_list": COUNTIES_DC, "timezone": "Eastern"}  # the zone of its county
+    # a PO box: no ZCTA, so no Census values
+    assert all(rows["20013"][f.name] == in_20013.get(f.name, "") for f in FIELDS)
+    assert rows["20037"]["timezone"] == "Eastern" and rows["10001"]["timezone"] == "Eastern"
     with open(os.path.join(paths.db_out_dir, "db_demo_coverage.json"), encoding="utf-8") as fh:
         coverage = json.load(fh)
     assert rows["20037"]["median_home_value"] == "743700" and rows["10001"]["median_home_value"] == ""
-    assert coverage["pks_by_non_null_fields"] == {"5": 1, str(len(FIELDS) - 2): 1, str(len(FIELDS)): 1}
+    assert coverage["pks_by_non_null_fields"] == {"7": 1, str(len(FIELDS) - 2): 1, str(len(FIELDS)): 1}
     assert coverage["crawlers"]["census-dhc"]["rows_outside_pk_set"] == 1  # 00601
 
     out, err = capsys.readouterr()

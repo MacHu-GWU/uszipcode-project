@@ -17,7 +17,9 @@ from uszipcode.data import build as build_mod
 from uszipcode.data import fetch
 from uszipcode.data.checks import task_command
 from uszipcode.data.cli import main
-from uszipcode.data.core import ContractError, Crawler, Download, Field, Paths, PipelineError, PkSetError
+from uszipcode.data.core import (
+    ContractError, Crawler, Download, Field, Paths, PipelineError, PkSetError, great_circle_miles, half_diagonal_miles,
+)
 
 from fakes import FakeOpener, make_fake_world
 
@@ -253,6 +255,28 @@ def test_a_failing_derived_field_stops_the_build(world):
         build_mod.build(list(world.fields) + [broken], world.crawlers, world.paths, pk_set=world.pk_csv)
     assert "derived Fields failed: 3 problem(s)" in str(e.value)
     assert "[B4] derived Field broken, zipcode 00501: ZeroDivisionError: division by zero" in str(e.value)
+
+
+def test_great_circle_miles():
+    assert great_circle_miles(38.0, -77.0, 38.0, -77.0) == 0.0
+    assert great_circle_miles(38.0, -77.0, 39.0, -77.0) == pytest.approx(69.0934, abs=1e-4)  # one degree of latitude
+    assert great_circle_miles(0.0, 0.0, 0.0, 1.0) == pytest.approx(69.0934, abs=1e-4)  # and of longitude on the equator
+    assert great_circle_miles(60.0, 0.0, 60.0, 1.0) == pytest.approx(69.0934 / 2, abs=1e-3)  # half of it at 60 north
+    assert great_circle_miles(0.0, 179.0, 0.0, -179.0) == pytest.approx(2 * 69.0934, abs=1e-3)  # across the 180th meridian
+    # New York to Los Angeles, about 2,446 miles
+    assert great_circle_miles(40.7128, -74.0060, 34.0522, -118.2437) == pytest.approx(2446, abs=2)
+
+
+def test_half_diagonal_miles():
+    extract = half_diagonal_miles("w", "e", "n", "s")
+    box = {"w": -77.064696, "e": -77.04624, "n": 38.910414, "s": 38.87131}
+    assert extract(box) == pytest.approx(great_circle_miles(38.87131, -77.064696, 38.910414, -77.04624) / 2)
+    assert extract(box) == pytest.approx(1.4392, abs=1e-4)  # 2.70 miles north-south, 0.99 east-west
+    assert extract({"w": "-77.5", "e": "-77.5", "n": "38.5", "s": "38.5"}) == 0.0  # text, as a source sends it
+    for name in box:
+        assert extract(dict(box, **{name: None})) is None
+    with pytest.raises(KeyError):  # a missing column is an error: the source changed
+        extract({"w": 1.0, "e": 2.0, "n": 3.0})
 
 
 def test_history_is_one_json_column_per_history_field(world, monkeypatch):

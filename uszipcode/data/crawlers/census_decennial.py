@@ -10,15 +10,10 @@ same free key as ``census-dhc``. A source row is one row of one census, with
 
 import json
 
-from ..core import Crawler, Download, Secret, field_names
+from ..core import Crawler, Download, field_names
+from ..keys import CENSUS_KEY
 from ..fields.history import census_population
 
-CENSUS_KEY = Secret(
-    env="CENSUS_API_KEY",
-    file="~/.census_key",
-    signup_url="https://api.census.gov/data/key_signup.html",
-    query_param="key",
-)
 KEY_COLUMN = "zip code tabulation area"
 #: census year -> (dataset, variable)
 CENSUSES = {2000: ("sf1", "P001001"), 2010: ("sf1", "P001001"), 2020: ("dhc", "P1_001N")}

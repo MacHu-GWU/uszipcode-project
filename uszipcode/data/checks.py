@@ -131,10 +131,13 @@ def _check_crawlers(crawlers: typing.Sequence[Crawler]) -> typing.List[str]:
                     problems.append("[C7] Crawler %r: the Secret of %r must set exactly one of query_param or bearer." % (c.name, d.filename))
                 if not (s.file or "").startswith("~/"):
                     problems.append("[C7] Crawler %r: the Secret file %r must be in the home folder (start with ~/)." % (c.name, s.file))
-            url_users[d.url].append(c.name)
+            url_users[d.url].append(c)
     for url, users in url_users.items():
-        if len(set(users)) > 1:
-            problems.append("[C8] URL %s is downloaded by both %s: one source, one crawler." % (url, " and ".join(repr(u) for u in sorted(set(users)))))
+        names = sorted({c.name for c in users})
+        # a history crawler cannot claim Fields of the main table, so it may download a file of one other crawler too
+        pair = len(names) == 2 and len({c.history for c in users}) == 2
+        if len(names) > 1 and not pair:
+            problems.append("[C8] URL %s is downloaded by both %s: one source, one crawler." % (url, " and ".join(repr(n) for n in names)))
     return problems
 
 

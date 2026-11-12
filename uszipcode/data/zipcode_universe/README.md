@@ -17,8 +17,9 @@ python -m pytest tests/data -q                               # offline unit test
 
 The HUD step needs a free API token (account at <https://www.huduser.gov/hudapi/public/register>,
 dataset "USPS Crosswalk"), read from `$HUD_API_TOKEN` or `~/.hud_token`. Everything else needs no key.
-Downloads (about 57 MB) are cached in `data_pipeline/.cache/zipcode_universe/` (ignored by git); a full
-run takes about 30 seconds once the files are cached.
+The files (about 57 MB) are downloaded by [`fetch.py`](../fetch.py), like those of the crawlers: once, into
+`data_pipeline/.cache/zipcode_universe/` (ignored by git), where `manifest.json` records each of them. A full
+run takes about 90 seconds the first time and a few seconds once the files are cached.
 
 Output:
 

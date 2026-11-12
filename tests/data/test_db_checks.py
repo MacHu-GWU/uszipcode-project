@@ -30,11 +30,11 @@ def test_check_prints_the_catalog(capsys):
                           % (len(FIELDS), len(CRAWLERS), n_derived))
     for f in FIELDS:
         assert any(line.split()[:2] == [f.name, f.dtype.__name__] for line in out.splitlines())
-    assert "population" in out and "census-dhc" in out and "census-gazetteer" in out
-    assert ("History: %d Fields from 2 history crawlers; each is a JSON column <field>_by_year of the database."
+    assert "population" in out and "census-dhc" in out and "zcta-geometry" in out
+    assert ("History: %d Fields from 3 history crawlers; each is a JSON column <field>_by_year of the database."
             % len(HISTORY_FIELDS)) in out
     assert any(line.split()[:3] == ["polygon", "str", "(zlib)"] for line in out.splitlines())
-    assert "Simple release: zipcode and 19 of the %d Fields: zipcode_type, major_city, state, county, lat, " % len(FIELDS) in out
+    assert "Simple release: zipcode and 20 of the %d Fields: zipcode_type, major_city, state, county, lat, " % len(FIELDS) in out
     assert any(line.split()[:2] == ["census_population", "int"] and line.split()[-1] == "census-decennial"
                for line in out.splitlines())
 
@@ -46,8 +46,8 @@ SIMPLE_2X = (
     "land_area_in_sqmi", "water_area_in_sqmi", "housing_units", "occupied_housing_units",
     "median_home_value", "median_household_income", "bounds_west", "bounds_east", "bounds_north", "bounds_south",
 )
-#: 2.x simple columns that are not Fields yet (question 12 of the README)
-SIMPLE_2X_MISSING = ("post_office_city", "common_city_list", "radius_in_miles", "area_code_list")
+#: 2.x simple columns that are not Fields (decision 17 of the README)
+SIMPLE_2X_MISSING = ("post_office_city", "common_city_list", "area_code_list")
 
 
 def test_the_simple_fields_are_the_2x_simple_columns():
@@ -220,6 +220,26 @@ def test_history_rules(tmp_path, history_fields, crawlers, rule, text):
     path.write_text(_mise(["src-a"] + [c.name for c in crawlers]), encoding="utf-8")
     problems = validate(list(BASE_FIELDS), [_crawler()] + crawlers, str(path), list(history_fields))
     assert any(p.startswith("[%s] " % rule) and text in p for p in problems), problems
+
+
+def test_a_history_crawler_may_download_a_file_of_one_other_crawler(tmp_path):
+    shared = _download("a.csv")
+    main_crawler = _crawler(downloads=(shared,))
+    history_crawler = Crawler("hist-a", ("h",), (shared, _download("b.csv")), _parse, history=True)
+    path = tmp_path / "mise.toml"
+    path.write_text(_mise(["src-a", "hist-a", "hist-b", "src-b"]), encoding="utf-8")
+    fields, history_fields = list(BASE_FIELDS) + [_field("c")], [_field("h"), _field("g")]
+
+    problems = validate(list(BASE_FIELDS), [main_crawler, history_crawler], str(path), history_fields[:1])
+    assert not [p for p in problems if not p.startswith("[M")], problems  # the mise tasks are for the cases below
+    # two history crawlers, two main crawlers, or three crawlers: one source, one crawler
+    second_history = Crawler("hist-b", ("g",), (shared,), _parse, history=True)
+    second_main = _crawler("src-b", fields=("c",), downloads=(shared,))
+    for crawlers, names in (([_crawler(), history_crawler, second_history], "'hist-a' and 'hist-b'"),
+                            ([main_crawler, second_main, _history_crawler()], "'src-a' and 'src-b'"),
+                            ([main_crawler, second_main, history_crawler], "'hist-a' and 'src-a' and 'src-b'")):
+        problems = validate(fields, crawlers, str(path), history_fields)
+        assert ("[C8] URL https://data.test/a.csv is downloaded by both %s: one source, one crawler." % names) in problems
 
 
 def test_a_history_column_may_not_have_the_name_of_a_field(tmp_path):

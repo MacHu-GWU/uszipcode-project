@@ -19,8 +19,8 @@ A Field with ``simple=True`` is also a column of the simple release
 """
 
 from . import (
-    zipcode_type, major_city, state, county, county_fips,
-    lat, lng, timezone, land_area_in_sqmi, water_area_in_sqmi, bounds,
+    zipcode_type, major_city, state, county, county_fips, county_list,
+    lat, lng, timezone, land_area_in_sqmi, water_area_in_sqmi, bounds, radius_in_miles,
     population, population_density,
     population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
@@ -36,8 +36,8 @@ from . import (
 
 #: every module of this folder, in column order; ``check`` fails if one is left out (rule L1)
 MODULES = (
-    zipcode_type, major_city, state, county, county_fips,
-    lat, lng, timezone, land_area_in_sqmi, water_area_in_sqmi, bounds,
+    zipcode_type, major_city, state, county, county_fips, county_list,
+    lat, lng, timezone, land_area_in_sqmi, water_area_in_sqmi, bounds, radius_in_miles,
     population, population_density,
     population_by_gender, population_by_age, children_by_age, population_by_race, median_age,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,

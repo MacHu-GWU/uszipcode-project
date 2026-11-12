@@ -93,7 +93,7 @@ def test_the_functionality_knows_no_crawler_and_no_field(name, path):
 
 @pytest.mark.parametrize("name, path", _modules(os.path.dirname(crawlers.__file__)))
 def test_a_crawler_only_downloads_and_parses(name, path):
-    allowed_packages = (DATABASE + ".core", DATABASE + ".fields", DATABASE + ".zipcodes")
+    allowed_packages = (DATABASE + ".core", DATABASE + ".fields", DATABASE + ".keys", DATABASE + ".zipcodes")
     for imported in _imports(path, DATABASE + ".crawlers"):
         assert imported.split(".")[0] not in NETWORK, (name, imported)
         if _inside(imported, LIBRARY):

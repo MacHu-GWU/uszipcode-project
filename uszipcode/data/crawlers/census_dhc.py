@@ -14,7 +14,8 @@ To claim another variable, add it to ``REQUESTS`` and the Field's module to ``fi
 
 import json
 
-from ..core import Crawler, Download, Secret, field_names
+from ..core import Crawler, Download, field_names
+from ..keys import CENSUS_KEY
 from ..fields import (
     population, population_by_gender, population_by_age, children_by_age, population_by_race,
     families_vs_singles, households_with_kids, head_of_household_by_age, housing_type,
@@ -22,12 +23,6 @@ from ..fields import (
 )
 
 URL = "https://api.census.gov/data/2020/dec/dhc?get={}&for=zip%20code%20tabulation%20area:*"
-CENSUS_KEY = Secret(
-    env="CENSUS_API_KEY",
-    file="~/.census_key",
-    signup_url="https://api.census.gov/data/key_signup.html",
-    query_param="key",
-)
 KEY_COLUMN = "zip code tabulation area"
 
 

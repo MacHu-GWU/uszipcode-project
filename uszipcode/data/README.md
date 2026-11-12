@@ -491,8 +491,11 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
    group wait for it?
 2. **Two files of the library.** `--cov=uszipcode` in the library's CI now counts `uszipcode/data/`, whose
    tests are skipped on Python 3.10: 25% with it, 97% with `uszipcode/data/*` omitted in `.coveragerc`. And in
-   a new environment with only `requirements.txt` installed, `import uszipcode` fails with
-   `No module named 'botocore'`: `sqlalchemy_mate` 2.0.0.3 imports it and `requirements.txt` does not list
-   it. This branch changes neither file. May it?
-3. **The JSON structure of a history column.** It is `{year: value}`, chosen here. Another structure changes
-   one function (`history_json` in `build.py`). Is this the structure you had in mind?
+   a new environment with only `requirements.txt` installed, `import uszipcode` prints
+   `No module named 'botocore'` and `SearchEngine` cannot be imported: `sqlalchemy_mate` 2.0.0.3 imports it
+   and `requirements.txt` does not list it. This branch changes neither file. May it?
+3. **The JSON structure of a history column.** It is `{year: value}`, chosen here, as plain text so that
+   `json_extract` reads it (56 MB for the 12 columns, 31 MB if compressed like `polygon`). The population has
+   three such columns, because the counts differ: `census_population_by_year`, `acs_population_by_year` and
+   `people_on_tax_returns_by_year` (the 2.x `population_by_year`). Another structure changes one function
+   (`history_json` in `build.py`). Is this the structure you had in mind?

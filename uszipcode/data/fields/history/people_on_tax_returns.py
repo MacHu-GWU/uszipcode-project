@@ -18,7 +18,8 @@ FIELDS = (
         dtype=int,
         description="Number of people on the individual income tax returns filed from the ZIP for that tax year, "
                     "taxpayers and dependents: exemptions up to 2017, individuals from 2018 (IRS SOI ZIP Code Data, "
-                    "N2); lower than the population, because not everybody files a return",
+                    "N2); lower than the population, because not everybody files a return; the ZIP is the one on the "
+                    "return, not a ZCTA",
         unit="people",
         extract=column("N2", parse_count),
         examples=(({"year": 2018, "N2": "6320.0000"}, 6320), ({"year": 2011, "N2": "6338.0000"}, 6338),

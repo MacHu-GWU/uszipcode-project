@@ -6,3 +6,4 @@ fuzzywuzzy
 haversine>=2.5.0
 SQLAlchemy>=2.0.30
 sqlalchemy_mate>=2.0.0.1
+botocore  # sqlalchemy_mate 2.0.0.3 imports it and does not require it

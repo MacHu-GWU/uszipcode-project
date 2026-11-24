@@ -489,11 +489,10 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 
 1. **The `data` dependency group.** Answered on 2026-11-22: add a `pyproject.toml` now, in its own commit.
    Done (see the table above).
-2. **Two files of the library.** `--cov=uszipcode` in the library's CI now counts `uszipcode/data/`, whose
-   tests are skipped on Python 3.10: 25% with it, 97% with `uszipcode/data/*` omitted in `.coveragerc`. And in
-   a new environment with only `requirements.txt` installed, `import uszipcode` prints
-   `No module named 'botocore'` and `SearchEngine` cannot be imported: `sqlalchemy_mate` 2.0.0.3 imports it
-   and `requirements.txt` does not list it. This branch changes neither file. May it?
+2. **Two files of the library.** Answered on 2026-11-22: yes to both. Done: `.coveragerc` omits
+   `uszipcode/data/*`, whose tests are skipped on Python 3.10 (the library's tests on 3.10, without
+   `test_db.py`: 94% instead of 25%), and `requirements.txt` lists `botocore`, which `sqlalchemy_mate` 2.0.0.3
+   imports (with only `requirements.txt` installed, `SearchEngine` can now be imported).
 3. **The JSON structure of a history column.** It is `{year: value}`, chosen here, as plain text so that
    `json_extract` reads it (56 MB for the 12 columns, 31 MB if compressed like `polygon`). The population has
    three such columns, because the counts differ: `census_population_by_year`, `acs_population_by_year` and

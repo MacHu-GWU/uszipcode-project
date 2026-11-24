@@ -15,7 +15,8 @@ Building blocks of the crawler registry. Nothing in this module does I/O.
 import dataclasses
 import math
 import os
-import typing
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import Any
 
 #: SQLite column type for each allowed Field dtype
 SQL_TYPES = {int: "INTEGER", float: "REAL", str: "TEXT"}
@@ -27,7 +28,7 @@ HISTORY_SUFFIX = "_by_year"
 SIMPLE_SUFFIX = "_simple"
 
 #: one source row: {column of the source: raw value}. The source's own names, untouched.
-SourceRow = typing.Mapping[str, typing.Any]
+SourceRow = Mapping[str, Any]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -52,9 +53,9 @@ class Field:
     dtype: type  # int | float | str
     description: str
     unit: str = ""
-    extract: typing.Optional[typing.Callable[[SourceRow], typing.Any]] = None
-    examples: typing.Tuple[typing.Tuple[dict, typing.Any], ...] = ()
-    inputs: typing.Tuple[str, ...] = ()
+    extract: Callable[[SourceRow], Any] | None = None
+    examples: tuple[tuple[dict, Any], ...] = ()
+    inputs: tuple[str, ...] = ()
     compressed: bool = False
     simple: bool = False
 
@@ -82,11 +83,11 @@ class Download:
     filename: str  # cached as .cache/crawlers/<crawler>/<filename>
     url: str
     magic: bytes = b""  # required first bytes, so an HTML error page is never cached
-    secret: typing.Optional[Secret] = None
+    secret: Secret | None = None
 
 
 #: what ``Crawler.parse`` yields: (key in the source, source row)
-Row = typing.Tuple[str, SourceRow]
+Row = tuple[str, SourceRow]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -105,9 +106,9 @@ class Crawler:
     """
 
     name: str  # kebab-case; the mise task is crawler-<name>
-    fields: typing.Tuple[str, ...]  # the Fields this crawler claims, in output order
-    downloads: typing.Tuple[Download, ...]
-    parse: typing.Callable[[typing.Dict[str, str]], typing.Iterable[Row]]
+    fields: tuple[str, ...]  # the Fields this crawler claims, in output order
+    downloads: tuple[Download, ...]
+    parse: Callable[[dict[str, str]], Iterable[Row]]
     description: str = ""
     history: bool = False
 
@@ -158,7 +159,7 @@ class PipelineError(Exception):
 class RegistryError(PipelineError):
     exit_code = 2
 
-    def __init__(self, problems: typing.List[str]):
+    def __init__(self, problems: list[str]):
         self.problems = list(problems)
         super().__init__(format_problems("registry check failed", self.problems))
 
@@ -175,7 +176,7 @@ class DownloadError(PipelineError):
     exit_code = 1
 
 
-def format_problems(title: str, problems: typing.List[str], limit: int = 0) -> str:
+def format_problems(title: str, problems: list[str], limit: int = 0) -> str:
     """``title: N problem(s)`` followed by numbered lines; continuation lines are indented."""
     shown = problems if not limit else problems[:limit]
     lines = ["%s: %d problem(s)" % (title, len(problems))]
@@ -189,33 +190,33 @@ def format_problems(title: str, problems: typing.List[str], limit: int = 0) -> s
 
 
 # ------------------------------------------------------------------------------------ value parsing
-def parse_int(value) -> typing.Optional[int]:
+def parse_int(value) -> int | None:
     """``None`` / blank -> None, else ``int(value)`` (sources often send numbers as text)."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     return int(value)
 
 
-def parse_float(value) -> typing.Optional[float]:
+def parse_float(value) -> float | None:
     """``None`` / blank -> None, else ``float(value)``."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     return float(value)
 
 
-def parse_count(value) -> typing.Optional[int]:
+def parse_count(value) -> int | None:
     """``None`` / blank -> None, else the whole number of ``"6320.0000"``: some sources write counts with decimals."""
     number = parse_float(value)
     return None if number is None else int(round(number))
 
 
-def census_int(value) -> typing.Optional[int]:
+def census_int(value) -> int | None:
     """Like ``parse_int``, but the Census "not available" codes (negative, e.g. -666666666) are None."""
     number = parse_int(value)
     return None if number is None or number < 0 else number
 
 
-def census_float(value) -> typing.Optional[float]:
+def census_float(value) -> float | None:
     """Like ``parse_float``, but the Census "not available" codes (negative, e.g. -666666666) are None."""
     number = parse_float(value)
     return None if number is None or number < 0 else number
@@ -225,19 +226,19 @@ def upper_text(value: str) -> str:
     return value.strip().upper()
 
 
-def column(name: str, convert: typing.Optional[typing.Callable] = None):
+def column(name: str, convert: Callable | None = None):
     """An ``extract`` function: one source column. A missing column is an error: the source changed."""
     def extract(row: SourceRow):
         return convert(row[name]) if convert else row[name]
     return extract
 
 
-def field_names(*modules) -> typing.Tuple[str, ...]:
+def field_names(*modules) -> tuple[str, ...]:
     """The names of the Fields of these ``fields/`` modules: what a crawler claims."""
     return tuple(field.name for module in modules for field in module.FIELDS)
 
 
-def total(*names: str, convert: typing.Callable = parse_int):
+def total(*names: str, convert: Callable = parse_int):
     """An ``extract`` function: the sum of several source columns; None if one of them is blank."""
     def extract(row: SourceRow):
         values = [convert(row[name]) for name in names]
@@ -246,8 +247,8 @@ def total(*names: str, convert: typing.Callable = parse_int):
 
 
 def field_group(prefix: str, source: str, unit: str,
-                buckets: typing.Sequence[typing.Tuple[str, str, typing.Sequence[str]]],
-                convert: typing.Callable = parse_int) -> typing.Tuple[Field, ...]:
+                buckets: Sequence[tuple[str, str, Sequence[str]]],
+                convert: Callable = parse_int) -> tuple[Field, ...]:
     """
     The Fields of one distribution, one column per bucket ``(name, label, source columns)``.
     Each Field is named ``<prefix>_<name>`` and is the sum of its source columns;
@@ -266,7 +267,7 @@ def field_group(prefix: str, source: str, unit: str,
     )
 
 
-def ratio(numerator: str, denominator: str, scale: float = 1, convert: typing.Callable = parse_float,
+def ratio(numerator: str, denominator: str, scale: float = 1, convert: Callable = parse_float,
           whole: bool = False):
     """
     An ``extract`` function: ``scale * numerator / denominator`` of two source columns; None if one
@@ -293,7 +294,7 @@ def great_circle_miles(lat1: float, lng1: float, lat2: float, lng2: float) -> fl
     return 2 * EARTH_RADIUS_MILES * math.asin(math.sqrt(min(1.0, a)))
 
 
-def half_diagonal_miles(west: str, east: str, north: str, south: str, convert: typing.Callable = parse_float):
+def half_diagonal_miles(west: str, east: str, north: str, south: str, convert: Callable = parse_float):
     """
     An ``extract`` function: half the distance in miles between the south-west and the north-east
     corner of a box, given by four source columns in degrees; None if one of them is blank. It is the
@@ -308,7 +309,7 @@ def half_diagonal_miles(west: str, east: str, north: str, south: str, convert: t
 
 
 def share_and_average_group(prefix: str, source: str, total: str, amount_scale: float,
-                            buckets: typing.Sequence[typing.Tuple[str, str, str, str]]) -> typing.Tuple[Field, ...]:
+                            buckets: Sequence[tuple[str, str, str, str]]) -> tuple[Field, ...]:
     """
     Two Fields per bucket ``(name, label, count column, amount column)``, for sources that give a count
     and an amount per category: ``<prefix>_<name>_share`` = count / ``total`` and
@@ -336,7 +337,7 @@ def share_and_average_group(prefix: str, source: str, total: str, amount_scale: 
     return tuple(fields)
 
 
-def first_value(*names: str, convert: typing.Optional[typing.Callable] = None):
+def first_value(*names: str, convert: Callable | None = None):
     """An ``extract`` function for a fallback: the first non-blank value among these columns."""
     def extract(row: SourceRow):
         for name in names:

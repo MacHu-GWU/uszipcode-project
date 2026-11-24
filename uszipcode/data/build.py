@@ -29,8 +29,9 @@ import json
 import os
 import re
 import sqlite3
-import typing
 import zlib
+from collections.abc import Sequence
+from typing import Any
 
 from .zipcodes import normalize_zip
 from .checks import owners, require_valid
@@ -45,7 +46,7 @@ CSV_MAX_ROWS = 1000  # the CSV copy is for reading and reviewing; a larger set g
 SET_NAME = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
-def _read_pk_csv(path: str, label: str) -> typing.List[str]:
+def _read_pk_csv(path: str, label: str) -> list[str]:
     with open(path, encoding="utf-8-sig", newline="") as fh:  # -sig: Excel writes a BOM
         reader = csv.reader(fh)
         header = [h.strip() for h in next(reader, [])]
@@ -68,7 +69,7 @@ def _read_pk_csv(path: str, label: str) -> typing.List[str]:
     return pks
 
 
-def load_pk_set(spec: str, paths: Paths) -> typing.Tuple[str, typing.List[str]]:
+def load_pk_set(spec: str, paths: Paths) -> tuple[str, list[str]]:
     """``demo``, ``full`` (all ZIPs of zipcode_universe.csv) or the path of a CSV file with a ``zipcode`` column."""
     if spec == "demo":
         return "demo", sorted(DEMO_PKS)
@@ -89,8 +90,8 @@ def load_pk_set(spec: str, paths: Paths) -> typing.Tuple[str, typing.List[str]]:
     return name, sorted(_read_pk_csv(spec, name))
 
 
-def assemble(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
-             outputs: typing.Dict[str, typing.Dict[str, dict]]) -> typing.List[list]:
+def assemble(pks: Sequence[str], fields: Sequence[Field], owner: dict[str, str],
+             outputs: dict[str, dict[str, dict]]) -> list[list]:
     """
     Pure left join: one row per PK, ``[zipcode] + [value per Field]``, with one lookup per
     crawler and PK (this runs per cell). Derived Fields are None here.
@@ -112,7 +113,7 @@ def assemble(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: t
     return rows
 
 
-def derive(rows: typing.List[list], fields: typing.Sequence[Field]) -> None:
+def derive(rows: list[list], fields: Sequence[Field]) -> None:
     """Fill in the derived Fields of every row, in catalog order (B4: a derived value fails)."""
     column = {f.name: j for j, f in enumerate(fields, start=1)}
     problems = []
@@ -131,8 +132,8 @@ def derive(rows: typing.List[list], fields: typing.Sequence[Field]) -> None:
         raise ContractError(format_problems("derived Fields failed", problems, limit=20))
 
 
-def fold_history(pks: typing.Sequence[str], fields: typing.Sequence[Field], owner: typing.Dict[str, str],
-                 outputs: typing.Dict[str, typing.Dict[tuple, dict]]) -> typing.List[typing.List[dict]]:
+def fold_history(pks: Sequence[str], fields: Sequence[Field], owner: dict[str, str],
+                 outputs: dict[str, dict[tuple, dict]]) -> list[list[dict]]:
     """
     The history of every PK: one ``{year: value}`` per history Field. A year without a
     value is left out, so a Field without any value has ``{}``.
@@ -151,21 +152,21 @@ def fold_history(pks: typing.Sequence[str], fields: typing.Sequence[Field], owne
     return folded
 
 
-def history_json(by_year: typing.Dict[int, typing.Any]) -> typing.Optional[str]:
+def history_json(by_year: dict[int, Any]) -> str | None:
     """``{2012: 14304, 2011: 13642}`` -> ``{"2011":13642,"2012":14304}``; no value at all -> None."""
     if not by_year:
         return None
     return json.dumps({str(year): by_year[year] for year in sorted(by_year)}, separators=(",", ":"))
 
 
-def simple_table(fields: typing.Sequence[Field], rows: typing.List[list]) -> typing.Tuple[typing.List[Field], typing.List[list]]:
+def simple_table(fields: Sequence[Field], rows: list[list]) -> tuple[list[Field], list[list]]:
     """The simple release: the Fields marked ``simple`` and their part of every row, ``[zipcode] + [value per Field]``."""
     keep = [j for j, f in enumerate(fields, start=1) if f.simple]
     return [fields[j - 1] for j in keep], [[row[0]] + [row[j] for j in keep] for row in rows]
 
 
-def _write_sqlite(path: str, fields: typing.Sequence[Field], history_fields: typing.Sequence[Field],
-                  rows: typing.List[list]) -> None:
+def _write_sqlite(path: str, fields: Sequence[Field], history_fields: Sequence[Field],
+                  rows: list[list]) -> None:
     """``rows``: ``[zipcode] + [value per Field] + [JSON text per history Field]``."""
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     part = path + ".part"
@@ -200,14 +201,14 @@ def _downloads(meta: dict) -> dict:
             for fn, e in sorted(meta.get("downloads", {}).items())}
 
 
-def _crawler_coverage(out: dict, pk_index: typing.Set[str], meta: dict) -> dict:
+def _crawler_coverage(out: dict, pk_index: set[str], meta: dict) -> dict:
     inside = sum(1 for key in out if (key[0] if isinstance(key, tuple) else key) in pk_index)
     return {"source_rows": len(out), "rows_in_pk_set": inside, "rows_outside_pk_set": len(out) - inside,
             "downloads": _downloads(meta)}
 
 
-def _history_coverage(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], owner: typing.Dict[str, str],
-                      outputs: dict, folded: typing.List[typing.List[dict]], pk_index: typing.Set[str], metas: dict) -> dict:
+def _history_coverage(fields: Sequence[Field], crawlers: Sequence[Crawler], owner: dict[str, str],
+                      outputs: dict, folded: list[list[dict]], pk_index: set[str], metas: dict) -> dict:
     """Per history Field: its column, the PKs that have it, its values (PK x year) and its years."""
     field_cov = {}
     for j, f in enumerate(fields):
@@ -222,8 +223,8 @@ def _history_coverage(fields: typing.Sequence[Field], crawlers: typing.Sequence[
     }
 
 
-def build(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler], paths: Paths,
-          pk_set: str = "demo", history_fields: typing.Sequence[Field] = ()) -> dict:
+def build(fields: Sequence[Field], crawlers: Sequence[Crawler], paths: Paths,
+          pk_set: str = "demo", history_fields: Sequence[Field] = ()) -> dict:
     """Validate, load the PK set and the crawler outputs, join and write. Returns the coverage report."""
     require_valid(fields, crawlers, paths.mise_toml, history_fields)
     name, pks = load_pk_set(pk_set, paths)

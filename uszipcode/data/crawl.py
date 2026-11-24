@@ -18,7 +18,8 @@ import csv
 import json
 import math
 import os
-import typing
+from collections.abc import Iterable, Sequence
+from typing import Any
 
 from .zipcodes import normalize_zip
 from . import fetch
@@ -52,7 +53,7 @@ def coerce(field: Field, value):
     return value.strip(), None
 
 
-def _year(value) -> typing.Optional[int]:
+def _year(value) -> int | None:
     try:
         year = int(value)
     except (TypeError, ValueError):
@@ -64,8 +65,8 @@ def _label(key) -> str:
     return "zipcode %s, year %d" % key if isinstance(key, tuple) else "zipcode %s" % key
 
 
-def check_rows(crawler: Crawler, catalog: typing.Dict[str, Field],
-               rows: typing.Iterable) -> typing.Tuple[typing.List[tuple], dict]:
+def check_rows(crawler: Crawler, catalog: dict[str, Field],
+               rows: Iterable) -> tuple[list[tuple], dict]:
     """
     Let each claimed Field read its value from the source rows of ``parse()`` and apply rules D1-D7.
     Returns ``(records, stats)``: records are ``(key, [value per claimed Field])`` sorted by key; the key
@@ -129,7 +130,7 @@ def check_rows(crawler: Crawler, catalog: typing.Dict[str, Field],
     return sorted(records.items()), stats
 
 
-def write_csv(path: str, header: typing.List[str], rows: typing.Iterable[typing.Sequence]) -> None:
+def write_csv(path: str, header: list[str], rows: Iterable[Sequence]) -> None:
     """
     UTF-8 without BOM, ``\\n`` line endings, written through ``.part`` + ``os.replace``.
     A cell: NULL -> empty, int -> str(), float -> repr() (round-trips exactly), str as is.
@@ -161,11 +162,11 @@ def replace(part: str, path: str) -> None:
                             % path) from None
 
 
-def output_paths(crawler: Crawler, out_dir: str) -> typing.Tuple[str, str]:
+def output_paths(crawler: Crawler, out_dir: str) -> tuple[str, str]:
     return os.path.join(out_dir, crawler.name + ".csv"), os.path.join(out_dir, crawler.name + ".json")
 
 
-def key_columns(crawler: Crawler) -> typing.List[str]:
+def key_columns(crawler: Crawler) -> list[str]:
     return ["zipcode", "year"] if crawler.history else ["zipcode"]
 
 
@@ -177,8 +178,8 @@ def write_output(crawler: Crawler, records, meta: dict, out_dir: str) -> str:
     return csv_path
 
 
-def read_output(crawler: Crawler, catalog: typing.Dict[str, Field],
-                out_dir: str) -> typing.Dict[typing.Any, typing.Dict[str, typing.Any]]:
+def read_output(crawler: Crawler, catalog: dict[str, Field],
+                out_dir: str) -> dict[Any, dict[str, Any]]:
     """
     ``{key: {field: value}}`` from ``<name>.csv`` (the key is the zipcode, or ``(zipcode, year)`` for a
     history crawler); checks it against the crawler's current claims (B1-B3).
@@ -243,7 +244,7 @@ def check_downloads(crawler: Crawler, meta: dict, out_dir: str) -> None:
                             % (output_paths(crawler, out_dir)[0], crawler.name, ", ".join(changed), crawler.name))
 
 
-def run_crawler(crawler: Crawler, fields: typing.Sequence[Field], paths: Paths,
+def run_crawler(crawler: Crawler, fields: Sequence[Field], paths: Paths,
                 refresh: bool = False, force: bool = False) -> dict:
     """Fetch, parse, check and write one crawler. Returns a summary for the CLI."""
     catalog = {f.name: f for f in fields}

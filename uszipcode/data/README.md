@@ -191,7 +191,10 @@ History Fields (the columns `<field>_by_year`):
 Comparing years needs care. The year of an ACS value is the last year of its 5-year window, so
 neighbouring years share four years of data, and dollars are of that year (not adjusted for inflation).
 ZCTA boundaries change: ACS years up to 2020 use the 2010 ZCTAs, later years the 2020 ZCTAs, and each census
-uses its own. A code can therefore stand for a different area in different years.
+uses its own (the crawler outputs have 33,120 ZCTAs in each ACS year 2011-2020 and 33,772 or 33,774 from 2021;
+32,038, 33,120 and 33,774 in the censuses 2000, 2010 and 2020). A code can therefore stand for a different
+area in different years. The description of each history Field says which ZCTA set its years use; the IRS
+values are by the ZIP on the tax return, not by ZCTA.
 
 The year of an IRS value is the tax year. `tax_returns` counts returns: a couple filing jointly is one.
 `people_on_tax_returns` is the number of taxpayers and dependents on them, which the IRS calls exemptions up
@@ -464,7 +467,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | 9 | `major_city` case? | Upper case, as HUD and ZBP write it (2.x stored title case). Title case is a matter of display, and is easy to get wrong (McKinney, St. Louis) | done |
 | 10 | `zipcode_type` source? | The 2.x values: no free government source has the type. The 6 ZIPs newer than 2.x have none | done |
 | 11 | Is a Census key required? | Yes (it is free). Keyless calls are limited per IP per day, so a crawl may not finish | done |
-| 12 | Does the JSON say which ZCTA set a history value uses? | No: the set follows from the source and the year (see [Crawlers and Fields](#crawlers-and-fields)) | done |
+| 12 | Does the JSON say which ZCTA set a history value uses? | No: the set follows from the source and the year, and the description of each history Field says which (the maintainer asked for it on 2026-11-22; see [Crawlers and Fields](#crawlers-and-fields)) | done |
 | 13 | How detailed is `polygon`? | The Census generalization for 1:500,000 maps; nothing is simplified here | done |
 | 14 | 529 MB for the four `bounds_*`? | Yes: the TIGER/Line file is downloaded once, and its box is exact (it matches the research for all 33,791 ZCTAs) | done |
 | 15 | What is `radius_in_miles`? | Half the diagonal of the `bounds_*` box, a derived Field. It is the definition that comes closest to the 2.x values (see [Result](#result-run-of-2026-11-09)) | done |
@@ -494,8 +497,9 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
    `uszipcode/data/*`, whose tests are skipped on Python 3.10 (the library's tests on 3.10, without
    `test_db.py`: 94% instead of 25%), and `requirements.txt` lists `botocore`, which `sqlalchemy_mate` 2.0.0.3
    imports (with only `requirements.txt` installed, `SearchEngine` can now be imported).
-3. **The JSON structure of a history column.** It is `{year: value}`, chosen here, as plain text so that
-   `json_extract` reads it (56 MB for the 12 columns, 31 MB if compressed like `polygon`). The population has
-   three such columns, because the counts differ: `census_population_by_year`, `acs_population_by_year` and
-   `people_on_tax_returns_by_year` (the 2.x `population_by_year`). Another structure changes one function
-   (`history_json` in `build.py`). Is this the structure you had in mind?
+3. **The JSON structure of a history column.** Answered on 2026-11-22: yes, `{year: value}` as plain text
+   (so that `json_extract` reads it), and three population columns, because they are different numbers:
+   `census_population_by_year`, `acs_population_by_year` and `people_on_tax_returns_by_year` (the 2.x
+   `population_by_year`). Done, with what was also asked: the description of each history Field says which ZCTA
+   set its years use. ACS: the 2010 ZCTAs up to 2020, the 2020 ZCTAs from 2021. Censuses: each its own, so
+   2000 uses the 2000 ZCTAs. IRS: the ZIP on the tax return, not a ZCTA. A test checks every history Field.

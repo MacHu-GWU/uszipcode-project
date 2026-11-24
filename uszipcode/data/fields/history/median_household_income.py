@@ -9,7 +9,8 @@ FIELDS = (
         name="median_household_income",
         dtype=int,
         description="Median household income of the ZCTA, ACS 5-year estimate ending in that year, in dollars of that "
-                    "year, table B19013 (B19013_001E)",
+                    "year, table B19013 (B19013_001E); years up to 2020 use the 2010 ZCTAs, years from 2021 the 2020 "
+                    "ZCTAs",
         unit="dollars",
         extract=column("B19013_001E", census_int),
         examples=(({"year": 2011, "B19013_001E": "78081"}, 78081), ({"year": 2011, "B19013_001E": "-666666666"}, None)),
@@ -17,7 +18,8 @@ FIELDS = (
     Field(
         name="median_household_income_moe",
         dtype=int,
-        description="Margin of error (90%) of median_household_income (B19013_001M)",
+        description="Margin of error (90%) of median_household_income (B19013_001M); years up to 2020 use the 2010 "
+                    "ZCTAs, years from 2021 the 2020 ZCTAs",
         unit="dollars",
         extract=column("B19013_001M", census_int),
         examples=(({"year": 2011, "B19013_001M": "9699"}, 9699), ({"year": 2011, "B19013_001M": "-222222222"}, None)),

@@ -7,11 +7,13 @@ The shape of the code, so that it stays the same as more Fields and crawlers are
 - the functionality (the modules of ``uszipcode/data/``) knows no crawler and no Field;
 - a crawler only downloads and parses: no network code; it claims Fields by module but never reads a value;
 - a Field module imports only ``core``, is named after its Field and carries examples that pass;
+- a history Field says which ZCTA set its years use, or that its ZIP is not a ZCTA;
 - every module is listed in its package's ``MODULES``.
 """
 
 import ast
 import os
+import re
 import types
 
 import pytest
@@ -134,6 +136,12 @@ def test_the_examples_of_every_field_pass(field):
         value = field.extract(source_row)
         assert value == expected
         assert value is None or type(value) is field.dtype
+
+
+@pytest.mark.parametrize("field", history.HISTORY_FIELDS, ids=lambda f: f.name)
+def test_every_history_field_says_which_zcta_set_its_years_use(field):
+    # ZCTA boundaries change, so a code can stand for a different area in different years
+    assert re.search(r"\b(2000|2010|2020) ZCTAs\b", field.description) or "not a ZCTA" in field.description
 
 
 def test_every_real_module_is_listed():

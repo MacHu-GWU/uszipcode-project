@@ -9,7 +9,8 @@ FIELDS = (
         name="median_home_value",
         dtype=int,
         description="Median value of owner-occupied housing units in the ZCTA, ACS 5-year estimate ending in that year, "
-                    "in dollars of that year, table B25077 (B25077_001E); the top code changed over the years",
+                    "in dollars of that year, table B25077 (B25077_001E); the top code changed over the years; years "
+                    "up to 2020 use the 2010 ZCTAs, years from 2021 the 2020 ZCTAs",
         unit="dollars",
         extract=column("B25077_001E", census_int),
         examples=(({"year": 2011, "B25077_001E": "546500"}, 546500), ({"year": 2011, "B25077_001E": "-666666666"}, None)),
@@ -17,7 +18,8 @@ FIELDS = (
     Field(
         name="median_home_value_moe",
         dtype=int,
-        description="Margin of error (90%) of median_home_value (B25077_001M)",
+        description="Margin of error (90%) of median_home_value (B25077_001M); years up to 2020 use the 2010 ZCTAs, "
+                    "years from 2021 the 2020 ZCTAs",
         unit="dollars",
         extract=column("B25077_001M", census_int),
         examples=(({"year": 2011, "B25077_001M": "51353"}, 51353), ({"year": 2011, "B25077_001M": "-222222222"}, None)),

@@ -20,7 +20,6 @@ import datetime
 import json
 import os
 import sys
-import typing
 
 from ..core import PipelineError
 from .sources import CACHE_NAME, SOURCES, Records, is_military_zip
@@ -44,7 +43,7 @@ COLUMNS = [
 ]
 
 
-def merge(records: typing.Dict[str, Records]) -> typing.List[dict]:
+def merge(records: dict[str, Records]) -> list[dict]:
     """
     ``records`` maps a source name to its ``{zipcode: attributes}``. Returns one row
     per ZIP found in any source, sorted by ZIP.
@@ -83,7 +82,7 @@ def merge(records: typing.Dict[str, Records]) -> typing.List[dict]:
     return rows
 
 
-def write_csv(rows: typing.List[dict], path: str) -> None:
+def write_csv(rows: list[dict], path: str) -> None:
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS, lineterminator="\n")
@@ -92,7 +91,7 @@ def write_csv(rows: typing.List[dict], path: str) -> None:
             writer.writerow({k: ("" if v is None else v) for k, v in row.items()})
 
 
-def summarize(rows: typing.List[dict], records: typing.Dict[str, Records], params: dict) -> dict:
+def summarize(rows: list[dict], records: dict[str, Records], params: dict) -> dict:
     by_type = collections.Counter(r["v2_zipcode_type"] for r in rows if r["in_v2"])
     covered = collections.Counter(r["v2_zipcode_type"] for r in rows if r["in_v2"] and r["n_gov_sources"] > 0)
     return {
@@ -121,7 +120,7 @@ def _shown(path: str) -> str:
         return path
 
 
-def _parse_years(text: str) -> typing.List[int]:
+def _parse_years(text: str) -> list[int]:
     years = []
     for part in text.split(","):
         part = part.strip()
@@ -133,7 +132,7 @@ def _parse_years(text: str) -> typing.List[int]:
     return years
 
 
-def main(argv: typing.Optional[typing.List[str]] = None) -> dict:
+def main(argv: list[str] | None = None) -> dict:
     p = argparse.ArgumentParser(prog="python -m uszipcode.data.zipcode_universe", description=__doc__.split("\n\n")[0])
     p.add_argument("--cache-dir", default=DEFAULT_CACHE_DIR,
                    help="downloads are kept in its folder " + CACHE_NAME + " (default: %(default)s)")
@@ -172,7 +171,7 @@ def main(argv: typing.Optional[typing.List[str]] = None) -> dict:
     return summary
 
 
-def run(argv: typing.Optional[typing.List[str]] = None) -> int:
+def run(argv: list[str] | None = None) -> int:
     """``main`` for the command line: an expected failure is one line on stderr and an exit code, not a traceback."""
     try:
         main(argv)

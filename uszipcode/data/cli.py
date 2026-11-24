@@ -19,7 +19,7 @@ import argparse
 import difflib
 import os
 import sys
-import typing
+from collections.abc import Sequence
 
 from . import build as build_mod
 from .checks import describe, require_valid, unlisted_modules, validate
@@ -58,8 +58,8 @@ def _crawl_line(s: dict) -> str:
         s["crawler"], s["files"], how, s["rows"], s["skipped_keys"], _rel(s["path"]))
 
 
-def main(argv: typing.List[str], fields, crawlers, paths: typing.Optional[Paths] = None,
-         packages: typing.Sequence = (), history_fields=()) -> int:
+def main(argv: list[str], fields, crawlers, paths: Paths | None = None,
+         packages: Sequence = (), history_fields=()) -> int:
     """
     ``packages``: the Python packages of the Fields and crawlers, for rule L1 of ``check``.
     ``history_fields``: the catalog of the history Fields, claimed by the history crawlers.

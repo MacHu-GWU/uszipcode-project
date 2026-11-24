@@ -18,8 +18,8 @@ import difflib
 import os
 import pkgutil
 import re
-import typing
 import urllib.parse
+from collections.abc import Iterable, Sequence
 
 from .core import Crawler, Field, RegistryError, SQL_TYPES, history_column
 
@@ -43,17 +43,17 @@ def task_block(name: str) -> str:
     return '[tasks.%s%s]\nrun = "%s"' % (TASK_PREFIX, name, task_command(name))
 
 
-def owners(crawlers: typing.Sequence[Crawler]) -> typing.Dict[str, str]:
+def owners(crawlers: Sequence[Crawler]) -> dict[str, str]:
     """Field name -> name of the crawler that claims it."""
     return {f: c.name for c in crawlers for f in c.fields}
 
 
-def _did_you_mean(word: str, options: typing.Iterable[str]) -> str:
+def _did_you_mean(word: str, options: Iterable[str]) -> str:
     close = difflib.get_close_matches(word, list(options), n=1)
     return " (did you mean %r?)" % close[0] if close else ""
 
 
-def _check_fields(fields: typing.Sequence[Field], catalog: str = MAIN_CATALOG) -> typing.List[str]:
+def _check_fields(fields: Sequence[Field], catalog: str = MAIN_CATALOG) -> list[str]:
     problems, seen = [], set()
     key = HISTORY_KEY if catalog == HISTORY_CATALOG else MAIN_KEY
     for f in fields:
@@ -79,7 +79,7 @@ def _check_fields(fields: typing.Sequence[Field], catalog: str = MAIN_CATALOG) -
     return problems
 
 
-def _check_columns(fields: typing.Sequence[Field], history_fields: typing.Sequence[Field]) -> typing.List[str]:
+def _check_columns(fields: Sequence[Field], history_fields: Sequence[Field]) -> list[str]:
     """The database has one table: ``zipcode``, the Fields, and one column per history Field."""
     problems = []
     names = {f.name for f in fields}
@@ -94,7 +94,7 @@ def _check_columns(fields: typing.Sequence[Field], history_fields: typing.Sequen
     return problems
 
 
-def _check_crawlers(crawlers: typing.Sequence[Crawler]) -> typing.List[str]:
+def _check_crawlers(crawlers: Sequence[Crawler]) -> list[str]:
     problems = []
     names = collections.Counter(c.name for c in crawlers)
     for name, n in names.items():
@@ -141,8 +141,8 @@ def _check_crawlers(crawlers: typing.Sequence[Crawler]) -> typing.List[str]:
     return problems
 
 
-def _check_claims(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler],
-                  catalog_name: str = MAIN_CATALOG) -> typing.List[str]:
+def _check_claims(fields: Sequence[Field], crawlers: Sequence[Crawler],
+                  catalog_name: str = MAIN_CATALOG) -> list[str]:
     problems = []
     catalog = [f.name for f in fields]
     known = set(catalog)
@@ -191,7 +191,7 @@ def _load_toml(path: str):
         return None, "[M0] mise.toml is not valid TOML: %s" % e
 
 
-def _check_mise(crawlers: typing.Sequence[Crawler], mise_toml: str) -> typing.List[str]:
+def _check_mise(crawlers: Sequence[Crawler], mise_toml: str) -> list[str]:
     data, problem = _load_toml(mise_toml)
     if problem:
         return [problem]
@@ -213,8 +213,8 @@ def _check_mise(crawlers: typing.Sequence[Crawler], mise_toml: str) -> typing.Li
     return problems
 
 
-def validate(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler],
-             mise_toml: typing.Optional[str], history_fields: typing.Sequence[Field] = ()) -> typing.List[str]:
+def validate(fields: Sequence[Field], crawlers: Sequence[Crawler],
+             mise_toml: str | None, history_fields: Sequence[Field] = ()) -> list[str]:
     """
     Every problem of the catalogs, the crawlers, the claims and (unless ``mise_toml`` is None) the mise
     tasks. History crawlers claim from ``history_fields``, the other crawlers from ``fields``.
@@ -239,7 +239,7 @@ def require_valid(fields, crawlers, mise_toml, history_fields=()) -> None:
         raise RegistryError(problems)
 
 
-def unlisted_modules(package) -> typing.List[str]:
+def unlisted_modules(package) -> list[str]:
     """A module left out of its package's ``MODULES`` would silently not exist: rule L1."""
     folder = package.__name__.rsplit(".", 1)[-1]
     listed = {m.__name__.rsplit(".", 1)[-1] for m in package.MODULES}
@@ -247,7 +247,7 @@ def unlisted_modules(package) -> typing.List[str]:
             for _, name, is_package in pkgutil.iter_modules(package.__path__) if name not in listed and not is_package]
 
 
-def describe(fields: typing.Sequence[Field], crawlers: typing.Sequence[Crawler]) -> str:
+def describe(fields: Sequence[Field], crawlers: Sequence[Crawler]) -> str:
     """The Field catalog as a table: name, type, unit, claiming crawler."""
     owner = owners(crawlers)
     rows = [("field", "type", "unit", "crawler")]

@@ -4,10 +4,8 @@
 What every step of the pipeline needs to know about a ZIP code.
 """
 
-import typing
 
-
-def normalize_zip(value) -> typing.Optional[str]:
+def normalize_zip(value) -> str | None:
     """
     Return the 5-digit ZIP as a string with leading zeros, or None if ``value``
     is not a ZIP code. ``"501"`` -> ``"00501"``; ``"00000"``, ``"99999"``

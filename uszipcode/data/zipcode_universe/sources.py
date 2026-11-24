@@ -30,8 +30,9 @@ import dataclasses
 import io
 import json
 import sqlite3
-import typing
 import zipfile
+from collections.abc import Iterable
+from typing import Any
 
 from .. import fetch
 from ..core import Crawler, Download
@@ -60,7 +61,7 @@ MILITARY_PREFIXES = frozenset(
     ["%03d" % p for p in range(90, 100)] + ["340"] + [str(p) for p in range(962, 967)]
 )
 
-Records = typing.Dict[str, typing.Dict[str, typing.Any]]
+Records = dict[str, dict[str, Any]]
 
 
 def is_military_zip(zipcode: str) -> bool:
@@ -69,7 +70,7 @@ def is_military_zip(zipcode: str) -> bool:
 
 
 # ------------------------------------------------------------------------------------------ download
-def download(cache_dir: str, *downloads: Download) -> typing.List[str]:
+def download(cache_dir: str, *downloads: Download) -> list[str]:
     """
     The local paths of ``downloads``, in order. ``fetch.py`` fetches those that are
     not yet in ``<cache_dir>/zipcode_universe/`` and keeps a manifest there.
@@ -170,7 +171,7 @@ def load_census_zcta(cache_dir: str, **_) -> Records:
     return parse_gazetteer(_zip_member_text(path, ".txt", "utf-8"))
 
 
-def load_hud(cache_dir: str, hud_token_file: typing.Optional[str] = None, **_) -> Records:
+def load_hud(cache_dir: str, hud_token_file: str | None = None, **_) -> Records:
     """The token is read from ``$HUD_API_TOKEN``, else from ``hud_token_file`` (default ``~/.hud_token``)."""
     token = dataclasses.replace(HUD_TOKEN, file=hud_token_file) if hud_token_file else HUD_TOKEN
     path, = download(cache_dir, Download("hud_zip_county_all.json", HUD_ZIP_COUNTY_URL, magic=b"{", secret=token))
@@ -184,7 +185,7 @@ def load_zbp(cache_dir: str, zbp_year: int = 2023, **_) -> Records:
     return parse_zbp(_zip_member_text(path, ".txt", "latin-1"))
 
 
-def load_irs(cache_dir: str, irs_years: typing.Iterable[int] = (2022,), **_) -> Records:
+def load_irs(cache_dir: str, irs_years: Iterable[int] = (2022,), **_) -> Records:
     out = {}
     years = sorted(irs_years)
     paths = download(cache_dir, *[Download("%02dzpallnoagi.csv" % (year % 100), IRS_ZIP_URL.format(yy=year % 100),

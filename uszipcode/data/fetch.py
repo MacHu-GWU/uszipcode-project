@@ -30,7 +30,6 @@ import http.client
 import json
 import os
 import time
-import typing
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -50,7 +49,7 @@ MANIFEST = "manifest.json"
 TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
-def _origin(url: str) -> typing.Tuple[str, str]:
+def _origin(url: str) -> tuple[str, str]:
     parts = urllib.parse.urlsplit(url)
     return parts.scheme.lower(), parts.netloc.lower()
 
@@ -116,7 +115,7 @@ def _parse_time(text: str) -> datetime.datetime:
     return datetime.datetime.strptime(text, TIME_FORMAT).replace(tzinfo=datetime.timezone.utc)
 
 
-def _redact(text: str, secret: typing.Optional[str]) -> str:
+def _redact(text: str, secret: str | None) -> str:
     """Hide the secret, also in the URL-encoded form it has inside a request URL."""
     if not secret:
         return text
@@ -125,7 +124,7 @@ def _redact(text: str, secret: typing.Optional[str]) -> str:
     return text
 
 
-def _retry_wait(attempt: int, retry_after: typing.Optional[str]) -> float:
+def _retry_wait(attempt: int, retry_after: str | None) -> float:
     if retry_after and retry_after.strip().isdigit():
         return min(int(retry_after.strip()), RETRY_AFTER_MAX_S)
     return BACKOFF_S[min(attempt, len(BACKOFF_S)) - 1]
@@ -142,12 +141,12 @@ def _continues(response, offset: int) -> bool:
     return getattr(response, "status", None) == 206 and content_range.startswith("bytes%d-" % offset)
 
 
-def _validator(etag: typing.Optional[str], last_modified: typing.Optional[str]) -> typing.Optional[str]:
+def _validator(etag: str | None, last_modified: str | None) -> str | None:
     """What ``If-Range`` sends when resuming: a strong ETag, else the date (a weak ETag never matches there)."""
     return etag if etag and not etag.startswith("W/") else last_modified
 
 
-def _expected_size(response, offset: int) -> typing.Optional[int]:
+def _expected_size(response, offset: int) -> int | None:
     """The size of the file once ``response`` (which starts at byte ``offset``) is read to its end, if known."""
     length = (response.headers.get("Content-Length") or "").strip()
     return offset + int(length) if length.isdigit() else None
@@ -178,7 +177,7 @@ class _Part:
                 self.size += len(chunk)
 
 
-def _download(crawler_name: str, d: Download, path: str) -> typing.Tuple[dict, int]:
+def _download(crawler_name: str, d: Download, path: str) -> tuple[dict, int]:
     """Download one file to ``path``; returns (manifest entry, number of requests made)."""
     secret = read_secret(d.secret, crawler_name) if d.secret else None
     url, headers = d.url, {"User-Agent": USER_AGENT}
@@ -249,7 +248,7 @@ def _download(crawler_name: str, d: Download, path: str) -> typing.Tuple[dict, i
 
 
 def fetch_all(crawler: Crawler, cache_dir: str, refresh: bool = False,
-              force: bool = False) -> typing.Tuple[typing.Dict[str, str], int]:
+              force: bool = False) -> tuple[dict[str, str], int]:
     """
     Make sure every declared download of ``crawler`` is in the cache.
     Returns ``({filename: local path}, number of HTTP requests made)``.
@@ -286,7 +285,7 @@ def fetch_all(crawler: Crawler, cache_dir: str, refresh: bool = False,
     return files, requests
 
 
-def manifest_entries(crawler: Crawler, cache_dir: str) -> typing.Dict[str, dict]:
+def manifest_entries(crawler: Crawler, cache_dir: str) -> dict[str, dict]:
     """The manifest entries of the crawler's declared downloads (for its output metadata)."""
     manifest = load_manifest(crawler_cache_dir(crawler, cache_dir))
     return {d.filename: manifest[d.filename] for d in crawler.downloads if d.filename in manifest}

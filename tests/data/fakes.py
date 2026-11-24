@@ -13,7 +13,6 @@ import csv
 import email.message
 import io
 import os
-import typing
 import urllib.error
 
 from uszipcode.data.checks import task_command
@@ -51,7 +50,7 @@ class _Response:
         return False
 
 
-def http_error(url: str, code: int, retry_after: typing.Optional[str] = None) -> urllib.error.HTTPError:
+def http_error(url: str, code: int, retry_after: str | None = None) -> urllib.error.HTTPError:
     headers = email.message.Message()
     if retry_after is not None:
         headers["Retry-After"] = retry_after
@@ -71,7 +70,7 @@ class FakeOpener:
     request gets the whole body (200).
     """
 
-    def __init__(self, served: typing.Dict[str, bytes], script: typing.Optional[typing.Dict[str, list]] = None):
+    def __init__(self, served: dict[str, bytes], script: dict[str, list] | None = None):
         self.served = served
         self.script = {url: list(actions) for url, actions in (script or {}).items()}
         self.ranged = set()
@@ -84,7 +83,7 @@ class FakeOpener:
             return 0
         return int(asked[len("bytes="):].rstrip("-"))
 
-    def _match(self, url: str) -> typing.Optional[str]:
+    def _match(self, url: str) -> str | None:
         matches = [u for u in self.served if url.startswith(u)]
         return max(matches, key=len) if matches else None
 
@@ -108,7 +107,7 @@ class FakeOpener:
         return _Response(self.served[public], offset=offset, etag=self.etag)
 
     @property
-    def urls(self) -> typing.List[str]:
+    def urls(self) -> list[str]:
         return [c[0] for c in self.calls]
 
 
@@ -195,7 +194,7 @@ class FakeWorld:
         writer.writerows(rows)
         return out.getvalue().encode("utf-8")
 
-    def expected(self, bumps: typing.Optional[typing.Dict[int, int]] = None) -> typing.List[list]:
+    def expected(self, bumps: dict[int, int] | None = None) -> list[list]:
         """The database rows: one per PK (sorted), ``[zipcode] + [value or None per Field]``."""
         bumps = bumps or {}
         rows = []

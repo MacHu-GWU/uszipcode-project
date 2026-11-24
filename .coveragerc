@@ -8,6 +8,8 @@ omit =
     uszipcode/docs/*
     uszipcode/tests/*
     uszipcode/handlers/*
+    # the 3.0 data pipeline: Python 3.11+, tested by .github/workflows/data_pipeline.yml
+    uszipcode/data/*
 
 [report]
 # Regexes for lines to exclude from consideration

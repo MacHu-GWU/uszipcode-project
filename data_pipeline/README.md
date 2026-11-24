@@ -9,7 +9,7 @@ This folder holds only what the pipeline downloads and writes, so that none of i
 |---|---|---|
 | `.cache/` | the raw downloads, one folder per crawler, and the downloads of `zipcode_universe` | no |
 | `output/crawlers/` | one CSV and one JSON file per crawler | no |
-| `output/` | `zipcode_universe.csv` (the list of PKs), the databases `db_<set>.sqlite` and their simple releases `db_<set>_simple.sqlite` | only `zipcode_universe.*` and the demo CSV and coverage files |
+| `output/` | `zipcode_universe.csv` (the list of PKs) and its summary, the databases `db_<set>.sqlite` and their simple releases `db_<set>_simple.sqlite` | only `zipcode_universe_summary.json` and the demo CSV and coverage files; the full list goes with the release |
 
 The tasks are in [`mise.toml`](../mise.toml): `mise run pipeline-check`, `mise run crawler-<name>`,
 `mise run pipeline-build` and `mise run pipeline-test` (see the

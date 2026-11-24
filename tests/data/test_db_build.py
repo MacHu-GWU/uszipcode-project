@@ -92,7 +92,9 @@ def test_unknown_pk_set(tmp_path):
     assert "is not 'demo', 'full' or an existing CSV file" in str(e.value)
 
 
-def test_demo_pks_are_in_the_committed_universe():
+def test_demo_pks_are_in_the_universe():
+    if not os.path.exists(Paths.default().universe_csv):  # not in git: built by mise run zipcode-universe
+        pytest.skip("zipcode_universe.csv has not been built here")
     with open(Paths.default().universe_csv, encoding="utf-8", newline="") as fh:
         rows = {r["zipcode"]: r for r in csv.DictReader(fh)}
     assert all(pk in rows for pk in build_mod.DEMO_PKS)

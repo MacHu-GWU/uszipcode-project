@@ -2,4 +2,6 @@
 output/crawlers/
 output/*.sqlite
 output/db_full*
+# the full list of PKs (42,730 rows) goes with the release; git keeps its summary, zipcode_universe_summary.json
+output/zipcode_universe.csv
 *.part

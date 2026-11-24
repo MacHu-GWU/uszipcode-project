@@ -6,7 +6,7 @@ and a ZIP that has no statistics still keeps its row.
 
 ## Run
 
-From the repository root (Python 3.6+, standard library only):
+From the repository root (Python 3.11+, like the rest of `uszipcode/data/`; standard library only):
 
 ```
 python -m uszipcode.data.zipcode_universe                     # all sources, including the 2.x list
@@ -23,8 +23,10 @@ run takes about 90 seconds the first time and a few seconds once the files are c
 
 Output:
 
-- `data_pipeline/output/zipcode_universe.csv`: one row per ZIP (columns below)
-- `data_pipeline/output/zipcode_universe_summary.json`: counts per source and coverage of the 2.x list
+- `data_pipeline/output/zipcode_universe.csv`: one row per ZIP (columns below). It is not in git (42,730
+  rows): it goes with the release, and until then this command builds it.
+- `data_pipeline/output/zipcode_universe_summary.json`: counts per source and coverage of the 2.x list. It is
+  in git.
 
 ## Sources
 

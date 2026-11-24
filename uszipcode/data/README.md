@@ -503,3 +503,37 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
    `population_by_year`). Done, with what was also asked: the description of each history Field says which ZCTA
    set its years use. ACS: the 2010 ZCTAs up to 2020, the 2020 ZCTAs from 2021. Censuses: each its own, so
    2000 uses the 2000 ZCTAs. IRS: the ZIP on the tax return, not a ZCTA. A test checks every history Field.
+4. **Marking the values that are not from a government source** (your answer of 2026-11-22). A proposal:
+   nothing is built yet, because both choices below change the columns.
+
+   Where such values are today, for the full PK set (42,730 ZIPs). All of them are in `zip-basics`; every
+   other Field comes from a government source only.
+
+   | Field | from a government source | from uszipcode 2.x | none |
+   |---|---|---|---|
+   | `zipcode_type` | 0 | 42,724 | 6 (the ZIPs newer than 2.x) |
+   | `major_city`, `state` | 39,821 (HUD 39,484, else ZBP 337) | 2,909 | 0 |
+   | `county` | 39,455 (HUD) | 2,411 | 864 |
+   | `timezone` | 39,546 (the BTS zone at the ZCTA point 33,791, at the point of the HUD county 5,752, of the ZBP state 3) | 2,359 (a BTS zone, but at the county that 2.x names 2,291, or of the state that 2.x names 68) | 825 |
+
+   **a. How a row says it.** Proposed: a column `<field>_source` next to each of these five Fields, in the
+   full and the simple release, filled in every row. Its value names the source: `hud`, `zbp`, `zcta_point`,
+   `hud_county_point` or `zbp_state` for a government source, and a label that starts with `uszipcode_2x` or
+   `inferred` for the others. So `WHERE major_city_source LIKE 'uszipcode_2x%'` finds every 2.x value, and
+   when 2.x is dropped later, its values become NULL together with their source. The descriptions of the five
+   Fields say it too. One helper in `core` would make a Field and its `_source` Field from one list of
+   (source column, label), so the two cannot disagree; `build` does not change. The alternatives: one JSON
+   column with only the values that are not from a government source (`{"zipcode_type": "uszipcode_2x"}`,
+   which, because of `zipcode_type`, would be in almost every row), or only the descriptions (they cannot
+   say which rows).
+
+   **b. `zipcode_type` of a ZIP that 2.x does not have** (6 today, more with each HUD quarter). You agreed
+   to infer it from the HUD address flags, marked as inferred. Compared with the 2.x type of every ZIP that
+   has both, the rule works for two types only. Of the ZIPs it would call STANDARD (HUD lists residential
+   addresses), 82% are STANDARD in 2.x and 18% PO BOX; MILITARY, by prefix, is right for all 787. But of
+   those it would call UNIQUE (HUD lists no residential address), 35% are UNIQUE, and of those it would call PO BOX
+   (in neither HUD nor the ZCTAs), 38% are PO BOX: the flags do not separate the two (the business-only ZIPs
+   are 52% UNIQUE and 46% PO BOX). Proposed: infer only STANDARD and MILITARY (`zipcode_type_source` =
+   `inferred_hud_residential` or `inferred_military_prefix`) and leave the others NULL. For the 6 ZIPs:
+   77352, 84048 and 85144 would be STANDARD; 18768, 90140 and 90205 (business addresses only) would stay
+   NULL. The alternative: infer UNIQUE and PO BOX as well, marked the same way.

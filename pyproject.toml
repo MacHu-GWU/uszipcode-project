@@ -1,0 +1,49 @@
+# Packaging of uszipcode.
+#
+# setup.py still computes most of the metadata from the package (version,
+# authors, requirements.txt), so those fields are listed in `dynamic`. The
+# extras are here: setuptools replaces the extras of setup.py with these.
+
+[build-system]
+requires = ["setuptools>=61"]  # the first version that reads [project]
+# setup.py imports uszipcode from the source tree, and only the legacy backend
+# puts the source tree on sys.path (it is also what pip used without this file).
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "uszipcode"
+dynamic = [
+    "version",
+    "description",
+    "readme",
+    "authors",
+    "maintainers",
+    "license",
+    "classifiers",
+    "urls",
+    "dependencies",
+]
+
+[project.optional-dependencies]
+# The same two as requirements-test.txt, which the library CI and tox.ini read.
+tests = [
+    "pytest",      # test framework
+    "pytest-cov",  # coverage test
+]
+# Read by readthedocs.yml (until now from requirements-doc.txt).
+docs = [
+    "sphinx==4.3.0",                    # sphinx doc builder
+    "sphinx-inline-tabs==2021.8.17b10", # allow inline tab
+    "sphinx-jinja==1.1.1",              # allow jinja2 template
+    "sphinx-copybutton==0.4.0",         # add copy to clipboard button for code block
+    "rstobj==0.0.7",                    # generate list table from data
+    "docfly==1.0.2",                    # sphinx-doc automation
+    "furo==2021.8.31",                  # modern doc theme
+]
+# uszipcode.data, the pipeline that builds the 3.0 database (Python 3.11+).
+# It runs on the standard library alone; pytest runs its tests:
+#   pip install -e ".[data]"
+#   python -m pytest tests/data
+data = [
+    "pytest",
+]

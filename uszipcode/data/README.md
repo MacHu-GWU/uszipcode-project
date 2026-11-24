@@ -475,7 +475,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | 20 | IRS history? | Three history Fields from the 13 yearly files, 2011-2023: `tax_returns`, `people_on_tax_returns` and `average_income_per_return`. The income sources by year are not added: they would be 22 more JSON columns | done: 361,760 values each; the last two equal 2.x in all 221,288 common values |
 | 21 | Does `zipcode_universe` download by itself? | No: its five files go through `fetch.py`, like those of the crawlers (cached with a manifest, resumed, checked by their first bytes), and the HUD token is the one of `keys.py` | done: the list it builds is byte-identical to the committed one |
 
-## Decisions of the maintainer (2026-11-10)
+## Decisions of the maintainer (2026-11-10 and 2026-11-22)
 
 | Decision | Status |
 |---|---|
@@ -484,6 +484,7 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | `polygon` stays in the main table, compressed | done: a zlib BLOB, 45 MB instead of 138 MB; the full database was 150 MB instead of 227 MB |
 | The `simple` release has only a part of the columns | done: a Field with `simple=True` is also a column of `db_<set>_simple.sqlite`, which `build` writes from the same rows (see [The simple release](#the-simple-release)); 20 Fields, 6.9 MB for all ZIPs |
 | The pipeline gets its own group of optional dependencies, `data`, in `pyproject.toml` | done: [`pyproject.toml`](../../pyproject.toml) has the extra `data` (pytest; the pipeline needs only the standard library). The extras `tests` and `docs` moved there from `setup.py`, because setuptools replaces the extras of `setup.py` with those of `pyproject.toml`; `requirements-doc.txt`, which only `setup.py` read, is gone. The rest of the metadata still comes from `setup.py`, and the wheel is the same apart from the new extra |
+| Type hints in the modern style, since the pipeline needs Python 3.11+: `X \| None` and `tuple[str, ...]`, not `typing.Optional` and `typing.Tuple` | done: `list`, `dict`, `tuple`, `set` and `X \| None` instead of their `typing` names, and `Callable`, `Iterable`, `Mapping` and `Sequence` from `collections.abc`. Only the hints and the imports changed |
 
 ## Open questions for the maintainer
 

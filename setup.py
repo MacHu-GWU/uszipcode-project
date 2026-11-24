@@ -151,17 +151,8 @@ if __name__ == "__main__":
         print("'requirements.txt' not found!")
         REQUIRES = list()
 
-    EXTRA_REQUIRE = dict()
-
-    try:
-        EXTRA_REQUIRE["tests"] = read_requirements_file("requirements-test.txt")
-    except:
-        print("'requirements-test.txt' not found!")
-
-    try:
-        EXTRA_REQUIRE["docs"] = read_requirements_file("requirements-doc.txt")
-    except:
-        print("'requirements-doc.txt' not found!")
+    # The extras (tests, docs, data) are in pyproject.toml: setuptools would
+    # replace any extras_require given here with the ones there.
 
     setup(
         name=PKG_NAME,
@@ -182,7 +173,6 @@ if __name__ == "__main__":
         platforms=PLATFORMS,
         license=LICENSE,
         install_requires=REQUIRES,
-        extras_require=EXTRA_REQUIRE,
     )
 
 """

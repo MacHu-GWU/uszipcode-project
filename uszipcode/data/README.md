@@ -98,8 +98,9 @@ mise run pipeline-setup
 | `mise run pipeline-build -- --pk-set full` | builds it for all 42,730 ZIPs (or `--pk-set path/to/pks.csv`; the file may not be named `demo.csv` or `full.csv`) |
 | `mise run pipeline-test` | runs the offline tests (no network) |
 
-Without mise, run the same commands with `python -m uszipcode.data check | crawl NAME | crawl --all | build`
-from the repository root. Exit codes: 0 success, 2 registry / contract / PK-set problems, 1 download
+Without mise, `pip install -e ".[data]"` installs pytest (with the library and its requirements), and the
+same commands are `python -m uszipcode.data check | crawl NAME | crawl --all | build`, run from the
+repository root. Exit codes: 0 success, 2 registry / contract / PK-set problems, 1 download
 and file problems. Expected errors print one message without a traceback.
 
 Five crawlers need a free key, so `crawl-all` needs both keys:
@@ -482,13 +483,12 @@ Taken as defaults while the maintainer reviews; the maintainer's branch has the 
 | The product is one wide table with one row per ZIP. The values of a Field over time are one JSON structure in that row. The crawler stage may keep any shape | done: `db_<set>.sqlite` has the one table `zipcode_data`; a history Field `x` is the column `x_by_year`, a JSON object `{year: value}` (see [The database](#the-database)) |
 | `polygon` stays in the main table, compressed | done: a zlib BLOB, 45 MB instead of 138 MB; the full database was 150 MB instead of 227 MB |
 | The `simple` release has only a part of the columns | done: a Field with `simple=True` is also a column of `db_<set>_simple.sqlite`, which `build` writes from the same rows (see [The simple release](#the-simple-release)); 20 Fields, 6.9 MB for all ZIPs |
-| The pipeline gets its own group of optional dependencies, `data`, in `pyproject.toml` | not added: the repository has no `pyproject.toml` yet, and the pipeline needs only the standard library (and pytest for its tests) |
+| The pipeline gets its own group of optional dependencies, `data`, in `pyproject.toml` | done: [`pyproject.toml`](../../pyproject.toml) has the extra `data` (pytest; the pipeline needs only the standard library). The extras `tests` and `docs` moved there from `setup.py`, because setuptools replaces the extras of `setup.py` with those of `pyproject.toml`; `requirements-doc.txt`, which only `setup.py` read, is gone. The rest of the metadata still comes from `setup.py`, and the wheel is the same apart from the new extra |
 
 ## Open questions for the maintainer
 
-1. **The `data` dependency group.** The repository has `setup.py` and no `pyproject.toml`, and the pipeline
-   needs only the standard library (and pytest for its tests). Should a `pyproject.toml` be added now, or the
-   group wait for it?
+1. **The `data` dependency group.** Answered on 2026-11-22: add a `pyproject.toml` now, in its own commit.
+   Done (see the table above).
 2. **Two files of the library.** `--cov=uszipcode` in the library's CI now counts `uszipcode/data/`, whose
    tests are skipped on Python 3.10: 25% with it, 97% with `uszipcode/data/*` omitted in `.coveragerc`. And in
    a new environment with only `requirements.txt` installed, `import uszipcode` prints
